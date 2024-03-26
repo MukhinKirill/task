@@ -1,0 +1,24 @@
+{
+  "runtimeTarget": {
+    "name": ".NETStandard,Version=v2.1/",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETStandard,Version=v2.1": {},
+    ".NETStandard,Version=v2.1/": {
+      "Task.Integration.Data.Models/1.0.0": {
+        "runtime": {
+          "Task.Integration.Data.Models.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Task.Integration.Data.Models/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
