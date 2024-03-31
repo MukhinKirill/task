@@ -1,0 +1,47 @@
+version: '3.8'
+
+networks:
+  avanposttask:
+    driver: bridge
+
+services:
+    
+  postgres:
+    container_name: postgres
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: PostgresPassword
+      POSTGRES_DB: avanpostDb
+    ports:
+      - 19111:5432
+    volumes:
+     - dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - avanposttask
+  
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    volumes:
+      - pgadmin:/var/lib/pgadmin
+    ports:
+      - 15432:80
+    restart: unless-stopped
+    networks:
+      - avanposttask
+    depends_on:
+      - postgres
+
+volumes:
+  pgadmin:
+  dbdata:
