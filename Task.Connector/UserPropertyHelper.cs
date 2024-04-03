@@ -31,7 +31,7 @@ namespace Task.Connector
 			return properties;
 		}
 
-		public static void UpdateProperties(User user, IEnumerable<UserProperty> userProperties)
+		public static void SetProperties(User user, IEnumerable<UserProperty> userProperties)
 		{
 			var properties = userProperties.ToDictionary(x => x.Name.ToLower(), x => x.Value);
 			user.IsLead = properties.GetValueOrDefault(nameof(user.IsLead).ToLower()) == "true";

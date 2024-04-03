@@ -40,15 +40,13 @@ public class ConnectorDb : IConnector
 
 	public void CreateUser(UserToCreate user)
 	{
-		_context.Users.Add(new User
+		var newUser = new User()
 		{
 			Login = user.Login,
-			FirstName = string.Empty,
-			LastName = string.Empty,
-			IsLead = false,
-			MiddleName = string.Empty,
-			TelephoneNumber = string.Empty,
-		});
+		};
+
+		UserPropertyHelper.SetProperties(newUser, user.Properties);
+		_context.Users.Add(newUser);
 
 		_context.Passwords.Add(new Sequrity()
 		{
@@ -92,7 +90,7 @@ public class ConnectorDb : IConnector
 			return;
 		}
 
-		UserPropertyHelper.UpdateProperties(user, properties);
+		UserPropertyHelper.SetProperties(user, properties);
 
 		_context.Update(user);
 		_context.SaveChanges();
