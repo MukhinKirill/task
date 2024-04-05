@@ -1,6 +1,5 @@
 ﻿using Dapper;
 using Npgsql;
-using System.Data.Common;
 using Task.Connector.Interfaces;
 using Task.Connector.Models;
 using Task.Integration.Data.Models;
@@ -14,31 +13,79 @@ namespace Task.Connector.Connectors
 
         private bool _disposed = false;
 
-        private DbConnection _dbConnection;
+        private NpgsqlConnection _dbConnection;
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            throw new NotImplementedException();
+            var rightQuery = "INSERT INTO \"TestTaskSchema\".\"UserRequestRight\" (\"userId\", \"rightId\")" +
+                "VALUES (@Login, @RightId)";
+
+            var roleQuery = "INSERT INTO \"TestTaskSchema\".\"UserITRole\" " +
+                "VALUES (@Login, @RoleId)";
+
+            var requests = new List<int>();
+            var roles = new List<int>();
+
+            foreach (var id in rightIds)
+            {
+                var parameter = id.Split(':');
+                var parameterId = int.Parse(parameter[1]);
+                if (parameter[0] == "Role")
+                    roles.Add(parameterId);
+                else if (parameter[0] == "Request")
+                    requests.Add(parameterId);
+            }
+
+            if(requests.Count > 0 || roles.Count > 0)
+            {
+                _dbConnection.Open();
+
+                foreach (var request in requests)
+                {
+                    var command = new NpgsqlCommand(roleQuery, _dbConnection)
+                    {
+                        CommandText = rightQuery
+                    };
+                    command.Parameters.AddWithValue("@Login", userLogin);
+                    command.Parameters.AddWithValue("@RightId", request);
+
+                    command.ExecuteNonQuery();
+                }
+
+                foreach (var role in roles)
+                {
+                    var command = new NpgsqlCommand(roleQuery, _dbConnection)
+                    {
+                        CommandText = roleQuery
+                    };
+                    command.Parameters.AddWithValue("@Login", userLogin);
+                    command.Parameters.AddWithValue("@RoleId", role);
+
+                    command.ExecuteNonQuery();
+                }
+
+                _dbConnection.Close();
+            }
         }
 
         public void CreateUser(UserToCreate user)
         {
-            var query = "INSERT INTO \"TestTaskSchema\".\"User\"( " +
+            var createUserQuery = "INSERT INTO \"TestTaskSchema\".\"User\"( " +
                 "login, \"lastName\", \"firstName\", \"middleName\", \"telephoneNumber\", \"isLead\") " +
                 "VALUES (@Login, @LastName, @FirstName, @MiddleName, @TelephoneNumber, @IsLead)";
 
+            var createPasswordQuery = "INSERT INTO \"TestTaskSchema\".\"Passwords\"( " +
+                "\"userId\", \"password\") " +
+                "VALUES (@Login, @Password);";
+
             var parameters = new UserObjectCreateParamaters(user.Login, user.Properties);
 
-            var completed = _dbConnection.Execute(query, parameters) != 0;
+            var completed = _dbConnection.Execute(createUserQuery, parameters) != 0;
 
             if (!completed)
                 return;
 
-            query = "INSERT INTO \"TestTaskSchema\".\"Passwords\"( " +
-                "\"userId\", \"password\") " +
-                "VALUES (@Login, @Password);";
-
-            _dbConnection.Execute(query, new { parameters.Login, Password = user.HashPassword });
+            _dbConnection.Execute(createPasswordQuery, new { parameters.Login, Password = user.HashPassword });
         }
 
         public IEnumerable<Permission> GetAllPermissions()
@@ -46,17 +93,12 @@ namespace Task.Connector.Connectors
             var query = "SELECT " +
                 "\"id\" as Id, " +
                 "\"name\" as Name " +
-                "FROM \"TestTaskSchema\".\"RequestRight\"";
+                "FROM \"TestTaskSchema\".\"RequestRight\"" +
+                "UNION " +
+                "SELECT \"id\" as Id, \"name\" as Name FROM \"TestTaskSchema\".\"ItRole\"";
 
-            var permissions = _dbConnection.Query<PermissionModel>(query)
-                .ToList();
-
-            query = "SELECT \"id\" as Id, \"name\" as Name FROM \"TestTaskSchema\".\"ItRole\"";
-            var roles = _dbConnection.Query<PermissionModel>(query);
-
-            permissions.AddRange(roles);
-
-            return permissions.Select(x=> new Permission(x.Id, x.Name, string.Empty));
+            return _dbConnection.Query<PermissionModel>(query)
+                .Select(x=> new Permission(x.Id, x.Name, string.Empty));
         }
 
         public IEnumerable<Property> GetAllProperties()
@@ -68,7 +110,15 @@ namespace Task.Connector.Connectors
 
         public IEnumerable<string> GetUserPermissions(string userLogin)
         {
-            throw new NotImplementedException();
+            var query = "SELECT rr.\"name\" FROM \"TestTaskSchema\".\"UserRequestRight\" urr " +
+                "INNER JOIN \"TestTaskSchema\".\"RequestRight\" rr ON rr.\"id\" = urr.\"rightId\" " +
+                "WHERE urr.\"userId\" = 'GlavnyyNN' " +
+                "UNION " +
+                "SELECT ir.\"name\" FROM \"TestTaskSchema\".\"UserITRole\" uir " +
+                "INNER JOIN \"TestTaskSchema\".\"ItRole\" ir ON ir.\"id\" = uir.\"roleId\" " + 
+                "WHERE uir.\"userId\" = 'GlavnyyNN'";
+
+            return _dbConnection.Query<string>(query);
         }
 
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
@@ -90,6 +140,7 @@ namespace Task.Connector.Connectors
                 "FROM \"TestTaskSchema\".\"User\" u " +
                 "INNER JOIN \"TestTaskSchema\".\"Passwords\" p ON p.\"userId\" = u.\"login\" " +
                 "where u.login = @Login";
+
             return _dbConnection.QueryFirst<UserObjectPropertyModel>(query, new { Login = userLogin });
         }
 
@@ -103,7 +154,30 @@ namespace Task.Connector.Connectors
 
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            throw new NotImplementedException();
+            var rightQuery = "DELETE FROM \"TestTaskSchema\".\"UserRequestRight\" " +
+                "WHERE \"userId\" = @Login and \"rightId\" = ANY(@RightIds);";
+
+            var roleQuery = "DELETE FROM \"TestTaskSchema\".\"UserITRole\" " +
+                "WHERE \"userId\" = @Login and \"roleId\" = ANY(@RoleIds);";
+
+            var requests = new List<int>();
+            var roles = new List<int>();
+
+            foreach (var id in rightIds)
+            {
+                var parameter = id.Split(':');
+                var parameterId = int.Parse(parameter[1]);
+                if (parameter[0] == "Role")
+                    roles.Add(parameterId);
+                else if (parameter[0] == "Request")
+                    requests.Add(parameterId);
+            }
+
+            if(requests.Count > 0)
+                _dbConnection.Execute(rightQuery, new { Login = userLogin, RightIds = requests });
+
+            if(roles.Count > 0)
+                _dbConnection.Execute(roleQuery, new { Login = userLogin, RoleIds = roles });
         }
 
         public void StartUp(string connectionString)
@@ -117,7 +191,7 @@ namespace Task.Connector.Connectors
         {
             var user = GetUserObjectProperty(userLogin);
 
-            user.UpdateObject(properties);
+            user.UpdateProperties(properties);
 
             var query = "UPDATE \"TestTaskSchema\".\"User\" " +
                 "SET " +

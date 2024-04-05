@@ -22,7 +22,7 @@ namespace Task.Connector.Connectors
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            throw new NotImplementedException();
+            _connector.AddUserPermissions(userLogin, rightIds);
         }
 
         public void CreateUser(UserToCreate user)

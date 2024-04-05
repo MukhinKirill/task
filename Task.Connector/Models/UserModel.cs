@@ -4,19 +4,19 @@ namespace Task.Connector.Models
 {
     public class UserModel
     {
-        public string Login { get; protected set; } = null!;
+        public string Login { get; protected set; } = string.Empty;
 
-        public string? LastName { get; protected set; }
+        public string LastName { get; protected set; } = string.Empty;
 
-        public string? FirstName { get; protected set; }
+        public string FirstName { get; protected set; } = string.Empty;
 
-        public string? MiddleName { get; protected set; }
+        public string MiddleName { get; protected set; } = string.Empty;
 
-        public string? TelephoneNumber { get; protected set; }
+        public string TelephoneNumber { get; protected set; } = string.Empty;
 
         public bool IsLead { get; protected set; }
 
-        public UserModel() { }
+        protected UserModel() { }
 
         public UserModel(string login, IEnumerable<UserProperty> userProperties)
         {
@@ -25,7 +25,7 @@ namespace Task.Connector.Models
             FillObject(userProperties);
         }
 
-        public void UpdateObject(IEnumerable<UserProperty> userProperties)
+        public void UpdateProperties(IEnumerable<UserProperty> userProperties)
         {
             FillObject(userProperties);
         }
