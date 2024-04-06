@@ -25,7 +25,7 @@ namespace Task.Connector.Connectors
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            if (IsUserExists(userLogin))
+            if (!IsUserExists(userLogin))
                 throw new UserNotFoundException(userLogin);
 
             var rightQuery = "INSERT INTO \"TestTaskSchema\".\"UserRequestRight\" (\"userId\", \"rightId\")" +
@@ -110,7 +110,7 @@ namespace Task.Connector.Connectors
 
         public IEnumerable<string> GetUserPermissions(string userLogin)
         {
-            if (IsUserExists(userLogin))
+            if (!IsUserExists(userLogin))
                 throw new UserNotFoundException(userLogin);
 
             var query = "SELECT rr.\"name\" FROM \"TestTaskSchema\".\"UserRequestRight\" urr " +
@@ -126,7 +126,7 @@ namespace Task.Connector.Connectors
 
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
         {
-            if (IsUserExists(userLogin))
+            if (!IsUserExists(userLogin))
                 throw new UserNotFoundException(userLogin);
 
             var user = GetUserObjectProperty(userLogin);
@@ -136,7 +136,7 @@ namespace Task.Connector.Connectors
 
         private UserObjectPropertyModel GetUserObjectProperty(string userLogin)
         {
-            if (IsUserExists(userLogin))
+            if (!IsUserExists(userLogin))
                 throw new UserNotFoundException(userLogin);
 
             var query = "SELECT \"login\" as Login, " +
@@ -163,7 +163,7 @@ namespace Task.Connector.Connectors
 
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            if (IsUserExists(userLogin))
+            if (!IsUserExists(userLogin))
                 throw new UserNotFoundException(userLogin);
 
             var rightQuery = "DELETE FROM \"TestTaskSchema\".\"UserRequestRight\" " +
@@ -183,7 +183,7 @@ namespace Task.Connector.Connectors
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
         {
-            if (IsUserExists(userLogin))
+            if (!IsUserExists(userLogin))
                 throw new UserNotFoundException(userLogin);
 
             var user = GetUserObjectProperty(userLogin);

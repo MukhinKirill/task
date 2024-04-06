@@ -1,6 +1,4 @@
-using Task.Connector.Connectors;
 using Task.Connector.Constants;
-using Task.Connector.Tests.Constants;
 using Task.Integration.Data.DbCommon;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
@@ -10,31 +8,16 @@ namespace Task.Connector.Tests
 {
     public class DatabaseTests : IClassFixture<DatabaseFixture>
     {
-        readonly string mssqlConnectionString;
-        readonly string postgreConnectionString;
-        readonly Dictionary<string, string> connectorsCS;
-        readonly Dictionary<string, string> dataBasesCS;
+        DatabaseFixture _fixture;
 
         public DatabaseTests(DatabaseFixture dbFixture)
         {
-            mssqlConnectionString = "";
-            postgreConnectionString = dbFixture.PostgreSqlContainer.GetConnectionString();
-            connectorsCS = new Dictionary<string, string>
-            {
-                { DatabaseConnectors.MSSQL_PROVIDER, DatabaseConnectors.GetMssqlConfiguration(mssqlConnectionString) },
-                { DatabaseConnectors.POSGRE_PROVIDER,  DatabaseConnectors.GetPostgresConfiguration(postgreConnectionString)}
-            };
-
-            dataBasesCS = new Dictionary<string, string>
-            {
-                { DatabaseConnectors.MSSQL_PROVIDER, mssqlConnectionString},
-                { DatabaseConnectors.POSGRE_PROVIDER, postgreConnectionString}
-            };
+            _fixture = dbFixture;
         }
         
         public DataManager Init(string providerName)
         {
-            var factory = new DbContextFactory(dataBasesCS[providerName]);
+            var factory = new DbContextFactory(_fixture.DataBasesCS[providerName]);
             var dataSetter = new DataManager(factory, providerName);
             dataSetter.PrepareDbForTest();
             return dataSetter;
@@ -42,10 +25,7 @@ namespace Task.Connector.Tests
 
         public IConnector GetConnector(string provider)
         {
-            IConnector connector = new ConnectorDb();
-            connector.StartUp(connectorsCS[provider]);
-            connector.Logger = new FileLogger($"{DateTime.Now}connector{provider}.Log", $"{DateTime.Now}connector{provider}");
-            return connector;
+            return _fixture.GetConnector(provider);
         }
 
         [Theory]
@@ -153,6 +133,7 @@ namespace Task.Connector.Tests
             Assert.False(dataSetter.MasterUserHasITRole(dataSetter.GetITRoleId().ToString()));
             Assert.False(dataSetter.MasterUserHasRequestRight(dataSetter.GetRequestRightId(DefaultData.RequestRights[DefaultData.MasterUserRequestRights.First()].Name).ToString()));
         }
+        
         [Theory]
         [InlineData("MSSQL")]
         [InlineData("POSTGRE")]

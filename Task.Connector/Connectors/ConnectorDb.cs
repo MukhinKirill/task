@@ -7,7 +7,7 @@ using Task.Integration.Data.Models.Models;
 
 namespace Task.Connector.Connectors
 {
-    public class ConnectorDb : IConnector
+    public class ConnectorDb : IConnectorDb
     {
         public ILogger Logger { get; set; }
 
@@ -200,11 +200,16 @@ namespace Task.Connector.Connectors
             }
         }
 
-        ~ConnectorDb()
+        public void Dispose()
         {
             Logger.Debug("Dispose connector");
 
             _connector.Dispose();
+        }
+
+        ~ConnectorDb()
+        {
+            Dispose();
         }
     }
 }

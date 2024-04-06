@@ -1,7 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Task.Connector.Connectors;
+using Task.Connector.Interfaces;
 using Task.Connector.Models;
 using Task.Connector.Tests.Constants;
-using Task.Integration.Data.DbCommon;
+using Task.Integration.Data.Models;
 using Testcontainers.PostgreSql;
 
 
@@ -11,6 +13,14 @@ namespace Task.Connector.Tests
     {
         public readonly PostgreSqlContainer PostgreSqlContainer;
 
+        public Dictionary<string, string> ConnectorsCS { get; private set; }
+        public Dictionary<string, string> DataBasesCS { get; private set; }
+
+        IConnectorDb _connector;
+
+        string _mssqlConnectionString;
+        string _postgreConnectionString;
+
         public DatabaseFixture()
         {
             PostgreSqlContainer = new PostgreSqlBuilder()
@@ -18,14 +28,33 @@ namespace Task.Connector.Tests
                 .Build();
         }
 
-        private void SetDefaultData(DbContextFactory factory, string provider)
+        public IConnector GetConnector(string provider)
         {
-            new DataManager(factory, provider).PrepareDbForTest();
+            _connector = new ConnectorDb
+            {
+                Logger = new FileLogger($"{DateTime.Now:dd.MM.yyyy}connector{provider}.Log", $"{DateTime.Now:dd.MM.yyyy}connector{provider}")
+            };
+            _connector.StartUp(ConnectorsCS[provider]);
+            return _connector;
         }
 
-        System.Threading.Tasks.Task IAsyncLifetime.InitializeAsync()
+        async System.Threading.Tasks.Task IAsyncLifetime.InitializeAsync()
         {
-            return InitializePostgreAsync();
+            await InitializePostgreAsync();
+
+            _mssqlConnectionString = "Server=(LocalDb)\\MSSQLLocalDB;Database=testDb;Trusted_Connection=True;";
+            _postgreConnectionString = PostgreSqlContainer.GetConnectionString();
+            ConnectorsCS = new Dictionary<string, string>
+            {
+                { DatabaseConnectors.MSSQL_PROVIDER, DatabaseConnectors.GetMssqlConfiguration(_mssqlConnectionString) },
+                { DatabaseConnectors.POSGRE_PROVIDER,  DatabaseConnectors.GetPostgresConfiguration(_postgreConnectionString)}
+            };
+
+            DataBasesCS = new Dictionary<string, string>
+            {
+                { DatabaseConnectors.MSSQL_PROVIDER, _mssqlConnectionString},
+                { DatabaseConnectors.POSGRE_PROVIDER, _postgreConnectionString}
+            };
         }
 
         async System.Threading.Tasks.Task InitializePostgreAsync()
@@ -41,12 +70,12 @@ namespace Task.Connector.Tests
 
             posgresDbContext.Database.Migrate();
             await posgresDbContext.DisposeAsync();
-
-            SetDefaultData(new DbContextFactory(postgresConfiguration.ConnectionString), DatabaseConnectors.POSGRE_PROVIDER);
         }
 
         async System.Threading.Tasks.Task IAsyncLifetime.DisposeAsync()
         {
+            _connector.Dispose();
+            
             await PostgreSqlContainer.DisposeAsync()
                 .ConfigureAwait(false);
         }
