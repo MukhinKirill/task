@@ -17,17 +17,17 @@ namespace Task.Connector.Tests
 
         public DatabaseTests(DatabaseFixture dbFixture)
         {
-            //mssqlConnectionString = dbFixture.MsSqlContainer.GetConnectionString();
+            mssqlConnectionString = ""/*dbFixture.MsSqlContainer.GetConnectionString()*/;
             postgreConnectionString = dbFixture.PostgreSqlContainer.GetConnectionString();
             connectorsCS = new Dictionary<string, string>
             {
-                //{ DatabaseConnectors.MSSQL_PROVIDER, DatabaseConnectors.GetMssqlConfiguration(mssqlConnectionString) },
+                { DatabaseConnectors.MSSQL_PROVIDER, DatabaseConnectors.GetMssqlConfiguration(mssqlConnectionString) },
                 { DatabaseConnectors.POSGRE_PROVIDER,  DatabaseConnectors.GetPostgresConfiguration(postgreConnectionString)}
             };
 
             dataBasesCS = new Dictionary<string, string>
             {
-                //{ DatabaseConnectors.MSSQL_PROVIDER, mssqlConnectionString},
+                { DatabaseConnectors.MSSQL_PROVIDER, mssqlConnectionString},
                 { DatabaseConnectors.POSGRE_PROVIDER, postgreConnectionString}
             };
         }

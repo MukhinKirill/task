@@ -73,9 +73,6 @@ namespace Task.Connector.Tests
         {
             await PostgreSqlContainer.DisposeAsync()
                 .ConfigureAwait(false);
-
-            //await MsSqlContainer.DisposeAsync()
-            //    .ConfigureAwait(false);
         }
     }
 }

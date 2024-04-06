@@ -1,4 +1,5 @@
-﻿using Task.Connector.Factories;
+﻿using Task.Connector.Exceptions;
+using Task.Connector.Factories;
 using Task.Connector.Interfaces;
 using Task.Connector.Models;
 using Task.Integration.Data.Models;
@@ -14,59 +15,195 @@ namespace Task.Connector.Connectors
 
         public void StartUp(string connectionString)
         {
+            if (Logger is null)
+                throw new ArgumentNullException("Logger dot't register");
+            
             var configuration = new ConnectionConfiguration(connectionString);
             _connector = ConnectorFactory.GetConnector(configuration.Provider);
+
+            Logger.Debug($"Use connector provider for {configuration.Provider}");
 
             _connector.StartUp(connectionString);
         }
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            _connector.AddUserPermissions(userLogin, rightIds);
+            Logger.Debug($"Add user permissions by login - {userLogin}");
+
+            try
+            {
+                _connector.AddUserPermissions(userLogin, rightIds);
+            }
+            catch (UserNotFoundException ex)
+            {
+                Logger.Error(ex.Message);
+
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex.Message);
+
+                throw;
+            }
         }
 
         public void CreateUser(UserToCreate user)
         {
-            _connector.CreateUser(user);
+            Logger.Debug("Creating user");
+
+            try
+            {
+                _connector.CreateUser(user);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex.Message);
+
+                throw;
+            }
         }
 
         public IEnumerable<Permission> GetAllPermissions()
         {
-            return _connector.GetAllPermissions();
+            Logger.Debug("Get all permissions");
+            
+            try
+            {
+                return _connector.GetAllPermissions();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex.Message);
+
+                throw;
+            }
         }
 
         public IEnumerable<Property> GetAllProperties()
         {
-            return _connector.GetAllProperties();
+            Logger.Debug("Get all properties");
+
+            try
+            {
+                return _connector.GetAllProperties();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex.Message);
+
+                throw;
+            }
         }
 
         public IEnumerable<string> GetUserPermissions(string userLogin)
         {
-            return _connector.GetUserPermissions(userLogin);
+            Logger.Debug("Get all permissions");
+
+            try
+            {
+                return _connector.GetUserPermissions(userLogin);
+            }
+            catch (UserNotFoundException ex)
+            {
+                Logger.Error(ex.Message);
+
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex.Message);
+
+                throw;
+            }
         }
 
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
         {
-            return _connector.GetUserProperties(userLogin);
+            Logger.Debug($"Get user properties by login - {userLogin}");
+
+            try
+            {
+                return _connector.GetUserProperties(userLogin);
+            }
+            catch (UserNotFoundException ex)
+            {
+                Logger.Error(ex.Message);
+
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex.Message);
+
+                throw;
+            }
         }
 
         public bool IsUserExists(string userLogin)
         {
-            return _connector.IsUserExists(userLogin);    
+            Logger.Debug($"Check user exists by login - {userLogin}");
+
+            try
+            {
+                return _connector.IsUserExists(userLogin);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex.Message);
+
+                throw;
+            }
         }
 
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            _connector.RemoveUserPermissions(userLogin, rightIds);
+            Logger.Debug($"Remove user permissions by login - {userLogin}");
+
+            try
+            {
+                _connector.RemoveUserPermissions(userLogin, rightIds);
+            }
+            catch (UserNotFoundException ex)
+            {
+                Logger.Error(ex.Message);
+
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex.Message);
+
+                throw;
+            }
         }
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
         {
-            _connector.UpdateUserProperties(properties, userLogin);
+            Logger.Debug($"Update user properties by login - {userLogin}");
+
+            try
+            {
+                _connector.UpdateUserProperties(properties, userLogin);
+            }
+            catch (UserNotFoundException ex)
+            {
+                Logger.Error(ex.Message);
+
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex.Message);
+
+                throw;
+            }
         }
 
         ~ConnectorDb()
         {
+            Logger.Debug("Dispose connector");
+
             _connector.Dispose();
         }
     }

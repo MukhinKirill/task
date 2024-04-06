@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using System.Data.SqlClient;
+using Task.Connector.Exceptions;
 using Task.Connector.Interfaces;
 using Task.Connector.Models;
 using Task.Integration.Data.Models;
@@ -24,6 +25,9 @@ namespace Task.Connector.Connectors
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
+            if (IsUserExists(userLogin))
+                throw new UserNotFoundException(userLogin);
+
             var rightQuery = "INSERT INTO \"TestTaskSchema\".\"UserRequestRight\" (\"userId\", \"rightId\")" +
                 "VALUES (@Login, @RightId)";
 
@@ -106,6 +110,9 @@ namespace Task.Connector.Connectors
 
         public IEnumerable<string> GetUserPermissions(string userLogin)
         {
+            if (IsUserExists(userLogin))
+                throw new UserNotFoundException(userLogin);
+
             var query = "SELECT rr.\"name\" FROM \"TestTaskSchema\".\"UserRequestRight\" urr " +
                 "INNER JOIN \"TestTaskSchema\".\"RequestRight\" rr ON rr.\"id\" = urr.\"rightId\" " +
                 "WHERE urr.\"userId\" = 'GlavnyyNN' " +
@@ -119,6 +126,9 @@ namespace Task.Connector.Connectors
 
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
         {
+            if (IsUserExists(userLogin))
+                throw new UserNotFoundException(userLogin);
+
             var user = GetUserObjectProperty(userLogin);
 
             return user.GetProperties();
@@ -126,6 +136,9 @@ namespace Task.Connector.Connectors
 
         private UserObjectPropertyModel GetUserObjectProperty(string userLogin)
         {
+            if (IsUserExists(userLogin))
+                throw new UserNotFoundException(userLogin);
+
             var query = "SELECT \"login\" as Login, " +
                 "\"lastName\" as LastName, " +
                 "\"firstName\" as FirstName, " +
@@ -150,6 +163,9 @@ namespace Task.Connector.Connectors
 
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
+            if (IsUserExists(userLogin))
+                throw new UserNotFoundException(userLogin);
+
             var rightQuery = "DELETE FROM \"TestTaskSchema\".\"UserRequestRight\" " +
                             "WHERE \"userId\" = @Login and \"rightId\" IN @RightIds;";
 
@@ -167,6 +183,9 @@ namespace Task.Connector.Connectors
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
         {
+            if (IsUserExists(userLogin))
+                throw new UserNotFoundException(userLogin);
+
             var user = GetUserObjectProperty(userLogin);
 
             user.UpdateProperties(properties);

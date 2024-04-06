@@ -12,7 +12,7 @@ namespace Task.Connector.Factories
             {
                 ProviderConstants.MSSQL => new MssqlConnector(),
                 ProviderConstants.POSTGRE => new PostgreConnector(),
-                _ => throw new ArgumentException("provider don't registration - {0}", nameof(provider)),
+                _ => throw new ArgumentException("Provider don't registration - {0}", nameof(provider)),
             };
         }
     }
