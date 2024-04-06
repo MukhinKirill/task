@@ -22,7 +22,6 @@ namespace Task.Connector.Models
                 properties.Add(new UserProperty("telephoneNumber", TelephoneNumber));
 
             properties.Add(new UserProperty("isLead", IsLead.ToString()));
-            properties.Add(new UserProperty("password", Password));
 
             return properties;
         }

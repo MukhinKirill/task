@@ -60,7 +60,7 @@ namespace Task.Connector.Tests
             var connector = GetConnector(provider);
             var userInfo = connector.GetUserProperties(DefaultData.MasterUserLogin);
             Assert.NotNull(userInfo);
-            Assert.Equal(6, userInfo.Count());
+            Assert.Equal(5, userInfo.Count());
             Assert.True(userInfo.FirstOrDefault(_ => _.Value.Equals(DefaultData.MasterUser.TelephoneNumber)) != null);
         }
 
