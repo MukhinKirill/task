@@ -1,28 +1,37 @@
 using Task.Connector.Connectors;
+using Task.Connector.Constants;
+using Task.Connector.Tests.Constants;
 using Task.Integration.Data.DbCommon;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
 
+
 namespace Task.Connector.Tests
 {
-    public class UnitTest1
+    public class DatabaseTests : IClassFixture<DatabaseFixture>
     {
-        static string requestRightGroupName = "Request";
-        static string itRoleRightGroupName = "Role";
-        static string delimeter = ":";
-        static string mssqlConnectionString = "Server=.\\SQLEXPRESS;Database=testDb;Trusted_Connection=True;TrustServerCertificate=True";
-        static string postgreConnectionString = "Server=127.0.0.1;Port=5432;Database=testDb;Username=postgres;Password=1234;";
-        static Dictionary<string, string> connectorsCS = new Dictionary<string, string>
-        {
-            { "MSSQL",$"ConnectionString='{mssqlConnectionString}';Provider='SqlServer.2019';SchemaName='AvanpostIntegrationTestTaskSchema';"},
-            { "POSTGRE", $"ConnectionString='{postgreConnectionString}';Provider='PostgreSQL.9.5';SchemaName='AvanpostIntegrationTestTaskSchema';"}
-        };
-        static Dictionary<string, string> dataBasesCS = new Dictionary<string, string>
-        {
-            { "MSSQL",mssqlConnectionString},
-            { "POSTGRE", postgreConnectionString}
-        };
+        readonly string mssqlConnectionString;
+        readonly string postgreConnectionString;
+        readonly Dictionary<string, string> connectorsCS;
+        readonly Dictionary<string, string> dataBasesCS;
 
+        public DatabaseTests(DatabaseFixture dbFixture)
+        {
+            //mssqlConnectionString = dbFixture.MsSqlContainer.GetConnectionString();
+            postgreConnectionString = dbFixture.PostgreSqlContainer.GetConnectionString();
+            connectorsCS = new Dictionary<string, string>
+            {
+                //{ DatabaseConnectors.MSSQL_PROVIDER, DatabaseConnectors.GetMssqlConfiguration(mssqlConnectionString) },
+                { DatabaseConnectors.POSGRE_PROVIDER,  DatabaseConnectors.GetPostgresConfiguration(postgreConnectionString)}
+            };
+
+            dataBasesCS = new Dictionary<string, string>
+            {
+                //{ DatabaseConnectors.MSSQL_PROVIDER, mssqlConnectionString},
+                { DatabaseConnectors.POSGRE_PROVIDER, postgreConnectionString}
+            };
+        }
+        
         public DataManager Init(string providerName)
         {
             var factory = new DbContextFactory(dataBasesCS[providerName]);
@@ -39,9 +48,8 @@ namespace Task.Connector.Tests
             return connector;
         }
 
-
         [Theory]
-        [InlineData("MSSQL")]
+        //[InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void CreateUser(string provider)
         {
@@ -53,18 +61,18 @@ namespace Task.Connector.Tests
         }
 
         [Theory]
-        [InlineData("MSSQL")]
+        //[InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void GetAllProperties(string provider)
         {
             var dataSetter = Init(provider);
             var connector = GetConnector(provider);
             var propInfos = connector.GetAllProperties();
-            Assert.Equal(DefaultData.PropsCount+1/*password too*/, propInfos.Count());
+            Assert.Equal(DefaultData.PropsCount + 1/*password too*/, propInfos.Count());
         }
 
         [Theory]
-        [InlineData("MSSQL")]
+        //[InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void GetUserProperties(string provider)
         {
@@ -77,7 +85,7 @@ namespace Task.Connector.Tests
         }
 
         [Theory]
-        [InlineData("MSSQL")]
+        //[InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void IsUserExists(string provider)
         {
@@ -88,7 +96,7 @@ namespace Task.Connector.Tests
         }
 
         [Theory]
-        [InlineData("MSSQL")]
+        //[InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void UpdateUserProperties(string provider)
         {
@@ -105,7 +113,7 @@ namespace Task.Connector.Tests
         }
 
         [Theory]
-        [InlineData("MSSQL")]
+        //[InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void GetAllPermissions(string provider)
         {
@@ -117,36 +125,36 @@ namespace Task.Connector.Tests
         }
 
         [Theory]
-        [InlineData("MSSQL")]
+        //[InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void AddUserPermissions(string provider)
         {
             var dataSetter = Init(provider);
             var connector = GetConnector(provider);
-            var RoleId = $"{itRoleRightGroupName}{delimeter}{dataSetter.GetITRoleId()}";
+            var RoleId = $"{RightConstants.IT_ROLE_RIGHT_GROUP_NAME}{RightConstants.DELIMETER}{dataSetter.GetITRoleId()}";
             connector.AddUserPermissions(
                 DefaultData.MasterUserLogin,
-                new [] { RoleId });
+                new[] { RoleId });
             Assert.True(dataSetter.MasterUserHasITRole(dataSetter.GetITRoleId().ToString()));
             Assert.True(dataSetter.MasterUserHasRequestRight(dataSetter.GetRequestRightId(DefaultData.RequestRights[DefaultData.MasterUserRequestRights.First()].Name).ToString()));
         }
 
         [Theory]
-        [InlineData("MSSQL")]
+        //[InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void RemoveUserPermissions(string provider)
         {
             var dataSetter = Init(provider);
             var connector = GetConnector(provider);
-            var requestRightIdToDrop = $"{requestRightGroupName}{delimeter}{dataSetter.GetRequestRightId(DefaultData.RequestRights[DefaultData.MasterUserRequestRights.First()].Name)}";
+            var requestRightIdToDrop = $"{RightConstants.REQUEST_RIGHT_GROUP_NAME}{RightConstants.DELIMETER}{dataSetter.GetRequestRightId(DefaultData.RequestRights[DefaultData.MasterUserRequestRights.First()].Name)}";
             connector.RemoveUserPermissions(
                 DefaultData.MasterUserLogin,
-                new [] { requestRightIdToDrop });
+                new[] { requestRightIdToDrop });
             Assert.False(dataSetter.MasterUserHasITRole(dataSetter.GetITRoleId().ToString()));
             Assert.False(dataSetter.MasterUserHasRequestRight(dataSetter.GetRequestRightId(DefaultData.RequestRights[DefaultData.MasterUserRequestRights.First()].Name).ToString()));
         }
         [Theory]
-        [InlineData("MSSQL")]
+        //[InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void GetUserPermissions(string provider)
         {

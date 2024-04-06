@@ -25,29 +25,18 @@ namespace Task.Connector.Connectors
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
             var rightQuery = "INSERT INTO \"TestTaskSchema\".\"UserRequestRight\" (\"userId\", \"rightId\")" +
-    "VALUES (@Login, @RightId)";
+                "VALUES (@Login, @RightId)";
 
             var roleQuery = "INSERT INTO \"TestTaskSchema\".\"UserITRole\" " +
                 "VALUES (@Login, @RoleId)";
 
-            var requests = new List<int>();
-            var roles = new List<int>();
+            var permissions = new UserPremissionsModel(rightIds);
 
-            foreach (var id in rightIds)
-            {
-                var parameter = id.Split(':');
-                var parameterId = int.Parse(parameter[1]);
-                if (parameter[0] == "Role")
-                    roles.Add(parameterId);
-                else if (parameter[0] == "Request")
-                    requests.Add(parameterId);
-            }
-
-            if (requests.Count > 0 || roles.Count > 0)
+            if (permissions.Requests.Count > 0 || permissions.Roles.Count > 0)
             {
                 _dbConnection.Open();
 
-                foreach (var request in requests)
+                foreach (var request in permissions.Requests)
                 {
                     var command = new SqlCommand(roleQuery, _dbConnection)
                     {
@@ -59,7 +48,7 @@ namespace Task.Connector.Connectors
                     command.ExecuteNonQuery();
                 }
 
-                foreach (var role in roles)
+                foreach (var role in permissions.Roles)
                 {
                     var command = new SqlCommand(roleQuery, _dbConnection)
                     {
@@ -85,7 +74,7 @@ namespace Task.Connector.Connectors
                 "\"userId\", \"password\") " +
                 "VALUES (@Login, @Password);";
 
-            var parameters = new UserObjectCreateParamaters(user.Login, user.Properties);
+            var parameters = new UserModel(user.Login, user.Properties);
 
             var completed = _dbConnection.Execute(createUserQuery, parameters) != 0;
 
@@ -167,24 +156,13 @@ namespace Task.Connector.Connectors
             var roleQuery = "DELETE FROM \"TestTaskSchema\".\"UserITRole\" " +
                 "WHERE \"userId\" = @Login and \"roleId\" IN @RoleIds;";
 
-            var requests = new List<int>();
-            var roles = new List<int>();
+            var permissions = new UserPremissionsModel(rightIds);
 
-            foreach (var id in rightIds)
-            {
-                var parameter = id.Split(':');
-                var parameterId = int.Parse(parameter[1]);
-                if (parameter[0] == "Role")
-                    roles.Add(parameterId);
-                else if (parameter[0] == "Request")
-                    requests.Add(parameterId);
-            }
+            if (permissions.Requests.Count > 0)
+                _dbConnection.Execute(rightQuery, new { Login = userLogin, RightIds = permissions.Requests });
 
-            if (requests.Count > 0)
-                _dbConnection.Execute(rightQuery, new { Login = userLogin, RightIds = requests });
-
-            if (roles.Count > 0)
-                _dbConnection.Execute(roleQuery, new { Login = userLogin, RoleIds = roles });
+            if (permissions.Roles.Count > 0)
+                _dbConnection.Execute(roleQuery, new { Login = userLogin, RoleIds = permissions.Roles });
         }
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)

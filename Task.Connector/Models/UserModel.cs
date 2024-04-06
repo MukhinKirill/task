@@ -2,7 +2,7 @@
 
 namespace Task.Connector.Models
 {
-    public class UserModel
+    internal class UserModel
     {
         public string Login { get; protected set; } = string.Empty;
 

@@ -2,7 +2,7 @@
 
 namespace Task.Connector.Models
 {
-    internal class ConnectionConfiguration
+    public class ConnectionConfiguration
     {
         private readonly string _connectionString;
 

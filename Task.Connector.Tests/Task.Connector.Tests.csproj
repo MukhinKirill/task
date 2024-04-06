@@ -13,6 +13,8 @@
 	  <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="7.0.13" />
 	  <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.11" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.5.0" />
+    <PackageReference Include="Testcontainers.MsSql" Version="3.8.0" />
+    <PackageReference Include="Testcontainers.PostgreSql" Version="3.8.0" />
     <PackageReference Include="xunit" Version="2.4.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -34,6 +36,12 @@
     </Reference>
     <Reference Include="Task.Integration.Data.Models">
       <HintPath>..\libs\Models\Task.Integration.Data.Models.dll</HintPath>
+    </Reference>
+    <Reference Include="Task.Integration.Data.MSSQL">
+      <HintPath>..\DbCreationUtility\Task.Integration.Data.MSSQL.dll</HintPath>
+    </Reference>
+    <Reference Include="Task.Integration.Data.Postgre">
+      <HintPath>..\DbCreationUtility\Task.Integration.Data.Postgre.dll</HintPath>
     </Reference>
   </ItemGroup>
 
