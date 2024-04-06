@@ -17,7 +17,7 @@ namespace Task.Connector.Tests
 
         public DatabaseTests(DatabaseFixture dbFixture)
         {
-            mssqlConnectionString = ""/*dbFixture.MsSqlContainer.GetConnectionString()*/;
+            mssqlConnectionString = "";
             postgreConnectionString = dbFixture.PostgreSqlContainer.GetConnectionString();
             connectorsCS = new Dictionary<string, string>
             {
