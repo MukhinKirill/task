@@ -56,6 +56,12 @@ namespace Task.Connector.Connectors
             {
                 _connector.CreateUser(user);
             }
+            catch (UserLoginNotUniqueException ex)
+            {
+                Logger.Warn(ex.Message);
+
+                throw;
+            }
             catch (Exception ex)
             {
                 Logger.Error(ex.Message);

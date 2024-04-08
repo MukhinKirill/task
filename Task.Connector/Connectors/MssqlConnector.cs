@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using System.Data.SqlClient;
+using Task.Connector.Constants;
 using Task.Connector.Exceptions;
 using Task.Connector.Interfaces;
 using Task.Connector.Models;
@@ -70,6 +71,9 @@ namespace Task.Connector.Connectors
 
         public void CreateUser(UserToCreate user)
         {
+            if (IsUserExists(user.Login))
+                throw new UserLoginNotUniqueException(user.Login);
+
             var createUserQuery = "INSERT INTO \"TestTaskSchema\".\"User\"( " +
                             "login, \"lastName\", \"firstName\", \"middleName\", \"telephoneNumber\", \"isLead\") " +
                             "VALUES (@Login, @LastName, @FirstName, @MiddleName, @TelephoneNumber, @IsLead)";
@@ -83,7 +87,7 @@ namespace Task.Connector.Connectors
             var completed = _dbConnection.Execute(createUserQuery, parameters) != 0;
 
             if (!completed)
-                return;
+                throw new Exception("Error creating user");
 
             _dbConnection.Execute(createPasswordQuery, new { parameters.Login, Password = user.HashPassword });
         }
@@ -91,11 +95,11 @@ namespace Task.Connector.Connectors
         public IEnumerable<Permission> GetAllPermissions()
         {
             var query = "SELECT " +
-                "\"id\" as Id, " +
+                $"'{RightConstants.REQUEST_RIGHT_GROUP_NAME}' + '{RightConstants.DELIMETER}' + CONVERT(VARCHAR(10), \"id\") as Id, " +
                 "\"name\" as Name " +
                 "FROM \"TestTaskSchema\".\"RequestRight\"" +
                 "UNION " +
-                "SELECT \"id\" as Id, \"name\" as Name FROM \"TestTaskSchema\".\"ItRole\"";
+                $"SELECT '{RightConstants.IT_ROLE_RIGHT_GROUP_NAME}' + '{RightConstants.DELIMETER}' + CONVERT(VARCHAR(10), \"id\") as Id, \"name\" as Name FROM \"TestTaskSchema\".\"ItRole\"";
 
             return _dbConnection.Query<PermissionModel>(query)
                 .Select(x => new Permission(x.Id, x.Name, string.Empty));
@@ -115,13 +119,13 @@ namespace Task.Connector.Connectors
 
             var query = "SELECT rr.\"name\" FROM \"TestTaskSchema\".\"UserRequestRight\" urr " +
                 "INNER JOIN \"TestTaskSchema\".\"RequestRight\" rr ON rr.\"id\" = urr.\"rightId\" " +
-                "WHERE urr.\"userId\" = 'GlavnyyNN' " +
+                "WHERE urr.\"userId\" = @Login " +
                 "UNION " +
                 "SELECT ir.\"name\" FROM \"TestTaskSchema\".\"UserITRole\" uir " +
                 "INNER JOIN \"TestTaskSchema\".\"ItRole\" ir ON ir.\"id\" = uir.\"roleId\" " +
-                "WHERE uir.\"userId\" = 'GlavnyyNN'";
+                "WHERE uir.\"userId\" = @Login";
 
-            return _dbConnection.Query<string>(query);
+            return _dbConnection.Query<string>(query, new { Login = userLogin });
         }
 
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
