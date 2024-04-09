@@ -1,33 +1,31 @@
 ﻿using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
-
 using Task.Connector.Models;
 using Task.Connector.Factory;
-
 namespace Task.Connector
 {
+
     public class ConnectorDb : IConnector
     {
-        public ILogger logger { get; set; }
+        private IConnector connector;
 
-        private IConnector _connector;
+        public ILogger Logger { get; set; }
+
         public void StartUp(string connectionString)
         {
-            if(logger is null)
+            if(Logger is null)
             {
                 throw new ArgumentNullException("Logger is not executed");
             }
 
             var config = new ConnectionConfig(connectionString);
 
-            _connector = ConnectorsFactory.GetConnector(config.Provider);
+            connector = ConnectorsFactory.GetConnector(config.Provider);
 
             Logger.Debug($"Used {config.Provider} provider");
 
-            _connector.StartUp(connectionString);
+            connector.StartUp(connectionString);
         }
-
-        //TODO:Do method calls depending on the provider type 
 
         public void CreateUser(UserToCreate user)
         {
@@ -73,7 +71,5 @@ namespace Task.Connector
         {
             throw new NotImplementedException();
         }
-
-        public ILogger Logger { get; set; }
     }
 }

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Task.Connector.DbModels;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
 
@@ -10,6 +6,7 @@ namespace Task.Connector.Connectors
 {
     internal class MssqlConnector : IConnector
     {
+        private MssqlAvanpostContext _context;
         public ILogger Logger { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
