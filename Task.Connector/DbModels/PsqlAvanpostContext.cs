@@ -17,7 +17,7 @@ public partial class PsqlAvanpostContext : DbContext
 
     public virtual DbSet<ItRole> ItRoles { get; set; }
 
-    public virtual DbSet<Password> Passwords { get; set; }
+    public virtual DbSet<Passwords> Passwords { get; set; }
 
     public virtual DbSet<RequestRight> RequestRights { get; set; }
 
@@ -46,12 +46,12 @@ public partial class PsqlAvanpostContext : DbContext
                 .HasColumnName("name");
         });
 
-        modelBuilder.Entity<Password>(entity =>
+        modelBuilder.Entity<Passwords>(entity =>
         {
             entity.ToTable("Passwords", "TestTaskSchema");
 
             entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Password1)
+            entity.Property(e => e.Password)
                 .HasMaxLength(20)
                 .HasColumnName("password");
             entity.Property(e => e.UserId)
