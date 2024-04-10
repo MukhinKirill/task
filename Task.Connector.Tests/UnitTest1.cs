@@ -71,7 +71,6 @@ namespace Task.Connector.Tests
         [InlineData("POSTGRE")]
         public void IsUserExists(string provider)
         {
-            var dataSetter = Init(provider);
             var connector = GetConnector(provider);
             Assert.True(connector.IsUserExists(DefaultData.MasterUserLogin));
             Assert.False(connector.IsUserExists(TestData.NotExistingUserLogin));
@@ -97,7 +96,6 @@ namespace Task.Connector.Tests
         [InlineData("POSTGRE")]
         public void GetAllPermissions(string provider)
         {
-            var dataSetter = Init(provider);
             var connector = GetConnector(provider);
             var permissions = connector.GetAllPermissions();
             Assert.NotNull(permissions);

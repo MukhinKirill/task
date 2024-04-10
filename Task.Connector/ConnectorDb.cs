@@ -9,18 +9,15 @@ namespace Task.Connector
     public sealed class ConnectorDb : IConnector
     {
         public ILogger Logger { get; set; }
-
-        private static DbContextFactory _contextFactory = new DbContextFactory(_connectionString);
-        private readonly DataContext _dataContext = _contextFactory.GetContext(_providerName);
         private const string _providerName = "POSTGRE";
         private const string _connectionString = "Server=127.0.0.1;Port=5432;Database=postgres;Username=postgres;Password=1";
+        private static DbContextFactory _contextFactory = new DbContextFactory(_connectionString);
+        private readonly DataContext _dataContext = _contextFactory.GetContext(_providerName);
 
         public ConnectorDb() { }
 
         public void StartUp(string connectionString)
-        {
-            connectionString = _connectionString;
-        }
+        { }
 
         public void CreateUser(UserToCreate userToCreate)
         {
@@ -28,7 +25,7 @@ namespace Task.Connector
 
             if (!IsUserExists(login))
             {
-                var user = new User()
+                var newUser = new User()
                 {
                     FirstName = "Ivan",
                     LastName = "Ivanov",
@@ -38,7 +35,7 @@ namespace Task.Connector
                     Login = login
                 };
 
-                _dataContext.Users.Add(user);
+                _dataContext.Users.Add(newUser);
 
                 _dataContext.SaveChanges();
             }
@@ -55,7 +52,6 @@ namespace Task.Connector
                 new Property("Property_5","Description_5"),
                 new Property("Property_6","Description_6"),
             };
-
             return properties;
         }
 
@@ -75,16 +71,17 @@ namespace Task.Connector
 
         public bool IsUserExists(string userLogin)
         {
-            return _dataContext.Users.FirstOrDefault(user => user.Login == userLogin) != null ? true : false;
+            return _dataContext.Users.FirstOrDefault(user => user.Login == userLogin) != null
+                ? true
+                : false;
         }
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
         {
-            if (userLogin == null)
-                throw new UserNotFoundException();
+            if (userLogin == null) throw new UserNotFoundException();
 
             var user = _dataContext.Users.FirstOrDefault(user => user.Login == userLogin)
-                ?? throw new Exception();
+                ?? throw new UserNotFoundException();
 
             user.TelephoneNumber = "88003221337";
             _dataContext.SaveChanges();
@@ -116,18 +113,17 @@ namespace Task.Connector
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
             var role = new UserITRole() { UserId = userLogin, RoleId = 1 };
-
             _dataContext.UserITRoles.Add(role);
-
             _dataContext.SaveChanges();
         }
 
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            var allRigths = _dataContext.UserRequestRights.ToArray();
+            var allRigths = _dataContext.UserRequestRights.ToArray()
+                ?? throw new UserRightsNotExistException();
+
             _dataContext.UserRequestRights.RemoveRange(allRigths);
             _dataContext.SaveChanges();
-
         }
 
         public IEnumerable<string> GetUserPermissions(string userLogin)
