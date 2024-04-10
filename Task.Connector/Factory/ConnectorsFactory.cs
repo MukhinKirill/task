@@ -10,12 +10,11 @@ namespace Task.Connector.Factory
     {
         public static IConnector GetConnector(string provider)
         {
-            //TODO: Get constant values out of a switch statement
             switch (provider)
             {
-                case "SqlServer.2019":
+                case Constants.Constants.MSSQL:
                     return new MssqlConnector();
-                case "PostgreSQL":
+                case Constants.Constants.POSTGRE:
                     return new PsqlConnector();
                 default:
                     throw new ArgumentException($"Unknown provider - {nameof(provider)}");
