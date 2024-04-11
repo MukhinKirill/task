@@ -2,74 +2,204 @@
 using Task.Integration.Data.Models.Models;
 using Task.Connector.Models;
 using Task.Connector.Factory;
+using Task.Connector.Exceptions;
+
 namespace Task.Connector
 {
 
     public class ConnectorDb : IConnector
     {
-        private IConnector connector;
+        private IConnector _connector;
 
         public ILogger Logger { get; set; }
 
         public void StartUp(string connectionString)
         {
-            if(Logger is null)
-            {
-                throw new ArgumentNullException("Logger is not executed");
-            }
-
             var config = new ConnectionConfig(connectionString);
 
-            connector = ConnectorsFactory.GetConnector(config.Provider);
+            _connector = ConnectorsFactory.GetConnector(config.Provider);
 
-            Logger.Debug($"Used {config.Provider} provider");
-
-            connector.StartUp(connectionString);
+            _connector.StartUp(connectionString);
         }
 
         public void CreateUser(UserToCreate user)
         {
-            throw new NotImplementedException();
+            Logger.Debug("Creating user");
+
+            try
+            {
+                _connector.CreateUser(user);
+            }
+            catch (UserAlreadyExistsException ex)
+            {
+                Logger.Error(ex.Message);
+
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex.Message);
+
+                throw;
+            }
         }
 
         public IEnumerable<Property> GetAllProperties()
         {
-            throw new NotImplementedException();
+            Logger.Debug("Get all properties");
+
+            try
+            {
+                return _connector.GetAllProperties();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex.Message);
+
+                throw;
+            }
         }
 
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
         {
-            throw new NotImplementedException();
+            Logger.Debug($"Get user properties by login - {userLogin}");
+
+            try
+            {
+                return _connector.GetUserProperties(userLogin);
+            }
+            catch (UserNotFoundException ex)
+            {
+                Logger.Error(ex.Message);
+
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex.Message);
+
+                throw;
+            }
         }
 
         public bool IsUserExists(string userLogin)
         {
-            throw new NotImplementedException();
+            Logger.Debug($"Check is user exists by login - {userLogin}");
+
+            try
+            {
+                return _connector.IsUserExists(userLogin);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex.Message);
+
+                throw;
+            }
         }
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
         {
-            throw new NotImplementedException();
+            Logger.Debug($"Update user properties by login - {userLogin}");
+
+            try
+            {
+                _connector.UpdateUserProperties(properties, userLogin);
+            }
+            catch (UserNotFoundException ex)
+            {
+                Logger.Error(ex.Message);
+
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex.Message);
+
+                throw;
+            }
         }
 
         public IEnumerable<Permission> GetAllPermissions()
         {
-            throw new NotImplementedException();
+            Logger.Debug("Get all permissions");
+
+            try
+            {
+                return _connector.GetAllPermissions();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex.Message);
+
+                throw;
+            }
         }
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            throw new NotImplementedException();
+            Logger.Debug($"Add user permissions by login - {userLogin}");
+
+            try
+            {
+                _connector.AddUserPermissions(userLogin, rightIds);
+            }
+            catch (UserNotFoundException ex)
+            {
+                Logger.Error(ex.Message);
+
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex.Message);
+
+                throw;
+            }
         }
 
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            throw new NotImplementedException();
+            Logger.Debug($"Remove user permissions by login - {userLogin}");
+
+            try
+            {
+                _connector.RemoveUserPermissions(userLogin, rightIds);
+            }
+            catch (UserNotFoundException ex)
+            {
+                Logger.Error (ex.Message);
+
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex.Message);
+
+                throw;
+            }
         }
 
         public IEnumerable<string> GetUserPermissions(string userLogin)
         {
-            throw new NotImplementedException();
+            Logger.Debug("Get all permissions");
+
+            try
+            {
+                return _connector.GetUserPermissions(userLogin);
+            }
+            catch (UserNotFoundException ex)
+            {
+                Logger.Error(ex.Message);
+
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex.Message);
+
+                throw;
+            }
         }
     }
 }
