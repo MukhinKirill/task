@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 namespace Task.Connector.DbModels;
 
@@ -28,7 +26,6 @@ public partial class PsqlAvanpostContext : DbContext
     public virtual DbSet<UserRequestRight> UserRequestRights { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        // TODO: move connect string out of source code
         => optionsBuilder.UseNpgsql("Server=127.0.0.1;Port=5432;Database=psqlavanpost;Username=postgres;Password=password");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

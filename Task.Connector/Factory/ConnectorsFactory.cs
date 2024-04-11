@@ -1,7 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Task.Connector.Connectors;
-using Task.Connector.DbModels;
-using Task.Connector.Models;
+﻿using Task.Connector.Connectors;
 using Task.Integration.Data.Models;
 
 namespace Task.Connector.Factory

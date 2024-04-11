@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Task.Connector.DbModels;
+﻿namespace Task.Connector.DbModels;
 
 public partial class RequestRight
 {

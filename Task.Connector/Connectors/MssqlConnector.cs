@@ -111,7 +111,6 @@ namespace Task.Connector.Connectors
                 _context.UserItroles.Where(ur => ur.UserId == userLogin && roles.Contains(ur.RoleId)).ExecuteDelete();
             }
         }
-
         public void StartUp(string connectionString)
         {
             _context = new MssqlAvanpostContext();

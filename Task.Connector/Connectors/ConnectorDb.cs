@@ -1,8 +1,8 @@
-﻿using Task.Integration.Data.Models;
-using Task.Integration.Data.Models.Models;
-using Task.Connector.Models;
+﻿using Task.Connector.Exceptions;
 using Task.Connector.Factory;
-using Task.Connector.Exceptions;
+using Task.Connector.Models;
+using Task.Integration.Data.Models;
+using Task.Integration.Data.Models.Models;
 
 namespace Task.Connector
 {
@@ -15,6 +15,7 @@ namespace Task.Connector
 
         public void StartUp(string connectionString)
         {
+
             var config = new ConnectionConfig(connectionString);
 
             _connector = ConnectorsFactory.GetConnector(config.Provider);
@@ -168,7 +169,7 @@ namespace Task.Connector
             }
             catch (UserNotFoundException ex)
             {
-                Logger.Error (ex.Message);
+                Logger.Error(ex.Message);
 
                 throw;
             }

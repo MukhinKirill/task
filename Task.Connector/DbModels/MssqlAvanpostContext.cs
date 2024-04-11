@@ -1,9 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Task.Connector.DbModels
 {
@@ -31,7 +26,6 @@ namespace Task.Connector.DbModels
         public virtual DbSet<UserRequestRight> UserRequestRights { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-            // TODO: move connect string out of source code
             => optionsBuilder.UseSqlServer("Server=(LocalDb)\\MSSQLLocalDB;Database=avanpost;Integrated Security=SSPI;");
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

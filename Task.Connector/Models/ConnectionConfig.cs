@@ -32,7 +32,7 @@ namespace Task.Connector.Models
 
             if (endIndex == -1)
             {
-                return string.Empty; 
+                return string.Empty;
             }
 
             return _connectionString.Substring(startIndex, endIndex - startIndex);
