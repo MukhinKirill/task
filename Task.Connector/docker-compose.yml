@@ -1,0 +1,20 @@
+﻿version: '3'
+services:
+  postgres-db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: usr
+      POSTGRES_PASSWORD: pwd
+    ports:
+      - "5432:5432"
+    restart: always
+
+  sqlserver-db:
+    image: mcr.microsoft.com/mssql/sqlserver:latest
+    environment:
+      MSSQL_PID: 6
+      MSSQL_USERNAME: usr
+      MSSQL_PASSWORD: pwd
+    ports:
+      - "1433:1433"
+    restart: always
