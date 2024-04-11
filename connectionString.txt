@@ -1,0 +1,1 @@
+Task.Integration.Data.DbCreationUtility.exe -s "Server=172.25.208.1,1400;Database=Users;User Id=SA;Password=databasePassword111Secret;MultipleActiveResultSets=true;Encrypt=False;TrustServerCertificate=True" -p "MSSQL"
