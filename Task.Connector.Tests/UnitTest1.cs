@@ -8,9 +8,9 @@ namespace Task.Connector.Tests
     {
         static string requestRightGroupName = "Request";
         static string itRoleRightGroupName = "Role";
-        static string delimeter = ":";
-        static string mssqlConnectionString = "";
-        static string postgreConnectionString = "";
+        static string delimiter = ":";
+        static string mssqlConnectionString = "Server=127.0.0.1,11433;Database=testDb;User Id=sa;Password=813G76v!T71v8;TrustServerCertificate=True;";
+        static string postgreConnectionString = "Server=127.0.0.1;Port=15432;Database=testDb;Username=testUser;Password=813G76v!T71v8;";
         static Dictionary<string, string> connectorsCS = new Dictionary<string, string>
         {
             { "MSSQL",$"ConnectionString='{mssqlConnectionString}';Provider='SqlServer.2019';SchemaName='AvanpostIntegrationTestTaskSchema';"},
@@ -30,14 +30,13 @@ namespace Task.Connector.Tests
             return dataSetter;
         }
 
-        public IConnector GetConnector(string provider)
+        public IMyConnector GetConnector(string provider)
         {
-            IConnector connector = new ConnectorDb();
+            IMyConnector connector = new ConnectorDb();
             connector.StartUp(connectorsCS[provider]);
-            connector.Logger = new FileLogger($"{DateTime.Now}connector{provider}.Log", $"{DateTime.Now}connector{provider}");
+            connector.Logger = new FileLogger($"{DateTime.Now.ToString("yyyy-MM-ddTH_mm_ss")}connector{provider}.Log", $"{DateTime.Now}connector{provider}");
             return connector;
         }
-
 
         [Theory]
         [InlineData("MSSQL")]
@@ -45,7 +44,7 @@ namespace Task.Connector.Tests
         public void CreateUser(string provider)
         {
             var dataSetter = Init(provider);
-            var connector = GetConnector(provider);
+            using var connector = GetConnector(provider);
             connector.CreateUser(new UserToCreate("testUserToCreate", "testPassword") { Properties = new UserProperty[] { new UserProperty("isLead", "false") } });
             Assert.NotNull(dataSetter.GetUser("testUserToCreate"));
             Assert.Equal(DefaultData.MasterUserDefaultPassword, dataSetter.GetUserPassword(DefaultData.MasterUserLogin));
@@ -56,10 +55,10 @@ namespace Task.Connector.Tests
         [InlineData("POSTGRE")]
         public void GetAllProperties(string provider)
         {
-            var dataSetter = Init(provider);
-            var connector = GetConnector(provider);
+            Init(provider);
+            using var connector = GetConnector(provider);
             var propInfos = connector.GetAllProperties();
-            Assert.Equal(DefaultData.PropsCount+1/*password too*/, propInfos.Count());
+            Assert.Equal(DefaultData.PropsCount + 1/*password too*/, propInfos.Count());
         }
 
         [Theory]
@@ -67,12 +66,12 @@ namespace Task.Connector.Tests
         [InlineData("POSTGRE")]
         public void GetUserProperties(string provider)
         {
-            var dataSetter = Init(provider);
-            var connector = GetConnector(provider);
-            var userInfo = connector.GetUserProperties(DefaultData.MasterUserLogin);
+            Init(provider);
+            using var connector = GetConnector(provider);
+            var userInfo = connector.GetUserProperties(DefaultData.MasterUserLogin).ToList();
             Assert.NotNull(userInfo);
-            Assert.Equal(5, userInfo.Count());
-            Assert.True(userInfo.FirstOrDefault(_ => _.Value.Equals(DefaultData.MasterUser.TelephoneNumber)) != null);
+            Assert.Equal(5, userInfo.Count);
+            Assert.True(userInfo.FirstOrDefault(u => u.Value.Equals(DefaultData.MasterUser.TelephoneNumber)) != null);
         }
 
         [Theory]
@@ -80,8 +79,8 @@ namespace Task.Connector.Tests
         [InlineData("POSTGRE")]
         public void IsUserExists(string provider)
         {
-            var dataSetter = Init(provider);
-            var connector = GetConnector(provider);
+            Init(provider);
+            using var connector = GetConnector(provider);
             Assert.True(connector.IsUserExists(DefaultData.MasterUserLogin));
             Assert.False(connector.IsUserExists(TestData.NotExistingUserLogin));
         }
@@ -92,9 +91,9 @@ namespace Task.Connector.Tests
         public void UpdateUserProperties(string provider)
         {
             var dataSetter = Init(provider);
-            var connector = GetConnector(provider);
-            var userInfo = connector.GetUserProperties(DefaultData.MasterUserLogin);
-            var propertyName = connector.GetUserProperties(DefaultData.MasterUserLogin).First(_ => _.Value.Equals(DefaultData.MasterUser.TelephoneNumber)).Name;
+            using var connector = GetConnector(provider);
+            connector.GetUserProperties(DefaultData.MasterUserLogin);
+            var propertyName = connector.GetUserProperties(DefaultData.MasterUserLogin).First(p => p.Value.Equals(DefaultData.MasterUser.TelephoneNumber)).Name;
             var propsToUpdate = new UserProperty[]
             {
                 new UserProperty(propertyName,TestData.NewPhoneValueForMasterUser)
@@ -108,8 +107,8 @@ namespace Task.Connector.Tests
         [InlineData("POSTGRE")]
         public void GetAllPermissions(string provider)
         {
-            var dataSetter = Init(provider);
-            var connector = GetConnector(provider);
+            Init(provider);
+            using var connector = GetConnector(provider);
             var permissions = connector.GetAllPermissions();
             Assert.NotNull(permissions);
             Assert.Equal(DefaultData.RequestRights.Length + DefaultData.ITRoles.Length, permissions.Count());
@@ -121,11 +120,11 @@ namespace Task.Connector.Tests
         public void AddUserPermissions(string provider)
         {
             var dataSetter = Init(provider);
-            var connector = GetConnector(provider);
-            var RoleId = $"{itRoleRightGroupName}{delimeter}{dataSetter.GetITRoleId()}";
+            using var connector = GetConnector(provider);
+            var RoleId = $"{itRoleRightGroupName}{delimiter}{dataSetter.GetITRoleId()}";
             connector.AddUserPermissions(
                 DefaultData.MasterUserLogin,
-                new [] { RoleId });
+                new[] { RoleId });
             Assert.True(dataSetter.MasterUserHasITRole(dataSetter.GetITRoleId().ToString()));
             Assert.True(dataSetter.MasterUserHasRequestRight(dataSetter.GetRequestRightId(DefaultData.RequestRights[DefaultData.MasterUserRequestRights.First()].Name).ToString()));
         }
@@ -136,21 +135,22 @@ namespace Task.Connector.Tests
         public void RemoveUserPermissions(string provider)
         {
             var dataSetter = Init(provider);
-            var connector = GetConnector(provider);
-            var requestRightIdToDrop = $"{requestRightGroupName}{delimeter}{dataSetter.GetRequestRightId(DefaultData.RequestRights[DefaultData.MasterUserRequestRights.First()].Name)}";
+            using var connector = GetConnector(provider);
+            var requestRightIdToDrop = $"{requestRightGroupName}{delimiter}{dataSetter.GetRequestRightId(DefaultData.RequestRights[DefaultData.MasterUserRequestRights.First()].Name)}";
             connector.RemoveUserPermissions(
                 DefaultData.MasterUserLogin,
-                new [] { requestRightIdToDrop });
+                new[] { requestRightIdToDrop });
             Assert.False(dataSetter.MasterUserHasITRole(dataSetter.GetITRoleId().ToString()));
             Assert.False(dataSetter.MasterUserHasRequestRight(dataSetter.GetRequestRightId(DefaultData.RequestRights[DefaultData.MasterUserRequestRights.First()].Name).ToString()));
         }
+
         [Theory]
         [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void GetUserPermissions(string provider)
         {
             Init(provider);
-            var connector = GetConnector(provider);
+            using var connector = GetConnector(provider);
             var permissions = connector.GetUserPermissions(DefaultData.MasterUserLogin);
             Assert.Equal(DefaultData.MasterUserRequestRights.Length, permissions.Count());
         }

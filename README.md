@@ -1,3 +1,42 @@
+# _Описание проекта и результат выполнения тестового задания_
+
+## Результат прохождения тестов
+![Результат прохождения тестов](./assets/tests_result.png)
+
+## Докер контейнеры для баз данных (docker-compose в структуре проекта)
+![Название изображения](./assets/docker_db_containers.png)
+
+### Docker-compose.yml
+
+    services:
+        postgres-avanpost-database:
+            image: postgres:latest
+            environment:
+            - POSTGRES_USER=testUser
+            - POSTGRES_PASSWORD=813G76v!T71v8
+            - POSTGRES_DB=testDb
+            ports:
+            - 15432:5432
+
+        sqlserver-avanpost-database:
+            image: mcr.microsoft.com/mssql/server:2022-latest
+            environment:
+            - ACCEPT_EULA=Y
+            - MSSQL_SA_PASSWORD=813G76v!T71v8
+            - MSSQL_PID=Developer
+            ports:
+            - 11433:1433
+
+### Команды инициализации БД
+#### Postgres
+    Task.Integration.Data.DbCreationUtility.exe -s "Server=127.0.0.1;Port=15432;Database=testDb;Username=testUser;Password=813G76v!T71v8;" -p "POSTGRE"
+#### MSSQL
+    Task.Integration.Data.DbCreationUtility.exe -s "Server=127.0.0.1,11433;Database=testDb;User Id=sa;Password=813G76v!T71v8;TrustServerCertificate=True;" -p "MSSQL"
+
+### Powershell скрипт инициализации БД
+    ./startup.ps1
+
+
 # Описание системы
 Система представляет собой сервис для технического обслуживания.
 Внутри сервиса существуют пользователи(User), имеющие свойства(Properties) и права(RequestRight и ItRole).

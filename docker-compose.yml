@@ -1,0 +1,19 @@
+services:
+  postgres-avanpost-database:
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=testUser
+      - POSTGRES_PASSWORD=813G76v!T71v8
+      - POSTGRES_DB=testDb
+    ports:
+      - 15432:5432
+
+  sqlserver-avanpost-database:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=813G76v!T71v8
+      - MSSQL_PID=Developer
+    ports:
+      - 11433:1433
+
