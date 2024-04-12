@@ -4,20 +4,14 @@
     <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <AssemblyName>Task.Connector</AssemblyName>
-    <RootNamespace>Task.Connector</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="13.0.1" />
-    <PackageReference Include="Dapper.Database" Version="3.0.0.238" />
-    <PackageReference Include="EntityFramework" Version="6.4.4" />
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.13" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Task.Repository\Task.Repository.csproj" />
+    <ProjectReference Include="..\Task.Utilities\Task.Utilities.csproj" />
   </ItemGroup>
 
   <ItemGroup>
