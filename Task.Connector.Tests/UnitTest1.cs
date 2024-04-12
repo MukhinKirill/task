@@ -34,7 +34,7 @@ namespace Task.Connector.Tests
         {
             IConnector connector = new ConnectorDb();
             connector.StartUp(connectorsCS[provider]);
-            // Пришлось изменить название лога, т.к система ругалась на ошибку в названии тома или файла.
+            // РџСЂРёС€Р»РѕСЃСЊ РёР·РјРµРЅРёС‚СЊ РЅР°Р·РІР°РЅРёРµ Р»РѕРіР°, С‚.Рє СЃРёСЃС‚РµРјР° СЂСѓРіР°Р»Р°СЃСЊ РЅР° РѕС€РёР±РєСѓ РІ РЅР°Р·РІР°РЅРёРё С‚РѕРјР° РёР»Рё С„Р°Р№Р»Р°.
             connector.Logger = new FileLogger($"{DateTime.Now.Date.ToString("ddMMyy")}connector{provider}.Log", $"{DateTime.Now}connector{provider}");
             return connector;
         }
