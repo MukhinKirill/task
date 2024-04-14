@@ -1,6 +1,6 @@
 # Комментарии
 * Развернуть БД согласно инструкции "Развертывание системы"
-* Вписать в ConnectionString, например, postgreConnectionString = "Server=localhost;Port=21349;Database=AvanpostDB;User Id=postgres;Password=Q!2werty;"
+* Вписать в качестве ConnectionString, например, postgreConnectionString = "Server=localhost;Port=21349;Database=AvanpostDB;User Id=postgres;Password=Q!2werty;"
 
 # Описание системы
 Система представляет собой сервис для технического обслуживания.
