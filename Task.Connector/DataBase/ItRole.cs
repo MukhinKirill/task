@@ -13,11 +13,13 @@ namespace Task.Connector.DataBase
         public int Id { get; set; }
 
         [Column("name")]
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
         [Column("corporatePhoneNumber")]
-        public string CorporatePhoneNumber { get; set; }
+        public string CorporatePhoneNumber { get; set; } = string.Empty;
 
         public List<User> Users { get; set; } = new();
+        public List<UserITRole> UserRoles { get; set; } = new();
+
     }
 }

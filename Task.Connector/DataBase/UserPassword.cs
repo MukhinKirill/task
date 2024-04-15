@@ -15,12 +15,12 @@ namespace Task.Connector.DataBase
         public UserPassword() { }
 
         [Key]
-        [Column("key")]
+        [Column("id")]
         public int Id { get; set; }
 
         [Column("password")]
         [DbItemProperty("password", "password by person")]
-        public string Password { get; set; }
+        public string Password { get; set; } = string.Empty;
 
         [Column("userId")]
         public string UserId { get; set; }

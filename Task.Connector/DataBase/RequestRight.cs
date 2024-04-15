@@ -15,8 +15,10 @@ namespace Task.Connector.DataBase
         public int Id { get; set; }
 
         [Column("name")]
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
         public List<User> Users { get; set; } = new();
+        public List<UserRequestRight> UserRight { get; set; } = new();
+
     }
 }

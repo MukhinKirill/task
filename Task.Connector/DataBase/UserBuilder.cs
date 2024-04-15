@@ -21,7 +21,7 @@ namespace Task.Connector.DataBase
 
         public void AddItRole(string role)
         {
-            var userRole = _dbContext.ItRoles.FirstOrDefault(i => i.Name == role);
+            var userRole = _dbContext.ItRole.FirstOrDefault(i => i.Name == role);
             if (userRole != null)
                 _user.Roles.Add(userRole);
             else
@@ -30,7 +30,7 @@ namespace Task.Connector.DataBase
 
         public void AddRequestRight(string requestRight)
         {
-            var right = _dbContext.RequestRights.FirstOrDefault(i => i.Name == requestRight);
+            var right = _dbContext.RequestRight.FirstOrDefault(i => i.Name == requestRight);
             if (right != null)
                 _user.RequestRights.Add(right);
             else
@@ -40,13 +40,13 @@ namespace Task.Connector.DataBase
         public void AddPassword(string password)
         {
             var userPassword = new UserPassword() { Password = password };
-            _dbContext.Passwords.Add(userPassword);
+            _dbContext.Password.Add(userPassword);
             _user.Passwords = userPassword;
         }
 
         public void AddProperty(string property, string value) 
         {
-            if (!DbItemTools.TrySetDbItemProperty(this, property, value))
+            if (!DbItemTools.TrySetDbItemProperty(_user, property, value))
                 throw new ArgumentException($"property {property} in {nameof(User)} not exists or not available for edit");
         }
 

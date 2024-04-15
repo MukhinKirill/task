@@ -1,8 +1,0 @@
-version: '3.4'
-
-services:
-  task.connector.tests:
-    image: ${DOCKER_REGISTRY-}taskconnectortests
-    build:
-      context: .
-      dockerfile: Task.Connector.Tests/Dockerfile

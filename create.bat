@@ -1,1 +1,2 @@
+docker run --name ms_sql_server --hostname ms_sql_server  -p 1400:1400 -d mcr.microsoft.com/mssql/server:2022-latest -e "ACCEPT_EULA=y" -e "SA_PASSWORD=databasePassword111Secret" -e "LD_DEBUG=1" -e "MSSQL_TCP_PORT=1400"
 Task.Integration.Data.DbCreationUtility.exe -s "Server=172.25.208.1,1400;Database=Users;User Id=SA;Password=databasePassword111Secret;MultipleActiveResultSets=true;Encrypt=False" -p "MSSQL"

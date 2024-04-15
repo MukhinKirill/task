@@ -2,6 +2,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using Task.Connector.DataBase;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
@@ -23,30 +24,28 @@ namespace Task.Connector
 
             UpdateUserProperties(user.Properties, builder);
 
-            DbContext.Users.Add(builder.Build());
+            DbContext.User.Add(builder.Build());
             DbContext.SaveChanges();
         }
 
         public IEnumerable<Property> GetAllProperties()
         {
-            return typeof(User).GetProperties()
-                .Select(p => p.GetCustomAttribute<DbItemPropertyAttribute>())
-                .Where(p => p != null)
+            return DbItemPropertyTools.GetAllProperties(typeof(User))
                 .Select(p => new Property(p.Name, p.Description));
         }
 
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
         {
             var user = getUser(userLogin);
-            return typeof(User).GetProperties()
-                .Select(p => new { property = p, attr = p.GetCustomAttribute<DbItemPropertyAttribute>() })
-                .Where(p => p.attr != null)
-                .Select(p => new UserProperty(p.attr.Name, p.property.GetValue(user)?.ToString()));
+            if (user == null)
+                return null;
+            return DbItemPropertyTools.GetAllPropertiesOnlyObject(user)
+                .Select(p => new UserProperty(p.Name, p.Value.ToString()??string.Empty));
         }
 
         public bool IsUserExists(string userLogin)
         {
-            return DbContext.Users.Any(i=>i.Login == userLogin);
+            return DbContext.User.Any(i=>i.Login == userLogin);
         }
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
@@ -56,6 +55,7 @@ namespace Task.Connector
             {
                 UserBuilder builder = new(DbContext, user);
                 UpdateUserProperties(properties, builder);
+                DbContext.SaveChanges();
             }
         }
 
@@ -86,12 +86,13 @@ namespace Task.Connector
 
         public IEnumerable<Permission> GetAllPermissions()
         {
-            return DbContext.RequestRights
+            var itRoles = DbContext.ItRole
+                .Select(i => new Permission(i.Id.ToString(), i.Name, "It role"))
+                .ToList();
+            return DbContext.RequestRight
                 .Select(i => new Permission(i.Id.ToString(), i.Name, "Request right"))
-                .Union(
-                    DbContext.ItRoles
-                    .Select(i => new Permission(i.Id.ToString(), i.Name, "It role"))
-                );
+                .ToList()
+                .Union(itRoles);
         }
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
@@ -99,17 +100,20 @@ namespace Task.Connector
             var user = getUser(userLogin);
             if(user != null)
             {
+                var rights = GetRightIds(rightIds);
                 user.RequestRights = user.RequestRights
-                    .Union(DbContext.RequestRights
-                    .Where(i => rightIds.Contains(i.Name)))
+                    .Union(DbContext.RequestRight
+                    .Where(i => rights.Contains(i.Id)))
                     .Distinct()
                     .ToList();
 
+                var roles = GetRoleIds(rightIds);
                 user.Roles = user.Roles
-                    .Union(DbContext.ItRoles
-                    .Where(i => rightIds.Contains(i.Name)))
+                    .Union(DbContext.ItRole
+                    .Where(i => roles.Contains(i.Id)))
                     .Distinct()
                     .ToList();
+                DbContext.SaveChanges();
                 Logger.Debug("add rights: " + string.Join(", ", rightIds) + $" to {userLogin}");
             }
         }
@@ -119,9 +123,30 @@ namespace Task.Connector
             var user = getUser(userLogin);
             if(user != null)
             {
-                user.RequestRights = user.RequestRights.Where(i => !rightIds.Contains(i.Name)).ToList();
+                var rights = GetRightIds(rightIds);
+                user.RequestRights = user.RequestRights
+                    .Where(i => !rights.Contains(i.Id))
+                    .ToList();
+
+                var roles = GetRoleIds(rightIds);
+                user.Roles = user.Roles
+                    .Where(i => !roles.Contains(i.Id))
+                    .ToList();
+
                 DbContext.SaveChanges();
             }
+        }
+
+        private static IEnumerable<int> GetRightIds(IEnumerable<string> premissions)
+        {
+            var rightRegex = new Regex(@"Request:(?<id>\d+)");
+            return premissions.Select(i => rightRegex.Match(i)).Where(i => i.Success).Select(i => Convert.ToInt32(i.Groups["id"].Value));
+        }
+
+        private static IEnumerable<int> GetRoleIds(IEnumerable<string> premissions)
+        {
+            var roleRegex = new Regex(@"Role:(?<id>\d+)");
+            return premissions.Select(i => roleRegex.Match(i)).Where(i => i.Success).Select(i => Convert.ToInt32(i.Groups["id"].Value));
         }
 
         public IEnumerable<string> GetUserPermissions(string userLogin)
@@ -132,7 +157,10 @@ namespace Task.Connector
         
         private User? getUser(string login)
         {
-            var user = DbContext.Users.Include(i => i.RequestRights).FirstOrDefault(i => i.Login == login);
+            var user = DbContext.User
+                .Include(i => i.RequestRights)
+                .Include(i => i.Roles)
+                .FirstOrDefault(i => i.Login == login);
             if (user == null)
                 Logger?.Warn($"user with login {login} not found");
             return user;
