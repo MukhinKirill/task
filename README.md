@@ -1,15 +1,17 @@
-# Инстркуция по запуску
-## 1. Запуск Docker образа с базой данных
+## Выполнил тестовое задание Андрей Косарев - [TG - @eh0neer](https://t.me/eh0neer) 
+
+### Инстркуция по запуску
+### 1. Запуск Docker образа с базой данных
 cd Docker 
 
 docker-compose up -d
 
 ![docker](https://github.com/Eh0neer/testAvanpost/assets/114866823/1fbc2524-a6d0-4c8f-83bc-98bdb60d237d)
 
-## 2. Создание миграции данных в базу
+### 2. Создание миграции данных в базу
 cd DbCreationUtility
 
-### Команда для миграции данных:
+#### Команда для миграции данных:
 ```bash
 Task.Integration.Data.DbCreationUtility.exe -s "Host=localhost;Port=13470;Database=TestDB;User Id=postgres;Password=QWEasd123;Include Error Detail=true;" -p "POSTGRE"
 ```
