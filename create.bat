@@ -1,30 +1,40 @@
 @echo off
+echo -----------------------------------------------
 echo Run to script
 echo Run container ...
-docker run --name ms_sql_server --hostname ms_sql_server -u root -p 1400:1400 -d mcr.microsoft.com/mssql/server:2022-latest -e "ACCEPT_EULA=y" -e "SA_PASSWORD=databasePassword111Secret" -e "LD_DEBUG=1" -e "MSSQL_TCP_PORT=1400"
-echo %ERRORLEVEL%
-pause
+docker run --name ms_sql_server --hostname ms_sql_server -u root -p 1400:1400 -e "ACCEPT_EULA=y" -e "SA_PASSWORD=databasePassword111Secret" -e "LD_DEBUG=1" -e "MSSQL_TCP_PORT=1400" -d mcr.microsoft.com/mssql/server:2022-latest
 
-if /I %ERRORLEVEL% GOTO dockerError
+set /A TRUE=1
+IF %ERRORLEVEL% EQU 0 set /A TRUE=0
+IF %ERRORLEVEL% EQU 125 set /A TRUE=0
+IF %TRUE% NEQ 0 GOTO dockerError
 echo conteiner is running
+echo -----------------------------------------------
 
-echo Run script for fill the Database
+echo waiting run database 5 secund
+timeout 5
+
+echo -----------------------------------------------
+echo Run script for fill the database
 cd ./DbCreationUtility
 Task.Integration.Data.DbCreationUtility.exe -s "Server=172.25.208.1,1400;Database=Users;User Id=SA;Password=databasePassword111Secret;MultipleActiveResultSets=true;Encrypt=False" -p "MSSQL"
-if /I %ERRORLEVEL% GOTO dockerError
-echo Script 
+if /I %ERRORLEVEL% NEQ 0 GOTO scriptError
+echo end script for fill the database
+echo -----------------------------------------------
 GOTO end
 
 :dockerError
-echo Ошибка: докер не найден. Попробуйте установить докер подробнее: https://docs.docker.com/desktop/install/windows-install
+echo Error: docker not found. Try installing docker for more details: https://docs.docker.com/desktop/install/windows-install
 GOTO end
 
 :scriptError
-echo ipconfig
-echo Произошла ошибка запуска скрипта. Пожалуйста проверьте ip адрес в bat файле. Совпадает ли он с ip виртуальной машины
-echo Найдите ipv4-adress для adapter ethernet vEthernet (WSL) из списка выше
-echo Измените ip-адрес в строке подключения в bat файле Task.Integration.Data.DbCreationUtility.exe ... ("...Server=xxx.xxx.xxx.xxx,1400"), где x - номер ip
-echo Не забудьте Изменить ip-адрес в строке подключения в проекте ("...Server=xxx.xxx.xxx.xxx,1400"), где x - номер ip
+echo -----------------------------------------------
+ipconfig
+echo -----------------------------------------------
+echo An error occurred while running the script. Please check the IP address in the bat file. Does it match the virtual machine's IP?
+echo Find the ipv4-adress for adapter ethernet vEthernet (WSL) from the list above
+echo Change the ip address in the connection line in the bat file Task.Integration.Data.DbCreationUtility.exe ... ("...Server=xxx.xxx.xxx.xxx,1400"), where x is the ip number
+echo Don't forget to Change the IP address in the connection line in the project ("...Server=xxx.xxx.xxx.xxx,1400"), where x is the ip number
 GOTO end
 :end
 pause
