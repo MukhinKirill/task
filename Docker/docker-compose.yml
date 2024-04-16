@@ -1,0 +1,25 @@
+version: '3.8'
+
+networks:
+  ananpostnetworks:
+    driver: bridge
+
+services:
+    
+  postgres:
+    container_name: postgres
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: QWEasd123
+      POSTGRES_DB: TestDB
+    ports:
+      - 13470:5432
+    volumes:
+     - dbdata:/var/lib/postgresql/data
+    networks:
+      - ananpostnetworks
+
+volumes:
+  dbdata:
