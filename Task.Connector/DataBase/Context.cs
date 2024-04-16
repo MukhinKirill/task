@@ -4,8 +4,17 @@ using Task.Integration.Data.Models;
 
 namespace Task.Connector.DataBase
 {
+    /// <summary>
+    /// Контекст подключаемой БД для хранения пользователей
+    /// </summary>
     internal class Context:DbContext
     {
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="connectionString">Строка настроек
+        /// Настройки указываются в виде: настройка1='значение1';настройка2='значение2';...
+        /// Настройки: Provider, ConnectionString, SchemaName</param>
         public Context(string connectionString):base()
         {
 
@@ -16,6 +25,14 @@ namespace Task.Connector.DataBase
             _connectionString = properties.First(i=>i.Groups["key"].Value == "ConnectionString").Groups["value"].Value;
             _schema = properties.First(i => i.Groups["key"].Value == "SchemaName").Groups["value"].Value;
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="connectionString">Строка настроек
+        /// Настройки указываются в виде: настройка1='значение1';настройка2='значение2';...
+        /// Настройки: Provider, ConnectionString, SchemaName</param>
+        /// <param name="options">Внутренние опции БД</param>
         public Context(string connectionString, DbContextOptions<Context> options) : base(options)
         {
             this._connectionString = connectionString;
@@ -23,12 +40,14 @@ namespace Task.Connector.DataBase
         }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
+            //Исходя из настроек выбираем провайдера БД
             if (_providers.Contains("SqlServer"))
                 optionsBuilder.UseSqlServer(_connectionString);
             else if (_providers.Contains("PostgreSQL"))
                 optionsBuilder.UseNpgsql(_connectionString);
             else
                 throw new ArgumentException("Database provider is not suppored");
+
             //Установка логгирования БД
             optionsBuilder.LogTo((id, l) => l == Microsoft.Extensions.Logging.LogLevel.Warning, (d) => logger?.Warn(d.ToString()));
             optionsBuilder.LogTo((id, l) => l == Microsoft.Extensions.Logging.LogLevel.Debug, (d) => logger?.Debug(d.ToString()));
@@ -39,8 +58,10 @@ namespace Task.Connector.DataBase
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
+            //Схема таблиц
             builder.HasDefaultSchema(_schema);
 
+            //Установка связи многие ко многим между User и RequestRight
             builder.Entity<User>()
                 .HasMany(user => user.RequestRights)
                 .WithMany(right => right.Users)
@@ -57,6 +78,7 @@ namespace Task.Connector.DataBase
                     }
                 );
 
+            //Установка связи многие ко многим между User и ITRole
             builder.Entity<User>()
                 .HasMany(user => user.Roles)
                 .WithMany(roles => roles.Users)
@@ -73,6 +95,7 @@ namespace Task.Connector.DataBase
                     }
                 );
 
+            //Установка связи один к одному между User и UserPassword
             builder.Entity<UserPassword>()
                 .HasOne(pass => pass.User)
                 .WithOne(user => user.Passwords)
@@ -89,12 +112,14 @@ namespace Task.Connector.DataBase
         public DbSet<ItRole> ItRole { get; set; } = null!;
         public DbSet<RequestRight> RequestRight { get; set; } = null!;
 
-        #endregion
+        #endregion //Items
 
         public ILogger? logger { get; set; }
 
+        #region PrivateFileds
         private readonly string _connectionString;
         private readonly string _providers;
         private readonly string _schema;
+        #endregion //PrivateFileds
     }
 }

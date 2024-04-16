@@ -9,13 +9,38 @@ using Task.Integration.Data.Models.Models;
 
 namespace Task.Connector
 {
+    /// <summary>
+    /// Реализованный интерфейс коннектора
+    /// </summary>
     public class ConnectorDb : IConnector
     {
+        #region PublicProperies
+        public ILogger Logger
+        {
+            get
+            {
+                return DbContext.logger;
+            }
+            set
+            {
+                DbContext.logger = value;
+            }
+        }
+        #endregion //PublicProperies
+
+        #region IConnectorRealization
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="connectionString">Строка настроек
+        /// Настройки указываются в виде: настройка1='значение1';настройка2='значение2';...
+        /// Настройки: Provider, ConnectionString, SchemaName</param>
         public void StartUp(string connectionString)
         {
             DbContext = new(connectionString);
         }
 
+        
         public void CreateUser(UserToCreate user)
         {
             UserBuilder builder = new(DbContext);
@@ -59,6 +84,127 @@ namespace Task.Connector
             }
         }
 
+
+
+        public IEnumerable<Permission> GetAllPermissions()
+        {
+            var itRoles = DbContext.ItRole
+                .Select(i => new Permission(i.Id.ToString(), i.Name, "It role"))
+                .ToList();
+            return DbContext.RequestRight
+                .Select(i => new Permission(i.Id.ToString(), i.Name, "Request right"))
+                .ToList()
+                .Union(itRoles);
+        }
+
+        /// <summary>
+        /// Добавляет пользователю права и роли по id/ например ["Role:1", "Request:3"...]
+        /// </summary>
+        /// <param name="userLogin">Логин пользователя</param>
+        /// <param name="rightIds">Права и роли в виде ["Role:1", "Request:3"...]</param>
+        public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
+        {
+            var user = getUser(userLogin);
+            if(user != null)
+            {
+                //Установка прав
+                var rights = GetRightIds(rightIds);
+                user.RequestRights = user.RequestRights
+                    .Union(DbContext.RequestRight
+                    .Where(i => rights.Contains(i.Id)))
+                    .Distinct()
+                    .ToList();
+
+                //установка ролей
+                var roles = GetRoleIds(rightIds);
+                user.Roles = user.Roles
+                    .Union(DbContext.ItRole
+                    .Where(i => roles.Contains(i.Id)))
+                    .Distinct()
+                    .ToList();
+                DbContext.SaveChanges();
+                Logger.Debug("add rights: " + string.Join(", ", rightIds) + $" to {userLogin}");
+            }
+        }
+
+        /// <summary>
+        /// Удаляет у пользователя права и роли по id/ например ["Role:1", "Request:3"...]
+        /// </summary>
+        /// <param name="userLogin">Логин пользователя</param>
+        /// <param name="rightIds">Права и роли в виде ["Role:1", "Request:3"...]</param>
+        public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
+        {
+            var user = getUser(userLogin);
+            if(user != null)
+            {
+                //Удаление прав
+                var rights = GetRightIds(rightIds);
+                user.RequestRights = user.RequestRights
+                    .Where(i => !rights.Contains(i.Id))
+                    .ToList();
+
+                //Удаление ролей
+                var roles = GetRoleIds(rightIds);
+                user.Roles = user.Roles
+                    .Where(i => !roles.Contains(i.Id))
+                    .ToList();
+
+                DbContext.SaveChanges();
+            }
+        }
+
+        public IEnumerable<string> GetUserPermissions(string userLogin)
+        {
+            var  user = getUser(userLogin);
+            return user?.RequestRights.Select(i => i.Name);
+        }
+
+        #endregion //IConnectorRealization
+
+        #region HelperMethods
+
+        /// <summary>
+        /// Находит в массиве строк все права
+        /// </summary>
+        /// <param name="premissions"></param>
+        /// <returns></returns>
+        private static IEnumerable<int> GetRightIds(IEnumerable<string> premissions)
+        {
+            var rightRegex = new Regex(@"Request:(?<id>\d+)");
+            return premissions.Select(i => rightRegex.Match(i)).Where(i => i.Success).Select(i => Convert.ToInt32(i.Groups["id"].Value));
+        }
+        /// <summary>
+        /// Находит в массиве строк все роли
+        /// </summary>
+        /// <param name="premissions"></param>
+        /// <returns></returns>
+        private static IEnumerable<int> GetRoleIds(IEnumerable<string> premissions)
+        {
+            var roleRegex = new Regex(@"Role:(?<id>\d+)");
+            return premissions.Select(i => roleRegex.Match(i)).Where(i => i.Success).Select(i => Convert.ToInt32(i.Groups["id"].Value));
+        }
+
+        /// <summary>
+        /// Возвращает пользователя с подгруженными правами и ролями
+        /// </summary>
+        /// <param name="login"></param>
+        /// <returns></returns>
+        private User? getUser(string login)
+        {
+            var user = DbContext.User
+                .Include(i => i.RequestRights)
+                .Include(i => i.Roles)
+                .FirstOrDefault(i => i.Login == login);
+            if (user == null)
+                Logger?.Warn($"user with login {login} not found");
+            return user;
+        }
+
+        /// <summary>
+        /// Обновляет свойства у пользователя
+        /// </summary>
+        /// <param name="properties"></param>
+        /// <param name="builder"></param>
         private void UpdateUserProperties(IEnumerable<UserProperty> properties, UserBuilder builder)
         {
             foreach (var property in properties)
@@ -80,104 +226,11 @@ namespace Task.Connector
                 });
             }
             Logger.Debug("update properties: " + string.Join(", ", properties
-                .Select(i=>i.Name + "=" + i.Value)) + $" to {builder.Build().Login}");
+                .Select(i => i.Name + "=" + i.Value)) + $" to {builder.Build().Login}");
         }
+        #endregion //HelperMethods
 
-
-        public IEnumerable<Permission> GetAllPermissions()
-        {
-            var itRoles = DbContext.ItRole
-                .Select(i => new Permission(i.Id.ToString(), i.Name, "It role"))
-                .ToList();
-            return DbContext.RequestRight
-                .Select(i => new Permission(i.Id.ToString(), i.Name, "Request right"))
-                .ToList()
-                .Union(itRoles);
-        }
-
-        public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
-        {
-            var user = getUser(userLogin);
-            if(user != null)
-            {
-                var rights = GetRightIds(rightIds);
-                user.RequestRights = user.RequestRights
-                    .Union(DbContext.RequestRight
-                    .Where(i => rights.Contains(i.Id)))
-                    .Distinct()
-                    .ToList();
-
-                var roles = GetRoleIds(rightIds);
-                user.Roles = user.Roles
-                    .Union(DbContext.ItRole
-                    .Where(i => roles.Contains(i.Id)))
-                    .Distinct()
-                    .ToList();
-                DbContext.SaveChanges();
-                Logger.Debug("add rights: " + string.Join(", ", rightIds) + $" to {userLogin}");
-            }
-        }
-
-        public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
-        {
-            var user = getUser(userLogin);
-            if(user != null)
-            {
-                var rights = GetRightIds(rightIds);
-                user.RequestRights = user.RequestRights
-                    .Where(i => !rights.Contains(i.Id))
-                    .ToList();
-
-                var roles = GetRoleIds(rightIds);
-                user.Roles = user.Roles
-                    .Where(i => !roles.Contains(i.Id))
-                    .ToList();
-
-                DbContext.SaveChanges();
-            }
-        }
-
-        private static IEnumerable<int> GetRightIds(IEnumerable<string> premissions)
-        {
-            var rightRegex = new Regex(@"Request:(?<id>\d+)");
-            return premissions.Select(i => rightRegex.Match(i)).Where(i => i.Success).Select(i => Convert.ToInt32(i.Groups["id"].Value));
-        }
-
-        private static IEnumerable<int> GetRoleIds(IEnumerable<string> premissions)
-        {
-            var roleRegex = new Regex(@"Role:(?<id>\d+)");
-            return premissions.Select(i => roleRegex.Match(i)).Where(i => i.Success).Select(i => Convert.ToInt32(i.Groups["id"].Value));
-        }
-
-        public IEnumerable<string> GetUserPermissions(string userLogin)
-        {
-            var  user = getUser(userLogin);
-            return user?.RequestRights.Select(i => i.Name);
-        }
-        
-        private User? getUser(string login)
-        {
-            var user = DbContext.User
-                .Include(i => i.RequestRights)
-                .Include(i => i.Roles)
-                .FirstOrDefault(i => i.Login == login);
-            if (user == null)
-                Logger?.Warn($"user with login {login} not found");
-            return user;
-        }
-
-        public ILogger Logger 
-        {
-            get 
-            {
-                return DbContext.logger;
-            }
-            set
-            {
-                DbContext.logger = value;
-            }
-        }
-
+        #region PrivateFields
         private Context? _dbContext;
         private Context DbContext
         {
@@ -204,5 +257,6 @@ namespace Task.Connector
                 Logger?.Warn(e.Message);
             }
         }
+        #endregion //PrivateFields
     }
 }
