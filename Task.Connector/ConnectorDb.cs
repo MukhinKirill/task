@@ -56,7 +56,19 @@ namespace Task.Connector
 
         public bool IsUserExists(string userLogin)
         {
-            throw new NotImplementedException();
+            using(DataContext context = _dbContextFactory.GetContext(_providerName))
+            {
+                if (context.Users.Find(userLogin) != null)
+                {
+                    Logger.Debug($"{DateTime.Now}: пользователь с логином {userLogin} найден в базе данных");
+                    return true;
+                }
+                else
+                {
+                    Logger.Warn($"{DateTime.Now}: пользователя с логином {userLogin} не существует");
+                    return false;
+                }
+            }
         }
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
