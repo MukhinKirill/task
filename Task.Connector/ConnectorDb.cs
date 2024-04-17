@@ -1,18 +1,47 @@
-﻿using Task.Integration.Data.Models;
+﻿using Task.Connector.Extensions;
+using Task.Integration.Data.DbCommon;
+using Task.Integration.Data.DbCommon.DbModels;
+using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
 
 namespace Task.Connector
 {
     public class ConnectorDb : IConnector
     {
+        private DbContextFactory _dbContextFactory;
+        private string _providerName;
         public void StartUp(string connectionString)
         {
-            throw new NotImplementedException();
+            try
+            {
+                _dbContextFactory = new DbContextFactory(connectionString.GetDbConnectionString());
+                _providerName = connectionString.GetProviderName();
+                Logger.Debug($"{DateTime.Now}: Успешная попытка подключения");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"{DateTime.Now}: Неудачная попытка подключения: {ex.Message}");
+            }
         }
 
         public void CreateUser(UserToCreate user)
         {
-            throw new NotImplementedException();
+            try
+            {
+                User newUser = user.SetPropertiesOrDefault();
+                Sequrity userLoginData = new Sequrity { UserId = user.Login, Password = user.HashPassword };
+                using (DataContext context = _dbContextFactory.GetContext(_providerName))
+                {
+                    context.Users.Add(newUser);
+                    context.Passwords.Add(userLoginData);
+                    context.SaveChanges();
+                    Logger.Debug($"{DateTime.Now}: Создан пользователь с логином {newUser.Login}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"{DateTime.Now}: Ошибка при создании пользователя: {ex.Message}");
+            }
         }
 
         public IEnumerable<Property> GetAllProperties()
