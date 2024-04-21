@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Task.Connector.Extensions
@@ -10,29 +11,25 @@ namespace Task.Connector.Extensions
     {
         public static string GetDbConnectionString (this string connectionString)
         {
-            Dictionary<string, string> attributes = connectionString.GetAttributes();
-            return attributes["ConnectionString"];
+            Regex csPattern = new Regex(@"ConnectionString='.*?'", RegexOptions.IgnoreCase);
+            Match match = csPattern.Match (connectionString);
+            string dbConnectionString = match.Value.Replace("ConnectionString='", "").TrimEnd('\'');
+            return dbConnectionString;
         }
         public static string GetProviderName(this string connectionString)
         {
-            Dictionary<string, string> attributes = connectionString.GetAttributes();
-            if (attributes["Provider"].Contains("SqlServer"))
-                return "MSSQL";
-            else if (attributes["Provider"].Contains("PostgreSQL"))
-                return "POSTGRE";
-            else return "UnknownProvider";
-        }
-        public static Dictionary<string, string> GetAttributes(this string _string)
-        {
-            Dictionary<string, string> attributes = new Dictionary<string, string>();
-            string[] valuePairs = _string.Split(';');
-            foreach (string pair in valuePairs)
+            if (connectionString.Contains("Provider='SqlServer"))
             {
-                string key = pair.Substring(0, pair.IndexOf('=')).Trim();
-                string val = pair.Substring(pair.IndexOf('=')+1).Trim('\'');
-                attributes[key] = val;
+                return "MSSQL";
             }
-            return attributes;
+            if (connectionString.Contains("Provider='PostgreSQL"))
+            {
+                return "POSTGRE";
+            }
+            else
+            {
+                return "UnknownProvider";
+            }
         }
     }
 }
