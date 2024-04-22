@@ -34,7 +34,7 @@ namespace Task.Connector.Tests
         {
             IConnector connector = new ConnectorDb();
             connector.StartUp(connectorsCS[provider]);
-            connector.Logger = new FileLogger($"connector{provider}.Log", $"{DateTime.Now}connector{provider}");//($"{DateTime.Now}connector{provider}.Log", $"{DateTime.Now}connector{provider}");
+            connector.Logger = new FileLogger($"{DateTime.Now:yyyy-MM-dd HH-mm}connector{provider}.Log", $"{DateTime.Now}connector{provider}"); //Поменял формат даты в названии файла, иначе выдает ошибку. Старый вариант - ($"{DateTime.Now}connector{provider}.Log", $"{DateTime.Now}connector{provider}");
             return connector;
         }
 

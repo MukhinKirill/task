@@ -152,7 +152,7 @@ namespace Task.Connector
             try
             {
                 using(DataContext context = _dbContextFactory.GetContext(_providerName))
-                {                    foreach (ITRole itRole in context.ITRoles)
+                {   foreach (ITRole itRole in context.ITRoles)
                     {
                         allPermissions.Add(new Permission(itRole.Id.ToString(), itRole.Name, "Роль исполнителя"));
                     }
@@ -172,17 +172,113 @@ namespace Task.Connector
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            throw new NotImplementedException();
+            try
+            {
+                using(DataContext context = _dbContextFactory.GetContext(_providerName))
+                {
+                    if(context.Users.Find(userLogin) != null)
+                    {
+                        foreach (string rightId in rightIds)
+                        {
+                            string[] rightIdSplit = rightId.Split(':', 2);
+                            switch (rightIdSplit[0])
+                            {
+                                case "Request":
+                                    context.UserRequestRights.Add(new UserRequestRight()
+                                    {
+                                        UserId = userLogin,
+                                        RightId = int.Parse(rightIdSplit[1])
+                                    });
+                                    break;
+
+                                case "Role":
+                                    context.UserITRoles.Add(new UserITRole()
+                                    {
+                                        UserId = userLogin,
+                                        RoleId = int.Parse(rightIdSplit[1])
+                                    });
+                                    break;
+                            }
+                        }
+                        context.SaveChanges();
+                        Logger.Debug($"Добавлены права для пользователя {userLogin}");
+                    }
+                    else
+                    {
+                        Logger.Warn($"Попытка добавить права для пользователя с логином {userLogin}, но такого пользователя не существует");
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                Logger.Error($"Ошибка при добавлении прав пользователя: {ex.Message}");
+            }
         }
 
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            throw new NotImplementedException();
+            try
+            {
+                using (DataContext context = _dbContextFactory.GetContext(_providerName))
+                {
+                    foreach (string rightId in rightIds)
+                    {
+                        string[] rightIdSplit = rightId.Split(':', 2);
+                        switch (rightIdSplit[0])
+                        {
+                            case "Request":
+                                context.UserRequestRights.Remove(new UserRequestRight()
+                                {
+                                    UserId = userLogin,
+                                    RightId = int.Parse(rightIdSplit[1])
+                                });
+                                break;
+
+                            case "Role":
+                                context.UserITRoles.Remove(new UserITRole()
+                                {
+                                    UserId = userLogin,
+                                    RoleId = int.Parse(rightIdSplit[1])
+                                });
+                                break;
+                        }
+                    }
+                    context.SaveChanges();
+                    Logger.Debug($"Удалены права пользователя {userLogin}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Ошибка при удалении прав пользователя: {ex.Message}");
+            }
         }
 
         public IEnumerable<string> GetUserPermissions(string userLogin)
         {
-            throw new NotImplementedException();
+            List<string> permissions = new List<string>();
+            try
+            {
+                using (DataContext context = _dbContextFactory.GetContext(_providerName))
+                {
+                    var itRoles = from permission in context.UserITRoles
+                                  join role in context.ITRoles on permission.RoleId equals role.Id
+                                  where permission.UserId == userLogin
+                                  select "Role:" + role.Name;
+                    permissions.AddRange(itRoles);
+
+                    var requestRights = from permission in context.UserRequestRights
+                                  join right in context.RequestRights on permission.RightId equals right.Id
+                                  where permission.UserId == userLogin
+                                  select "Request:" + right.Name;
+                    permissions.AddRange(requestRights);
+                    Logger.Debug($"Запрошены права пользоавтеля {userLogin}");
+                }
+            }
+            catch(Exception ex)
+            {
+                Logger.Error($"Ошибка при запросе прав пользователя: {ex.Message}");
+            }
+            return permissions;
         }
 
         public ILogger Logger { get; set; }
