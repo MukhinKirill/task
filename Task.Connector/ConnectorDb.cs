@@ -12,15 +12,8 @@ namespace Task.Connector
         private string _providerName;
         public void StartUp(string connectionString)
         {
-            try
-            {
-                _dbContextFactory = new DbContextFactory(connectionString.GetDbConnectionString());
-                _providerName = connectionString.GetProviderName();
-            }
-            catch (Exception ex)
-            {
-                
-            }
+            _dbContextFactory = new DbContextFactory(connectionString.GetDbConnectionString());
+            _providerName = connectionString.GetProviderName();
         }
 
         public void CreateUser(UserToCreate user)
@@ -45,7 +38,16 @@ namespace Task.Connector
 
         public IEnumerable<Property> GetAllProperties()
         {
-            throw new NotImplementedException();
+            Logger.Debug("Запрошен список существующих свойств");
+            return new List<Property>()
+            {
+                new Property("First name", "Имя"),
+                new Property("Last name", "Фамилия"),
+                new Property("Middle name", "Отчество"),
+                new Property("Telephone number", "Номер телефона"),
+                new Property("Is lead", "Ведущий"),
+                new Property("Password", "Пароль"),
+            };
         }
 
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
