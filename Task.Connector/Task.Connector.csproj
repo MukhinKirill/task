@@ -9,6 +9,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Reference Include="Microsoft.EntityFrameworkCore">
+      <HintPath>..\libs\CommonForTest\Microsoft.EntityFrameworkCore.dll</HintPath>
+    </Reference>
+    <Reference Include="Task.Integration.Data.DbCommon">
+      <HintPath>..\libs\CommonForTest\Task.Integration.Data.DbCommon.dll</HintPath>
+    </Reference>
     <Reference Include="Task.Integration.Data.Models">
       <HintPath>..\libs\Models\Task.Integration.Data.Models.dll</HintPath>
     </Reference>
