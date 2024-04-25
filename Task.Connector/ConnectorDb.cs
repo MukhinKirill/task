@@ -40,21 +40,15 @@ namespace Task.Connector
 
         public IEnumerable<Property> GetAllProperties()
         {
-            var properties = new List<Property>();
-            var userProperties = typeof(User).GetProperties();
-            
-            foreach (var property in userProperties)
+            return new List<Property>()
             {
-                if (property.Name.ToLower() != "login")
-                {
-                    var userProperty = new Property(property.Name, property.Name);
-                    properties.Add(userProperty);
-                }
-            }
-            
-            properties.Add(new Property("Password", "Пароль пользователя"));
-
-            return properties;
+                new Property(nameof(User.LastName), ""),
+                new Property(nameof(User.FirstName), ""),
+                new Property(nameof(User.MiddleName), ""),
+                new Property(nameof(User.TelephoneNumber), ""),
+                new Property(nameof(User.IsLead), ""),
+                new Property(nameof(Sequrity.Password), "")
+            };
         }
 
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
@@ -66,21 +60,15 @@ namespace Task.Connector
             }
 
             var user = _db.Users.FirstOrDefault(x => x.Login == userLogin);
-            var result = new List<UserProperty>();
 
-            var userProperties = typeof(User).GetProperties();
-
-            foreach (PropertyInfo prop in userProperties)
+            return new List<UserProperty>()
             {
-                if (prop.Name.ToLower() != "login")
-                {
-                    var userProperty = new UserProperty(prop.Name, prop.GetValue(user)?.ToString());
-
-                    result.Add(userProperty);
-                }
-            }
-
-            return result;
+                new UserProperty(nameof(User.LastName), user.LastName),
+                new UserProperty(nameof(User.FirstName), user.FirstName),
+                new UserProperty(nameof(User.MiddleName), user.MiddleName),
+                new UserProperty(nameof(User.TelephoneNumber), user.TelephoneNumber),
+                new UserProperty(nameof(User.IsLead), user.IsLead.ToString()),
+            };
         }
 
         public bool IsUserExists(string userLogin)
@@ -112,7 +100,7 @@ namespace Task.Connector
             return _db.RequestRights
                 .Select(x => new Permission(x.Id.ToString(), x.Name, "Request right"))
                 .ToList()
-                .Union(itRoles);
+                .Concat(itRoles);
         }
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
@@ -123,39 +111,37 @@ namespace Task.Connector
                 return;
             }
 
-            foreach (string rightId in rightIds)
+            foreach (var permissionId in rightIds.Select(x => new PermissionId(x)))
             {
-                var id = GetPermissonId(rightId);
-
-                if (IsRoleId(rightId))
+                if (permissionId.IsRoleId)
                 {
-                    if (!IsItRoleExists(id))
+                    if (!IsItRoleExists(permissionId.Id))
                     {
-                        Logger.Warn($"ItRole с id={id} не сущетсвует");
+                        Logger.Warn($"ItRole с id={permissionId.Id} не сущетсвует");
                     }
                     else
                     {
                         var toAdd = new UserITRole
                         {
-                            RoleId = id,
+                            RoleId = permissionId.Id,
                             UserId = userLogin,
                         };
 
-                        _db.UserITRoles.Add(toAdd);             
+                        _db.UserITRoles.Add(toAdd);
                     }
                 }
 
-                if (IsRequestRightId(rightId))
+                if (permissionId.IsRequestRightId)
                 {
-                    if (!IsRequestRightExists(id))
+                    if (!IsRequestRightExists(permissionId.Id))
                     {
-                        Logger.Warn($"RequestRight с id={id} не сущетсвует");
+                        Logger.Warn($"RequestRight с id={permissionId.Id} не сущетсвует");
                     }
                     else
                     {
                         var toAdd = new UserRequestRight
                         {
-                            RightId = id,
+                            RightId = permissionId.Id,
                             UserId = userLogin,
                         };
 
@@ -175,37 +161,35 @@ namespace Task.Connector
                 return;
             }
 
-            foreach (string rightId in rightIds)
+            foreach (var permissionId in rightIds.Select(x => new PermissionId(x)))
             {
-                var id = GetPermissonId(rightId);
-
-                if (IsRoleId(rightId))
+                if (permissionId.IsRoleId)
                 {
-                    if (!IsItRoleExists(id))
+                    var toRemove = _db.UserITRoles
+                        .FirstOrDefault(x => x.UserId == userLogin && x.RoleId == permissionId.Id);
+
+                    if (toRemove == null)
                     {
-                        Logger.Warn($"ItRole с id={id} не сущетсвует");
+                        Logger.Warn($"У пользователя с логином {userLogin} нет ItRole с id={permissionId.Id}");
                     }
                     else
                     {
-                        var toRemove = _db.UserITRoles
-                            .FirstOrDefault(x => x.UserId == userLogin && x.RoleId == id);
-
-                        _db.UserITRoles.Remove(toRemove); 
+                        _db.UserITRoles.Remove(toRemove);
                     }
                 }
 
-                if (IsRequestRightId(rightId))
+                if (permissionId.IsRequestRightId)
                 {
-                    if (!IsRequestRightExists(id))
+                    var toRemove = _db.UserRequestRights
+                        .FirstOrDefault(x => x.UserId == userLogin && x.RightId == permissionId.Id);
+
+                    if (toRemove == null)
                     {
-                        Logger.Warn($"RequestRight с id={id} не сущетсвует");
+                        Logger.Warn($"У пользователя с логином {userLogin} нет RequestRight c id={permissionId.Id}");
                     }
                     else
                     {
-                        var toRemove = _db.UserRequestRights
-                            .FirstOrDefault(x => x.UserId == userLogin && x.RightId == id);
-
-                        _db.UserRequestRights.Remove(toRemove);                        
+                        _db.UserRequestRights.Remove(toRemove);
                     }
                 }
             }
@@ -288,21 +272,6 @@ namespace Task.Connector
         private bool IsRequestRightExists(int requestRightId)
         {
             return _db.RequestRights.Any(x => x.Id == requestRightId);
-        }
-
-        private bool IsRoleId(string rightId)
-        {
-            return rightId.Split(":")[0] == "Role";
-        }
-
-        private bool IsRequestRightId(string rightId)
-        {
-            return rightId.Split(":")[0] == "Request";
-        }
-
-        private int GetPermissonId(string rightId)
-        {
-            return int.Parse(rightId.Split(":")[1]);
         }
     }
 }
