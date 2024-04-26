@@ -1,9 +1,7 @@
-﻿using Task.Integration.Data.Models;
-using Task.Integration.Data.Models.Models;
-using Task.Integration.Data.DbCommon;
+﻿using Task.Integration.Data.DbCommon;
 using Task.Integration.Data.DbCommon.DbModels;
-using System.Reflection;
-using Microsoft.EntityFrameworkCore;
+using Task.Integration.Data.Models;
+using Task.Integration.Data.Models.Models;
 
 namespace Task.Connector
 {
@@ -20,26 +18,40 @@ namespace Task.Connector
 
         public void CreateUser(UserToCreate user)
         {
-            if (IsUserExists(user.Login))
+            try
             {
-                Logger.Warn($"Пользователь с логином {user.Login} уже существует");
-                return;
+                Logger.Debug($"Добавление пользователя с логином {user.Login}");
+
+                if (IsUserExists(user.Login))
+                {
+                    Logger.Warn($"Пользователь с логином {user.Login} уже существует");
+                    return;
+                }
+
+                _db.Passwords.Add(new Sequrity()
+                {
+                    Password = user.HashPassword,
+                    UserId = user.Login,
+                });
+
+                var toAdd = CreateUser(user.Properties, user.Login);
+
+                _db.Users.Add(toAdd);
+                _db.SaveChanges();
+
+                Logger.Debug($"Добавлен новый пользователь с логином {toAdd.Login}");
             }
-
-            _db.Passwords.Add(new Sequrity()
+            catch (Exception ex)
             {
-                Password = user.HashPassword,
-                UserId = user.Login,
-            });
-
-            var toAdd = CreateUser(user.Properties, user.Login);
-
-            _db.Users.Add(toAdd);
-            _db.SaveChanges();
+                Logger.Error(ex.ToString());
+                throw;
+            }
         }
 
         public IEnumerable<Property> GetAllProperties()
         {
+            Logger.Debug("Получение списка названий всех свойств");
+
             return new List<Property>()
             {
                 new Property(nameof(User.LastName), ""),
@@ -53,185 +65,210 @@ namespace Task.Connector
 
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
         {
-            if (!IsUserExists(userLogin))
+            try
             {
-                Logger.Warn($"Пользователя с логином {userLogin} не существует");
-                return Enumerable.Empty<UserProperty>();
+                Logger.Debug($"Получение списка значений всех свойств {userLogin}");
+
+                if (!IsUserExists(userLogin))
+                {
+                    Logger.Warn($"Пользователя с логином {userLogin} не существует");
+                    return Enumerable.Empty<UserProperty>();
+                }
+
+                var user = _db.Users.FirstOrDefault(x => x.Login == userLogin);
+
+                return new List<UserProperty>()
+                {
+                    new UserProperty(nameof(User.LastName), user.LastName),
+                    new UserProperty(nameof(User.FirstName), user.FirstName),
+                    new UserProperty(nameof(User.MiddleName), user.MiddleName),
+                    new UserProperty(nameof(User.TelephoneNumber), user.TelephoneNumber),
+                    new UserProperty(nameof(User.IsLead), user.IsLead.ToString()),
+                };
             }
-
-            var user = _db.Users.FirstOrDefault(x => x.Login == userLogin);
-
-            return new List<UserProperty>()
+            catch (Exception ex)
             {
-                new UserProperty(nameof(User.LastName), user.LastName),
-                new UserProperty(nameof(User.FirstName), user.FirstName),
-                new UserProperty(nameof(User.MiddleName), user.MiddleName),
-                new UserProperty(nameof(User.TelephoneNumber), user.TelephoneNumber),
-                new UserProperty(nameof(User.IsLead), user.IsLead.ToString()),
-            };
+                Logger.Error(ex.ToString());
+                throw;
+            }
         }
 
         public bool IsUserExists(string userLogin)
         {
-            return _db.Users.Any(x => x.Login == userLogin);
+            try
+            {
+                return _db.Users.Any(x => x.Login == userLogin);
+            }
+            catch(Exception ex)
+            {
+                Logger.Error(ex.ToString());
+                throw;
+            }
         }
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
         {
-            if (!IsUserExists(userLogin))
+            try
             {
-                Logger.Warn($"Пользователя с логином {userLogin} не существует");
-                return;
+                Logger.Debug($"Обновление свойств пользователя с логином {userLogin}");
+
+                if (!IsUserExists(userLogin))
+                {
+                    Logger.Warn($"Пользователя с логином {userLogin} не существует");
+                    return;
+                }
+
+                var user = _db.Users.FirstOrDefault(x => x.Login == userLogin);
+
+                UpdateUserProperties(user, properties);
+
+                _db.SaveChanges();
+
+                Logger.Debug($"Обновлены свойства пользователя с логином {user.Login}");
             }
-
-            var user = _db.Users.FirstOrDefault(x => x.Login == userLogin);
-
-            UpdateUserProperties(user, properties);
-
-            _db.SaveChanges();
+            catch (Exception ex)
+            {
+                Logger.Error(ex.ToString());
+                throw;
+            }
         }
 
         public IEnumerable<Permission> GetAllPermissions()
         {
-            var itRoles = _db.ITRoles
-                .Select(x => new Permission(x.Id.ToString(), x.Name, "It role"))
-                .ToList();
+            try
+            {
+                var itRoles = _db.ITRoles
+                    .Select(x => new Permission(x.Id.ToString(), x.Name, "It role"))
+                    .ToList();
 
-            return _db.RequestRights
-                .Select(x => new Permission(x.Id.ToString(), x.Name, "Request right"))
-                .ToList()
-                .Concat(itRoles);
+                return _db.RequestRights
+                    .Select(x => new Permission(x.Id.ToString(), x.Name, "Request right"))
+                    .ToList()
+                    .Concat(itRoles);
+            }
+            catch (Exception ex) 
+            {
+                Logger.Error(ex.ToString());
+                throw;
+            }
         }
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            if (!IsUserExists(userLogin))
+            try
             {
-                Logger.Warn($"Пользователя с логином {userLogin} не существует");
-                return;
-            }
+                Logger.Debug($"Добавление прав для пользователя {userLogin}");
 
-            foreach (var permissionId in rightIds.Select(x => new PermissionId(x)))
-            {
-                if (permissionId.IsRoleId)
+                if (!IsUserExists(userLogin))
                 {
-                    if (!IsItRoleExists(permissionId.Id))
-                    {
-                        Logger.Warn($"ItRole с id={permissionId.Id} не сущетсвует");
-                    }
-                    else
-                    {
-                        var toAdd = new UserITRole
-                        {
-                            RoleId = permissionId.Id,
-                            UserId = userLogin,
-                        };
+                    Logger.Warn($"Пользователя с логином {userLogin} не существует");
+                    return;
+                }
 
-                        _db.UserITRoles.Add(toAdd);
+                foreach (var permissionId in rightIds.Select(x => new PermissionId(x)))
+                {
+                    if (permissionId.IsRoleId)
+                    {
+                        AddUserITRole(userLogin, permissionId.Id);
+                    }
+                    else if (permissionId.IsRequestRightId)
+                    {
+                        AddUserRequestRight(userLogin, permissionId.Id);
                     }
                 }
 
-                if (permissionId.IsRequestRightId)
-                {
-                    if (!IsRequestRightExists(permissionId.Id))
-                    {
-                        Logger.Warn($"RequestRight с id={permissionId.Id} не сущетсвует");
-                    }
-                    else
-                    {
-                        var toAdd = new UserRequestRight
-                        {
-                            RightId = permissionId.Id,
-                            UserId = userLogin,
-                        };
+                _db.SaveChanges();
 
-                        _db.UserRequestRights.Add(toAdd);
-                    }
-                }
+                Logger.Debug($"Добавлены права для пользователя {userLogin}");
             }
-
-            _db.SaveChanges();
+            catch (Exception ex)
+            {
+                Logger.Error(ex.ToString());
+                throw;
+            }
         }
 
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            if (!IsUserExists(userLogin))
+            try
             {
-                Logger.Warn($"Пользователя с логином {userLogin} не существует");
-                return;
-            }
+                Logger.Debug($"Удаление прав у пользователя {userLogin}");
 
-            foreach (var permissionId in rightIds.Select(x => new PermissionId(x)))
-            {
-                if (permissionId.IsRoleId)
+                if (!IsUserExists(userLogin))
                 {
-                    var toRemove = _db.UserITRoles
-                        .FirstOrDefault(x => x.UserId == userLogin && x.RoleId == permissionId.Id);
+                    Logger.Warn($"Пользователя с логином {userLogin} не существует");
+                    return;
+                }
 
-                    if (toRemove == null)
+                foreach (var permissionId in rightIds.Select(x => new PermissionId(x)))
+                {
+                    if (permissionId.IsRoleId)
                     {
-                        Logger.Warn($"У пользователя с логином {userLogin} нет ItRole с id={permissionId.Id}");
+                        RemoveUserITRole(userLogin, permissionId.Id);
                     }
-                    else
+                    else if (permissionId.IsRequestRightId)
                     {
-                        _db.UserITRoles.Remove(toRemove);
+                        RemoveUserRequestRight(userLogin, permissionId.Id);
                     }
                 }
 
-                if (permissionId.IsRequestRightId)
-                {
-                    var toRemove = _db.UserRequestRights
-                        .FirstOrDefault(x => x.UserId == userLogin && x.RightId == permissionId.Id);
+                _db.SaveChanges();
 
-                    if (toRemove == null)
-                    {
-                        Logger.Warn($"У пользователя с логином {userLogin} нет RequestRight c id={permissionId.Id}");
-                    }
-                    else
-                    {
-                        _db.UserRequestRights.Remove(toRemove);
-                    }
-                }
+                Logger.Debug($"Удаление прав у пользователя {userLogin}");
             }
-
-            _db.SaveChanges();
+            catch (Exception ex)
+            {
+                Logger.Error(ex.ToString());
+                throw;
+            }
         }
 
         public IEnumerable<string> GetUserPermissions(string userLogin)
         {
-            if (!IsUserExists(userLogin))
+            try
             {
-                Logger.Warn($"Пользователя с логином {userLogin} не существует");
-                return Enumerable.Empty<string>();
+                Logger.Debug($"Получение списка прав пользователя {userLogin}");
+
+                if (!IsUserExists(userLogin))
+                {
+                    Logger.Warn($"Пользователя с логином {userLogin} не существует");
+                    return Enumerable.Empty<string>();
+                }
+
+                var permissions = new List<string>();
+
+                var roleIds = _db.UserITRoles
+                    .Where(x => x.UserId == userLogin)
+                    .Select(x => x.RoleId);
+
+                var roles = _db.ITRoles
+                    .Where(x => roleIds.Any(i => i == x.Id))
+                    .Select(x => x.Name);
+
+                permissions.AddRange(roles);
+
+                var requestRightIds = _db.UserRequestRights
+                    .Where(x => x.UserId == userLogin)
+                    .Select(x => x.RightId);
+
+                var requestRights = _db.RequestRights
+                    .Where(x => requestRightIds.Any(i => i == x.Id))
+                    .Select(x => x.Name);
+
+                permissions.AddRange(requestRights);
+
+                return permissions;
             }
-
-            var permissions = new List<string>();
-
-            var roleIds = _db.UserITRoles
-                .Where(x => x.UserId == userLogin)
-                .Select(x => x.RoleId);  
-
-            var roles = _db.ITRoles
-                .Where(x => roleIds.Any(i => i == x.Id))
-                .Select(x => x.Name);
-
-            permissions.AddRange(roles);
-
-            var requestRightIds = _db.UserRequestRights
-                .Where(x => x.UserId == userLogin)
-                .Select(x => x.RightId);
-
-            var requestRights = _db.RequestRights
-                .Where(x => requestRightIds.Any(i => i == x.Id))
-                .Select (x => x.Name);
-
-            permissions.AddRange(requestRights);
-
-            return permissions;
+            catch (Exception ex)
+            {
+                Logger.Error(ex.ToString());
+                throw;
+            }
         }
 
         public ILogger Logger { get; set; }
 
+        #region PrivateMethods
         private User CreateUser(IEnumerable<UserProperty> properties, string login)
         {
             var user = new User();
@@ -241,7 +278,7 @@ namespace Task.Connector
             user.FirstName = GetUserPropertyValue(properties, nameof(user.FirstName)) ?? string.Empty;
             user.MiddleName = GetUserPropertyValue(properties, nameof(user.MiddleName)) ?? string.Empty;
             user.TelephoneNumber = GetUserPropertyValue(properties, nameof(user.TelephoneNumber)) ?? string.Empty;
-            
+
             var isLead = GetUserPropertyValue(properties, nameof(user.IsLead));
             user.IsLead = isLead is null ? default(bool) : bool.Parse(isLead);
 
@@ -273,5 +310,72 @@ namespace Task.Connector
         {
             return _db.RequestRights.Any(x => x.Id == requestRightId);
         }
+
+        private void RemoveUserITRole(string userLogin, int roleId)
+        {
+            var toRemove = _db.UserITRoles
+                .FirstOrDefault(x => x.UserId == userLogin && x.RoleId == roleId);
+
+            if (toRemove == null)
+            {
+                Logger.Warn($"У пользователя с логином {userLogin} нет ItRole с id={roleId}");
+            }
+            else
+            {
+                _db.UserITRoles.Remove(toRemove);
+            }
+        }
+
+        private void RemoveUserRequestRight(string userLogin, int requestRightId)
+        {
+            var toRemove = _db.UserRequestRights
+                .FirstOrDefault(x => x.UserId == userLogin && x.RightId == requestRightId);
+
+            if (toRemove == null)
+            {
+                Logger.Warn($"У пользователя с логином {userLogin} нет RequestRight c id={requestRightId}");
+            }
+            else
+            {
+                _db.UserRequestRights.Remove(toRemove);
+            }
+        } 
+
+        private void AddUserITRole(string userLogin, int roleId)
+        {
+            if (!IsItRoleExists(roleId))
+            {
+                Logger.Warn($"ItRole с id={roleId} не существует");
+            }
+            else
+            {
+                var toAdd = new UserITRole
+                {
+                    RoleId = roleId,
+                    UserId = userLogin,
+                };
+
+                _db.UserITRoles.Add(toAdd);
+            }
+        }
+
+        private void AddUserRequestRight(string userLogin, int requestRightId)
+        {
+            if (!IsRequestRightExists(requestRightId))
+            {
+                Logger.Warn($"RequestRight с id={requestRightId} не существует");
+            }
+            else
+            {
+                var toAdd = new UserRequestRight
+                {
+                    RightId = requestRightId,
+                    UserId = userLogin,
+                };
+
+                _db.UserRequestRights.Add(toAdd);
+            }
+        }
+        #endregion
     }
 }
