@@ -1,0 +1,12 @@
+﻿version: '3'
+services:
+  postgres-db:
+    image: postgres:latest
+    environment:
+      PGUSER: dgash2201
+      POSTGRES_USER: dgash2201
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: testdb
+    ports:
+      - "15432:5432"
+    restart: always
