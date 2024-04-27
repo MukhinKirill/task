@@ -1,4 +1,5 @@
-﻿using Task.Integration.Data.Models;
+﻿using Microsoft.Data.SqlClient;
+using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
 
 namespace Task.Connector
@@ -6,13 +7,7 @@ namespace Task.Connector
     public class ConnectorDb : IConnector
     {
         private string _connectionString;
-        private ILogger _logger;
-
-        public ILogger Logger
-        {
-            get => _logger;
-            set => _logger = value;
-        }
+        public ILogger Logger { get; set; }
 
         public void StartUp(string connectionString)
         {
@@ -22,7 +17,28 @@ namespace Task.Connector
 
         public void CreateUser(UserToCreate user)
         {
-            throw new NotImplementedException();
+            // Создание нового пользователя в базе данных с набором свойств по умолчанию
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                var query = "INSERT INTO [User] (Login, LastName, FirstName, MiddleName, TelephoneNumber, IsLead) " +
+                            "VALUES (@Login, @LastName, @FirstName, @MiddleName, @TelephoneNumber, @IsLead)";
+
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@Login", user.Login);
+                    command.Parameters.Add("@LastName");
+                    command.Parameters.Add("@FirstName");
+                    command.Parameters.Add("@MiddleName");
+                    command.Parameters.Add("@TelephoneNumber");
+                    command.Parameters.Add("@IsLead");
+
+                    command.ExecuteNonQuery();
+                }
+
+                Logger.Debug($"User {user.Login} created");
+            }
         }
 
         public IEnumerable<Property> GetAllProperties()
@@ -65,6 +81,5 @@ namespace Task.Connector
             throw new NotImplementedException();
         }
 
-        public ILogger Logger { get; set; }
     }
 }
