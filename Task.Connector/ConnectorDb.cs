@@ -5,9 +5,19 @@ namespace Task.Connector
 {
     public class ConnectorDb : IConnector
     {
+        private string _connectionString;
+        private ILogger _logger;
+
+        public ILogger Logger
+        {
+            get => _logger;
+            set => _logger = value;
+        }
+
         public void StartUp(string connectionString)
         {
-            throw new NotImplementedException();
+            _connectionString = connectionString;
+            // Инициализация соединения с базой данных и другие настройки
         }
 
         public void CreateUser(UserToCreate user)
