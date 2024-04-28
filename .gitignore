@@ -434,3 +434,4 @@ MigrationBackup/
 # End of https://www.toptal.com/developers/gitignore/api/visualstudio,rider
 
 .idea/*
+/Task.Connector.Tests/UnitTest1.cs

@@ -9,10 +9,12 @@ namespace Task.Connector
         private string _connectionString;
         public ILogger Logger { get; set; }
 
+        public ConnectorDb () { }
+
+
         public void StartUp(string connectionString)
         {
             _connectionString = connectionString;
-            // Инициализация соединения с базой данных и другие настройки
         }
 
         public void CreateUser(UserToCreate user)
@@ -41,6 +43,25 @@ namespace Task.Connector
             }
         }
 
+        public bool IsUserExists(string userLogin)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                var query = "SELECT COUNT(*) FROM [User] WHERE Login = @Login";
+
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@Login", userLogin);
+
+                    var count = (int)command.ExecuteScalar();
+
+                    return count > 0;
+                }
+            }
+        }
+
         public IEnumerable<Property> GetAllProperties()
         {
             throw new NotImplementedException();
@@ -51,10 +72,6 @@ namespace Task.Connector
             throw new NotImplementedException();
         }
 
-        public bool IsUserExists(string userLogin)
-        {
-            throw new NotImplementedException();
-        }
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
         {
