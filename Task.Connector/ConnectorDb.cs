@@ -29,12 +29,10 @@ namespace Task.Connector
 
                 using (var command = new SqlCommand(query, connection))
                 {
-                    command.Parameters.AddWithValue("@Login", user.Login);
-                    command.Parameters.Add("@LastName");
-                    command.Parameters.Add("@FirstName");
-                    command.Parameters.Add("@MiddleName");
-                    command.Parameters.Add("@TelephoneNumber");
-                    command.Parameters.Add("@IsLead");
+                    foreach (var property in user.Properties)
+                    {
+                        command.Parameters.AddWithValue($"@{property.Name}", property.Value);
+                    }
 
                     command.ExecuteNonQuery();
                 }
