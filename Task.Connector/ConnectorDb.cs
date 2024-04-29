@@ -4,7 +4,7 @@ using Task.Integration.Data.Models.Models;
 
 namespace Task.Connector
 {
-    // Я добавил файл с тестами в .gitignore, поэтому при запуске тестов нужно будет изменить строку подключения для MSSQL, а также аргументы в FileLogger на подобный формат: $"{DateTime.Now.ToString("MM.dd.yyyy HH-mm-ss")}connector{provider}.Log", чтобы не вылетала ошибка.
+    // При запуске тестов нужно будет изменить строку подключения для MSSQL на свою
     public class ConnectorDb : IConnector
     {
         public ConnectorDb() { }
