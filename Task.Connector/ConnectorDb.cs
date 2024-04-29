@@ -24,8 +24,9 @@ namespace Task.Connector
             {
                 connection.Open();
 
-                var query = $"INSERT INTO [TestTaskSchema].[User] (Login, {string.Join(", ", user.Properties.Select(p => p.Name))}) " +
-                $"VALUES (@Login, {string.Join(", ", user.Properties.Select(p => '@' + p.Name))})";
+                var query = $"INSERT INTO [TestTaskSchema].[User] " +
+                    $"(Login, {string.Join(", ", user.Properties.Select(p => p.Name))}) " +
+                    $"VALUES (@Login, {string.Join(", ", user.Properties.Select(p => '@' + p.Name))})";
 
                 using (var command = new SqlCommand(query, connection))
                 {
@@ -126,7 +127,6 @@ namespace Task.Connector
             return userProperties;
         }
 
-
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
         {
             using (var connection = new SqlConnection(_connectionString))
@@ -156,12 +156,83 @@ namespace Task.Connector
 
         public IEnumerable<Permission> GetAllPermissions()
         {
-            throw new NotImplementedException();
+            var permissions = new List<Permission>();
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                var query = "SELECT Id, Name " +
+                    "FROM [TestTaskSchema].[RequestRight] " +
+                    "UNION " +
+                    "SELECT Id, Name " +
+                    "FROM [TestTaskSchema].[ItRole]";
+
+                using (var command = new SqlCommand(query, connection))
+                {
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var permissionId = reader.GetInt32(0);
+                            var permissionName = reader.GetString(1);
+                            permissions.Add(new Permission(permissionId.ToString(), permissionName, permissionName));
+                        }
+                    }
+                }
+            }
+
+            return permissions;
         }
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            throw new NotImplementedException();
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                connection.Open();
+                foreach (var rightId in rightIds)
+                {
+                    if (rightId.StartsWith("Request"))
+                    {
+                        string query = "INSERT INTO [TestTaskSchema].[UserRequestRight] " +
+                            "(userId, rightId) " +
+                            "VALUES (@userId, @rightId);";
+
+                        using (var command = new SqlCommand(query, connection))
+                        {
+                            command.Parameters.Clear();
+                            command.Parameters.AddWithValue("@userId", userLogin);
+
+                            var requestRightId = rightId.Replace("Request:", "");
+                            command.Parameters.AddWithValue("@rightId", rightId.Replace("Request:", ""));
+                            command.ExecuteNonQuery();
+                        }
+                    }
+                    else if (rightId.StartsWith("Role"))
+                    {
+                        string query = "INSERT INTO [TestTaskSchema].[UserITRole] " +
+                            "(userId, roleId) " +
+                            "VALUES (@userId, @roleId);";
+
+                        using (var command = new SqlCommand(query, connection))
+                        {
+                            command.Parameters.Clear();
+                            command.Parameters.AddWithValue("@userId", userLogin);
+
+                            var itRoleId = rightId.Replace("Role:", "");
+                            command.Parameters.AddWithValue("@roleId", rightId.Replace("Role:", ""));
+                            command.ExecuteNonQuery();
+                        }
+                    }
+                    else
+                    {
+                        throw new ArgumentException($"Invalid right ID format: {rightId}");
+                    }
+
+                }
+
+                Logger.Debug($"Permissions added to user {userLogin} successfully.");
+            }
         }
 
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
