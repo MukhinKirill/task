@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Task.Connector\Task.Connector.csproj" />
+    <ProjectReference Include="..\TestPlayground\TestPlayground.csproj" />
   </ItemGroup>
 
   <ItemGroup>

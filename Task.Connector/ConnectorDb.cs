@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Task.Connector.ContextConstruction;
 using Task.Connector.ContextConstruction.ContextFactory;
@@ -28,7 +29,14 @@ namespace Task.Connector
         // В теории можно передать схемы, не соответствующие генераторам моделей,
         // однако, чтобы это исправить, придется ввести фабричные методы,
         // что я счёл излишним
+
+        // Так как Logger создаётся вне коннектора и передается ему отдельно,
+        // а реализация Logger лежит в проекте с тестами,
+        // то я решил не инициализировать Logger и подавить warning
+
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         public ConnectorDb(UserSchema? userSchema = null,
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
                            PermissionSchema[]? permissionSchemas = null,
                            IModelGenerator<DynamicUserContext>? userModelGenerator = null,
                            IModelGenerator<DynamicPermissionContext>[]? permissionModelGenerators = null,
@@ -74,49 +82,93 @@ namespace Task.Connector
             _permissionRequestHandler.Initialize(_permissionContextFactories, schemaName);     
         }
 
+        private void LogExecution(string methodName, params (string name, object value) [] parameters)
+        {
+            Logger!.Debug("Executing " + methodName + ";");
+            foreach (var parameter in parameters)
+            {
+                Logger!.Debug("Parameter " + parameter.name + " = " + JsonSerializer.Serialize(parameter.value) + ";");
+            }
+        }
+
+        private T WrapInExceptionLogging<T>(Func<T> func)
+        {
+            try
+            {
+                return func();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex.ToString());
+                throw;
+            }
+        }
+
+        private void WrapInExceptionLogging(Action func)
+        {
+            try
+            {
+                func();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex.ToString());
+                throw;
+            }
+        }
+
         public void CreateUser(UserToCreate user)
         {
-            _userRequestHandler.CreateUser(_userConverter.ConvertUserToCreate(user));
+            LogExecution("CreateUser", ("user", user));
+            WrapInExceptionLogging(() => _userRequestHandler.CreateUser(_userConverter.ConvertUserToCreate(user)));
         }
 
         public IEnumerable<Property> GetAllProperties()
         {
-            return _userConverter.ConvertProperties(_userRequestHandler.GetAllProperties());
+            LogExecution("GetAllProperties");
+            return WrapInExceptionLogging(() => _userConverter.ConvertProperties(_userRequestHandler.GetAllProperties()));
         }
 
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
         {
-            return _userConverter.ExtractProperties(_userRequestHandler.GetUserProperties(userLogin));
+            LogExecution("GetUserProperties", ("userLogin", userLogin));
+            return WrapInExceptionLogging(() => _userConverter.ExtractProperties(_userRequestHandler.GetUserProperties(userLogin)));
         }
 
         public bool IsUserExists(string userLogin)
         {
-            return _userRequestHandler.IsUserExists(userLogin);
+            LogExecution("IsUserExists", ("userLogin", userLogin));
+            return WrapInExceptionLogging(() => _userRequestHandler.IsUserExists(userLogin));
         }
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
         {
-            _userRequestHandler.UpdateUserProperties(_userConverter.ConstructUser(properties, userLogin));
+            LogExecution("UpdateUserProperties", ("properties", properties), ("userLogin", userLogin));
+            WrapInExceptionLogging(() => _userRequestHandler.UpdateUserProperties(_userConverter.ConstructUser(properties, userLogin)));
         }
 
         public IEnumerable<Permission> GetAllPermissions()
         {
-            return _permissionRequestHandler.GetAllPermissions();
+            LogExecution("GetAllPermissions");
+            return WrapInExceptionLogging(() => _permissionRequestHandler.GetAllPermissions());
         }
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            _permissionRequestHandler.AddUserPermissions(userLogin, rightIds);
+            LogExecution("AddUserPermissions", ("userLogin", userLogin), ("rightIds", rightIds));
+            WrapInExceptionLogging(() => _permissionRequestHandler.AddUserPermissions(userLogin, rightIds));
         }
 
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            _permissionRequestHandler.RemoveUserPermissions(userLogin, rightIds);
+            LogExecution("RemoveUserPermissions", ("userLogin", userLogin), ("rightIds", rightIds));
+            WrapInExceptionLogging(() => _permissionRequestHandler.RemoveUserPermissions(userLogin, rightIds));
         }
 
         public IEnumerable<string> GetUserPermissions(string userLogin)
         {
-            return _permissionRequestHandler.GetUserPermissions(userLogin);
+            LogExecution("GetUserPermissions", ("userLogin", userLogin));
+            return WrapInExceptionLogging(() => _permissionRequestHandler.GetUserPermissions(userLogin));
         }
 
         public ILogger Logger { get; set; }
