@@ -8,6 +8,6 @@ namespace Task.Connector.ContextConstruction
     // которая обычно содержится в методе OnModelCreating
     public interface IModelGenerator<T> where T : DbContext
     {
-        IModel GenerateModel();
+        IModel GenerateModel(string schemaName);
     }
 }

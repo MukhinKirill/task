@@ -6,9 +6,8 @@
         public Dictionary<string, string> PropertyTypes { get; }
         public string UserTableName { get; }
         public string PasswordTableName { get; }
-        public string SchemaName { get; }
 
-        public UserSchema(Dictionary<string, string> propertyTypes, string userTableName, string passwordTableName, string schemaName)
+        public UserSchema(string userTableName, string passwordTableName, Dictionary<string, string> propertyTypes)
         {
             if (propertyTypes.ContainsKey("string"))
             {
@@ -22,7 +21,6 @@
             PropertyTypes = propertyTypes;
             UserTableName = userTableName;
             PasswordTableName = passwordTableName;
-            SchemaName = schemaName;
         }
     }
 }

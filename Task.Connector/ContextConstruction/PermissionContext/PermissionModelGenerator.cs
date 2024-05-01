@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using Task.Connector.Models;
 using Task.Connector.Models.Schemas;
 using Task.Connector.ContextConstruction.Converter;
-using Task.Integration.Data.Models.Models;
 
 namespace Task.Connector.ContextConstruction.PermissionContext
 {
@@ -18,29 +17,29 @@ namespace Task.Connector.ContextConstruction.PermissionContext
             _converter = converter;
         }
 
-        private void ConfigurePermissionTypeEntity(ModelBuilder modelBuilder)
+        private void ConfigurePermissionTypeEntity(ModelBuilder modelBuilder, string schemaName)
         {
-            modelBuilder.Entity<Permission>().ToTable(_schema.PermissionTypeTableName, _schema.SchemaName);
+            modelBuilder.Entity<PermissionType>().ToTable(_schema.PermissionTypeTableName, schemaName);
 
-            modelBuilder.Entity<Permission>()
+            modelBuilder.Entity<PermissionType>()
                 .Property(type => type.Id)
                 .HasColumnName("id")
                 .HasColumnType("integer");
 
             _converter.AddConversion("integer",
-                        modelBuilder.Entity<Permission>().Property(type => type.Id));
+                        modelBuilder.Entity<PermissionType>().Property(type => type.Id));
 
-            modelBuilder.Entity<Permission>()
+            modelBuilder.Entity<PermissionType>()
                 .HasKey(type => type.Id);
 
-            modelBuilder.Entity<Permission>()
+            modelBuilder.Entity<PermissionType>()
                 .Property(type => type.Name)
                 .IsRequired()
                 .HasColumnName("name");
 
             if (_schema.ContainsDescription)
             {
-                modelBuilder.Entity<Permission>()
+                modelBuilder.Entity<PermissionType>()
                     .Property(type => type.Description)
                     .IsRequired()
                     .HasColumnName(_schema.DescriptionColumnName!);
@@ -49,14 +48,14 @@ namespace Task.Connector.ContextConstruction.PermissionContext
             {
                 // Если данная разновидность прав пользователя не хранит описания,
                 // то свойство type.Description игнорируется EF Core, всегда заполняясь null
-                modelBuilder.Entity<Permission>()
+                modelBuilder.Entity<PermissionType>()
                     .Ignore(type => type.Description);
             }
         }
 
-        private void ConfigureUserPermissionEntity(ModelBuilder modelBuilder)
+        private void ConfigureUserPermissionEntity(ModelBuilder modelBuilder, string schemaName)
         {
-            modelBuilder.Entity<UserPermission>().ToTable(_schema.UserPermissionTableName, _schema.SchemaName);
+            modelBuilder.Entity<UserPermission>().ToTable(_schema.UserPermissionTableName, schemaName);
 
             modelBuilder.Entity<UserPermission>()
                 .Property(permission => permission.PermissionTypeId)
@@ -76,12 +75,12 @@ namespace Task.Connector.ContextConstruction.PermissionContext
                 .HasKey(permission => new { permission.UserId, permission.PermissionTypeId });
         }
 
-        public IModel GenerateModel()
+        public IModel GenerateModel(string schemaName)
         {
             var modelBuilder = new ModelBuilder();
 
-            ConfigurePermissionTypeEntity(modelBuilder);
-            ConfigureUserPermissionEntity(modelBuilder);
+            ConfigurePermissionTypeEntity(modelBuilder, schemaName);
+            ConfigureUserPermissionEntity(modelBuilder, schemaName);
 
             return modelBuilder.FinalizeModel();
         }

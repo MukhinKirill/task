@@ -15,9 +15,9 @@ namespace Task.Connector.ContextConstruction.ContextFactory
     {
         private readonly IDbContextFactory<T> _contextFactory;
 
-        public PooledDynamicContextFactory(IModelGenerator<T> modelGenerator, DbContextOptionsBuilder<T> optionsBuilder, int poolSize = 1024)
+        public PooledDynamicContextFactory(IModelGenerator<T> modelGenerator, DbContextOptionsBuilder<T> optionsBuilder, string schemaName, int poolSize = 1024)
         {
-            var model = modelGenerator.GenerateModel();
+            var model = modelGenerator.GenerateModel(schemaName);
             optionsBuilder.UseModel(model);
             _contextFactory = new PooledDbContextFactory<T>(optionsBuilder.Options, poolSize);
         }

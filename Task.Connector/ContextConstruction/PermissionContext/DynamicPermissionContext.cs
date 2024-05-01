@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Task.Connector.Models;
-using Task.Integration.Data.Models.Models;
 
 namespace Task.Connector.ContextConstruction.PermissionContext
 {
@@ -21,7 +20,7 @@ namespace Task.Connector.ContextConstruction.PermissionContext
         public DynamicPermissionContext(DbContextOptions<DynamicPermissionContext> options) : base(options)
         { }
 
-        public DbSet<Permission> PermissionTypes { get; set; }
+        public DbSet<PermissionType> PermissionTypes { get; set; }
 
         public DbSet<UserPermission> UserPermissions { get; set; }
     }

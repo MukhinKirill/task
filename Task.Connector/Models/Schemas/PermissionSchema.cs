@@ -9,10 +9,12 @@
         public string? DescriptionColumnName { get; }
         public string PermissionTypeTableName { get; }
         public string UserPermissionTableName { get; }
-        public string SchemaName { get; }
 
-        public PermissionSchema(bool containsDescription, string permissionIdName, string? descriptionColumnName,
-            string permissionTypeTableName, string userPermissionTableName, string schemaName)
+        public string GroupName { get; }
+        public string Delimeter { get; }
+
+        public PermissionSchema(string permissionTypeTableName, string userPermissionTableName,
+            bool containsDescription, string permissionIdName, string groupName, string delimeter, string? descriptionColumnName = null)
         {
             if (containsDescription && descriptionColumnName == null)
             {
@@ -24,7 +26,8 @@
             DescriptionColumnName = descriptionColumnName;
             PermissionTypeTableName = permissionTypeTableName;
             UserPermissionTableName = userPermissionTableName;
-            SchemaName = schemaName;
+            GroupName = groupName;
+            Delimeter = delimeter;
         }
     }
 }

@@ -10,11 +10,12 @@ namespace Task.Connector.Tests
         static string itRoleRightGroupName = "Role";
         static string delimeter = ":";
         static string mssqlConnectionString = "";
-        static string postgreConnectionString = "";
+        static string postgreConnectionString = "Server=127.0.0.1;Port=5432;Database=task-db;User Id=user;Password=postgres;";
         static Dictionary<string, string> connectorsCS = new Dictionary<string, string>
         {
-            { "MSSQL",$"ConnectionString='{mssqlConnectionString}';Provider='SqlServer.2019';SchemaName='AvanpostIntegrationTestTaskSchema';"},
-            { "POSTGRE", $"ConnectionString='{postgreConnectionString}';Provider='PostgreSQL.9.5';SchemaName='AvanpostIntegrationTestTaskSchema';"}
+            // Здесь я поправил названия схем, чтобы они соответствовали данным в БД
+            { "MSSQL",$"ConnectionString='{mssqlConnectionString}';Provider='SqlServer.2019';SchemaName='TestTaskSchema';"},
+            { "POSTGRE", $"ConnectionString='{postgreConnectionString}';Provider='PostgreSQL.9.5';SchemaName='TestTaskSchema';"}
         };
         static Dictionary<string, string> dataBasesCS = new Dictionary<string, string>
         {
@@ -46,7 +47,17 @@ namespace Task.Connector.Tests
         {
             var dataSetter = Init(provider);
             var connector = GetConnector(provider);
-            connector.CreateUser(new UserToCreate("testUserToCreate", "testPassword") { Properties = new UserProperty[] { new UserProperty("isLead", "false") } });
+
+            // В базе данных, получившейся после инициализации,
+            // все свойства пользователя отмечены как Not NULL,
+            // поэтому чтобы тестовый кейс работал, нужно добавить остальные поля
+            connector.CreateUser(new UserToCreate("testUserToCreate", "testPassword") { Properties = new UserProperty[] {
+                new UserProperty("isLead", "false"),
+                new UserProperty("lastName", "temp"),
+                new UserProperty("firstName", "temp"),
+                new UserProperty("middleName", "temp"),
+                new UserProperty("telephoneNumber", "temp")
+            } });
             Assert.NotNull(dataSetter.GetUser("testUserToCreate"));
             Assert.Equal(DefaultData.MasterUserDefaultPassword, dataSetter.GetUserPassword(DefaultData.MasterUserLogin));
         }
@@ -71,7 +82,13 @@ namespace Task.Connector.Tests
             var connector = GetConnector(provider);
             var userInfo = connector.GetUserProperties(DefaultData.MasterUserLogin);
             Assert.NotNull(userInfo);
-            Assert.Equal(5, userInfo.Count());
+
+            // Насколько мне сказала HR в личной переписке во вопросу
+            // "должны ли методы GetUserProperties и UpdateUserProperties обрабатывать пароль пользователя как свойство?" -
+            // "если сказано "пароль тоже считать свойством" значит считаем"
+            // однако в таком случае свойств должно быть 6 -
+            // lastName, firstName, middleName, telephoneNumber, isLead, password
+            Assert.Equal(6, userInfo.Count());
             Assert.True(userInfo.FirstOrDefault(_ => _.Value.Equals(DefaultData.MasterUser.TelephoneNumber)) != null);
         }
 

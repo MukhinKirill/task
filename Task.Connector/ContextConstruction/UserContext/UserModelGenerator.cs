@@ -22,7 +22,7 @@ namespace Task.Connector.ContextConstruction.UserContext
             _converter = converter;
         }
 
-        public IModel GenerateModel()
+        public IModel GenerateModel(string schemaName)
         {
             var modelBuilder = new ModelBuilder();
 
@@ -46,10 +46,10 @@ namespace Task.Connector.ContextConstruction.UserContext
             modelBuilder.SharedTypeEntity<Dictionary<string, object>>(
             "User", user =>
             {
-                user.ToTable(_schema.UserTableName, _schema.SchemaName)
+                user.ToTable(_schema.UserTableName, schemaName)
                 .SplitToTable(
                     _schema.PasswordTableName,
-                    _schema.SchemaName,
+                    schemaName,
                     tableBuilder =>
                     {
                         tableBuilder.Property("login").HasColumnName("userId");
