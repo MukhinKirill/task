@@ -10,11 +10,11 @@ namespace Task.Connector.Tests
         static string itRoleRightGroupName = "Role";
         static string delimeter = ":";
         static string mssqlConnectionString = "";
-        static string postgreConnectionString = "";
+		static string postgreConnectionString = "Server=127.0.0.1;Port=5444;Database=testDb;Username=postgres;Password=123;";
         static Dictionary<string, string> connectorsCS = new Dictionary<string, string>
         {
-            { "MSSQL",$"ConnectionString='{mssqlConnectionString}';Provider='SqlServer.2019';SchemaName='AvanpostIntegrationTestTaskSchema';"},
-            { "POSTGRE", $"ConnectionString='{postgreConnectionString}';Provider='PostgreSQL.9.5';SchemaName='AvanpostIntegrationTestTaskSchema';"}
+            { "MSSQL",$"ConnectionString='{mssqlConnectionString}';Provider='SqlServer.2019';SchemaName='TestTaskSchema';"},
+            { "POSTGRE", $"ConnectionString='{postgreConnectionString}';Provider='PostgreSQL.9.5';SchemaName='TestTaskSchema';"}
         };
         static Dictionary<string, string> dataBasesCS = new Dictionary<string, string>
         {
@@ -34,7 +34,7 @@ namespace Task.Connector.Tests
         {
             IConnector connector = new ConnectorDb();
             connector.StartUp(connectorsCS[provider]);
-            connector.Logger = new FileLogger($"{DateTime.Now}connector{provider}.Log", $"{DateTime.Now}connector{provider}");
+            connector.Logger = new FileLogger($"{DateTime.UtcNow.ToShortDateString()}connector{provider}.Log", $"{DateTime.UtcNow.ToShortDateString()}connector{provider}");
             return connector;
         }
 
@@ -46,7 +46,15 @@ namespace Task.Connector.Tests
         {
             var dataSetter = Init(provider);
             var connector = GetConnector(provider);
-            connector.CreateUser(new UserToCreate("testUserToCreate", "testPassword") { Properties = new UserProperty[] { new UserProperty("isLead", "false") } });
+            connector.CreateUser(new UserToCreate("testUserToCreate", "testPassword") { 
+				Properties = new UserProperty[] {
+					new UserProperty("LastName", "Иванов"),
+					new UserProperty("FirstName", "Иван"),
+					new UserProperty("MiddleName", "Петрович"),
+					new UserProperty("TelephoneNumber", "88001122334"),
+					new UserProperty("IsLead", "false")
+				}
+			});
             Assert.NotNull(dataSetter.GetUser("testUserToCreate"));
             Assert.Equal(DefaultData.MasterUserDefaultPassword, dataSetter.GetUserPassword(DefaultData.MasterUserLogin));
         }
