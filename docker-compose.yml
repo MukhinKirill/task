@@ -1,0 +1,30 @@
+﻿version: '3.4'
+
+services:
+  database:
+    image: postgres:13
+    container_name: database
+    restart: always
+    environment:
+      POSTGRES_USER: "1"
+      POSTGRES_PASSWORD: "1"
+      POSTGRES_DB: "1"
+    ports:
+      - "5432:5432"
+
+  test-project:
+    build:
+      context: .
+      dockerfile: Task.Connector.Tests/Dockerfile
+    depends_on:
+      - database
+    volumes:
+      - ./testresults:/app/testresults
+    command:
+      - dotnet
+      - test
+      - "/app/Task.Connector.Tests.dll"
+      - "-c"
+      - "Release"
+      - "--logger"
+      - "trx;LogFileName=testresults.trx"

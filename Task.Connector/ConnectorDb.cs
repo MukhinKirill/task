@@ -1,4 +1,7 @@
-﻿using System.Text.RegularExpressions;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -11,23 +14,6 @@ using ILogger = Task.Integration.Data.Models.ILogger;
 
 namespace Task.Connector
 {
-    public class ConnectionStringParser
-    {
-        public static string GetPostgreConnectionString(string fullString)
-        {
-            var regexPattern = @"ConnectionString='([^']+)'";
-            var match = Regex.Match(fullString, regexPattern);
-            if (match.Success)
-            {
-                return match.Groups[1].Value;
-            }
-            else
-            {
-                throw new ArgumentException("Invalid connection string format");
-            }
-        }
-    }
-
     public class ConnectorDb : IConnector
     {
         public ILogger Logger { get; set; }
