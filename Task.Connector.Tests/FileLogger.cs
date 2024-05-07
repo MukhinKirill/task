@@ -18,10 +18,9 @@ namespace Task.Connector.Tests
             using (var sw = File.AppendText(_fileName))
                 sw.WriteLine(text);
         }
-        public void Debug(string message) => Append($"{DateTime.Now}:{_connectorName}:DEBUG:{message}");
 
-        public void Error(string message) => Append($"{DateTime.Now}:{_connectorName}:ERROR:{message}");
-        public void Warn(string message) => Append($"{DateTime.Now}:{_connectorName}:WARNING{message}");
-
+        public void Debug(string message) => Append($"{DateTime.Now:dd MMM HH mm ss}:{_connectorName}:DEBUG:{message}");
+        public void Error(string message) => Append($"{DateTime.Now:dd MMM HH mm ss}:{_connectorName}:ERROR:{message}");
+        public void Warn(string message) => Append($"{DateTime.Now:dd MMM HH mm ss}:{_connectorName}:WARNING{message}");
     }
 }
