@@ -1,13 +1,19 @@
-﻿using Task.Integration.Data.Models;
+﻿using Task.Connector.Persistence;
+using Task.Integration.Data.DbCommon;
+using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
 
 namespace Task.Connector
 {
     public class ConnectorDb : IConnector
     {
+        private DataContext _context;
+        public ILogger Logger { get; set; }
+
         public void StartUp(string connectionString)
         {
-            throw new NotImplementedException();
+            DataContextFactory factory = new(connectionString, Logger);
+            _context = factory.GetContext();
         }
 
         public void CreateUser(UserToCreate user)
@@ -54,7 +60,5 @@ namespace Task.Connector
         {
             throw new NotImplementedException();
         }
-
-        public ILogger Logger { get; set; }
     }
 }
