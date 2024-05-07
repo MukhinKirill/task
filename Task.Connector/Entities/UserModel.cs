@@ -1,4 +1,7 @@
-﻿using Task.Connector.Common;
+﻿using System.Reflection;
+
+using Task.Connector.Common;
+using Task.Integration.Data.DbCommon.DbModels;
 using Task.Integration.Data.Models.Models;
 
 namespace Task.Connector.Entities;
@@ -11,6 +14,16 @@ public sealed class UserModel
     public string MiddleName { get; set; }
     public string TelephoneNumber { get; set; }
     public bool IsLead { get; set; }
+
+    public static IReadOnlyDictionary<string, PropertyInfo?> PropertyMap => new Dictionary<string, PropertyInfo?>()
+    {
+        { PropertyName.FirstName, typeof(User).GetProperty(nameof(User.FirstName)) },
+        { PropertyName.LastName, typeof(User).GetProperty(nameof(User.LastName)) },
+        { PropertyName.MiddleName, typeof(User).GetProperty(nameof(User.MiddleName)) },
+        { PropertyName.IsLead, typeof(User).GetProperty(nameof(User.IsLead)) },
+        { PropertyName.TelephoneNumber, typeof(User).GetProperty(nameof(User.TelephoneNumber)) },
+        { PropertyName.Password, typeof(Sequrity).GetProperty(nameof(Sequrity.Password)) }
+    };
 
     public UserModel()
     {

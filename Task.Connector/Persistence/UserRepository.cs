@@ -72,4 +72,32 @@ public sealed class UserRepository
     {
         return _context.Users.Any(user => user.Login == login);
     }
+
+    public User? GetUser(string login)
+    {
+        return _context.Users.SingleOrDefault(user => user.Login == login);
+    }
+
+    public Sequrity? GetPassword(string login)
+    {
+        return _context.Passwords.SingleOrDefault(password => password.UserId == login);
+    }
+
+    public List<PermissionModel> GetPermissions(string login)
+    {
+        return _context.UserITRoles
+                .Select(role => new PermissionModel()
+                {
+                    Id = role.RoleId,
+                    Name = PermissionModel.ItRoleRightGroupName
+                })
+                .Union(
+                _context.UserRequestRights.
+                Select(request => new PermissionModel()
+                {
+                    Id = request.RightId,
+                    Name = PermissionModel.RequestRightGroupName
+                }))
+                .ToList();
+    }
 }
