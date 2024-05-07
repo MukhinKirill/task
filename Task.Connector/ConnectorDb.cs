@@ -14,6 +14,12 @@ using Task.Integration.Data.Models.Models;
 
 namespace Task.Connector
 {
+    /// <summary>
+    /// Represents a database connector that implements the IConnector interface.
+    /// </summary>
+    /// <remarks>
+    /// This class provides methods for user management and permission handling.
+    /// </remarks>
     public class ConnectorDb : IConnector, IDisposable
     {
         private bool _disposed;
@@ -22,6 +28,10 @@ namespace Task.Connector
         private PermissionRepository _permissionRepository = null!;
         public ILogger Logger { get; set; } = null!;
 
+        /// <summary>
+        /// Starts up the database connection with the specified connection string.
+        /// </summary>
+        /// <param name="connectionString">The connection string to the database.</param>
         public void StartUp(string connectionString)
         {
             DataContextFactory factory = new(connectionString, Logger);
@@ -30,6 +40,10 @@ namespace Task.Connector
             _permissionRepository = new(_context);
         }
 
+        /// <summary>
+        /// Creates a new user based on the provided UserToCreate object.
+        /// </summary>
+        /// <param name="user">The UserToCreate object containing user details.</param>
         public void CreateUser(UserToCreate user)
         {
             Logger.Debug("Try to create a new user");
@@ -54,12 +68,31 @@ namespace Task.Connector
             }
         }
 
+        /// <summary>
+        /// Retrieves all properties available in the system.
+        /// </summary>
+        /// <returns>An IEnumerable of Property objects representing all properties.</returns>
         public IEnumerable<Property> GetAllProperties()
         {
             Logger.Debug("Get all properties");
             return UserModel.GetPropertiesName();
+            // NOTE : свойства формируются на основе модели, но была идея формировать их на основе базы данных
+            // например с использованием Dapper используя системную таблицу
+            // SELECT
+            //     column_name AS Name,
+            //     NULL AS Description
+            // FROM
+            //     information_schema.columns
+            // WHERE
+            //     table_name IN('User', 'Passwords') AND column_name NOT IN('id', 'userId', 'login')
+
         }
 
+        /// <summary>
+        /// Retrieves the properties of a specific user.
+        /// </summary>
+        /// <param name="userLogin">The login of the user to retrieve properties for.</param>
+        /// <returns>An IEnumerable of UserProperty objects representing the user's properties.</returns>
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
         {
             Logger.Debug($"Try get user properties for user '{userLogin}'");
@@ -81,6 +114,11 @@ namespace Task.Connector
             }
         }
 
+        /// <summary>
+        /// Checks if a user with the specified login exists in the system.
+        /// </summary>
+        /// <param name="userLogin">The login of the user to check.</param>
+        /// <returns>True if the user exists, otherwise false.</returns>
         public bool IsUserExists(string userLogin)
         {
             Logger.Debug($"Try check exists user '{userLogin}'");
@@ -107,6 +145,11 @@ namespace Task.Connector
             }
         }
 
+        /// <summary>
+        /// Updates the properties of a specific user.
+        /// </summary>
+        /// <param name="properties">The properties to update for the user.</param>
+        /// <param name="userLogin">The login of the user to update properties for.</param>
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
         {
             Logger.Debug($"Try update user '{userLogin}' properties");
@@ -135,6 +178,10 @@ namespace Task.Connector
             }
         }
 
+        /// <summary>
+        /// Retrieves all permissions available in the system.
+        /// </summary>
+        /// <returns>An IEnumerable of Permission objects representing all permissions.</returns>
         public IEnumerable<Permission> GetAllPermissions()
         {
             Logger.Debug("Try get all permissions in system");
@@ -155,6 +202,11 @@ namespace Task.Connector
             }
         }
 
+        /// <summary>
+        /// Adds the specified permissions to the user's roles and requests.
+        /// </summary>
+        /// <param name="userLogin">The login of the user to add permissions for.</param>
+        /// <param name="rightIds">The IDs of the permissions to add.</param>
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
             Logger.Debug($"Try add permissions for user '{userLogin}'");
@@ -187,6 +239,11 @@ namespace Task.Connector
             }
         }
 
+        /// <summary>
+        /// Removes the specified permissions from the user's roles and requests.
+        /// </summary>
+        /// <param name="userLogin">The login of the user to remove permissions for.</param>
+        /// <param name="rightIds">The IDs of the permissions to remove.</param>
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
             Logger.Debug($"Try remove permissions for user '{userLogin}'");
@@ -219,6 +276,11 @@ namespace Task.Connector
             }
         }
 
+        /// <summary>
+        /// Retrieves the permissions associated with the specified user.
+        /// </summary>
+        /// <param name="userLogin">The login of the user to retrieve permissions for.</param>
+        /// <returns>An IEnumerable of strings representing the user's permissions.</returns>
         public IEnumerable<string> GetUserPermissions(string userLogin)
         {
             Logger.Debug($"Try get permissions for user '{userLogin}'");
