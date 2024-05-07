@@ -1,4 +1,6 @@
-﻿using System.Transactions;
+﻿using Microsoft.EntityFrameworkCore;
+
+using System.Transactions;
 
 using Task.Connector.Entities;
 using Task.Integration.Data.DbCommon;
@@ -46,5 +48,28 @@ public sealed class UserRepository
         _context.SaveChanges();
 
         scope.Complete();
+    }
+
+    public UserModel? GetUserByLogin(string login)
+    {
+        return _context.Users
+                .Where(user => user.Login == login)
+                .Join(_context.Passwords, user => user.Login, password => password.UserId,
+                (user, password) => new UserModel()
+                {
+                    Login = user.Login,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    MiddleName = user.MiddleName,
+                    IsLead = user.IsLead,
+                    Password = password.Password,
+                    TelephoneNumber = user.TelephoneNumber
+                })
+                .SingleOrDefault();
+    }
+
+    public bool CheckUserExists(string login)
+    {
+        return _context.Users.Any(user => user.Login == login);
     }
 }
