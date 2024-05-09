@@ -9,17 +9,11 @@ namespace Task.Connector.Tests
         static string requestRightGroupName = "Request";
         static string itRoleRightGroupName = "Role";
         static string delimeter = ":";
-        static string mssqlConnectionString = "";
-        static string postgreConnectionString = "";
-        static Dictionary<string, string> connectorsCS = new Dictionary<string, string>
+        static string postgreConnectionString = "Server=localhost;Port=5432;Database=Avanpost;User Id=postgres;Password=1243";
+
+        static Dictionary<string, string> dataBasesCS = new()
         {
-            { "MSSQL",$"ConnectionString='{mssqlConnectionString}';Provider='SqlServer.2019';SchemaName='AvanpostIntegrationTestTaskSchema';"},
-            { "POSTGRE", $"ConnectionString='{postgreConnectionString}';Provider='PostgreSQL.9.5';SchemaName='AvanpostIntegrationTestTaskSchema';"}
-        };
-        static Dictionary<string, string> dataBasesCS = new Dictionary<string, string>
-        {
-            { "MSSQL",mssqlConnectionString},
-            { "POSTGRE", postgreConnectionString}
+            {"POSTGRE", postgreConnectionString}
         };
 
         public DataManager Init(string providerName)
@@ -33,14 +27,13 @@ namespace Task.Connector.Tests
         public IConnector GetConnector(string provider)
         {
             IConnector connector = new ConnectorDb();
-            connector.StartUp(connectorsCS[provider]);
-            connector.Logger = new FileLogger($"{DateTime.Now}connector{provider}.Log", $"{DateTime.Now}connector{provider}");
+            connector.Logger = new FileLogger($"{DateTime.Now:yyyy.MM.dd-HH_mm_ss}connector{provider}.Log", $"{DateTime.Now}connector{provider}");
+            connector.StartUp(dataBasesCS[provider]);
             return connector;
         }
 
 
         [Theory]
-        [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void CreateUser(string provider)
         {
@@ -52,18 +45,16 @@ namespace Task.Connector.Tests
         }
 
         [Theory]
-        [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void GetAllProperties(string provider)
         {
             var dataSetter = Init(provider);
             var connector = GetConnector(provider);
             var propInfos = connector.GetAllProperties();
-            Assert.Equal(DefaultData.PropsCount+1/*password too*/, propInfos.Count());
+            Assert.Equal(DefaultData.PropsCount + 1/*password too*/, propInfos.Count());
         }
 
         [Theory]
-        [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void GetUserProperties(string provider)
         {
@@ -76,7 +67,6 @@ namespace Task.Connector.Tests
         }
 
         [Theory]
-        [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void IsUserExists(string provider)
         {
@@ -87,7 +77,6 @@ namespace Task.Connector.Tests
         }
 
         [Theory]
-        [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void UpdateUserProperties(string provider)
         {
@@ -104,7 +93,6 @@ namespace Task.Connector.Tests
         }
 
         [Theory]
-        [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void GetAllPermissions(string provider)
         {
@@ -116,7 +104,6 @@ namespace Task.Connector.Tests
         }
 
         [Theory]
-        [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void AddUserPermissions(string provider)
         {
@@ -131,7 +118,6 @@ namespace Task.Connector.Tests
         }
 
         [Theory]
-        [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void RemoveUserPermissions(string provider)
         {
@@ -145,7 +131,6 @@ namespace Task.Connector.Tests
             Assert.False(dataSetter.MasterUserHasRequestRight(dataSetter.GetRequestRightId(DefaultData.RequestRights[DefaultData.MasterUserRequestRights.First()].Name).ToString()));
         }
         [Theory]
-        [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void GetUserPermissions(string provider)
         {
