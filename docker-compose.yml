@@ -1,0 +1,52 @@
+services:
+  test_avanpost:
+    build:
+      context: .
+      dockerfile: Task.Connector.Tests/Dockerfile
+    depends_on:
+      - avanpostPostgres
+    volumes:
+      - ./results:/app/results
+    environment:
+      DB_ROUTE: Server=avanpostPostgres;Port=5432;Database=AvanpostDB;User Id=postgres;Password=1243
+    networks:
+      - DbData
+    
+  avanpostPostgres:
+    container_name: avanpostPostgres
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1243
+      POSTGRES_DB: AvanpostDB
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    volumes:
+      - ./init/initAvanpostDB.sql:/docker-entrypoint-initdb.d/init.sql
+      - initAvanpost-data-db:/var/lib/postgresql/data
+    networks:
+      - DbData
+
+  pgadmin:
+    container_name: avanpostPgadmin
+    image: dpage/pgadmin4:7.2
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@aton.ru
+      PGADMIN_DEFAULT_PASSWORD: admin
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+    networks:
+      - DbData
+    depends_on:
+      - avanpostPostgres
+
+networks:
+  DbData:
+    driver: bridge
+
+volumes:
+  initAvanpost-data-db:
+  pgadmin-data:

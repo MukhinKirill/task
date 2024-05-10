@@ -9,7 +9,7 @@ namespace Task.Connector.Tests
         static string requestRightGroupName = "Request";
         static string itRoleRightGroupName = "Role";
         static string delimeter = ":";
-        static string postgreConnectionString = "Server=localhost;Port=5432;Database=Avanpost;User Id=postgres;Password=1243";
+        static string postgreConnectionString = Environment.GetEnvironmentVariable("DB_ROUTE") ?? "Server=localhost;Port=5432;Database=Avanpost;User Id=postgres;Password=1243";
 
         static Dictionary<string, string> dataBasesCS = new()
         {
