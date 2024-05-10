@@ -9,12 +9,12 @@ namespace Task.Connector.Tests
         static string requestRightGroupName = "Request";
         static string itRoleRightGroupName = "Role";
         static string delimeter = ":";
-        static string mssqlConnectionString = "";
-        static string postgreConnectionString = "";
+        static string mssqlConnectionString = "Server=localhost,1434;Database=master;User Id=sa;Password=a1B.2345;TrustServerCertificate=True";
+        static string postgreConnectionString = "Server=127.0.0.1;Port=5433;Database=postgres;User ID=postgres;Password=1234";
         static Dictionary<string, string> connectorsCS = new Dictionary<string, string>
         {
             { "MSSQL",$"ConnectionString='{mssqlConnectionString}';Provider='SqlServer.2019';SchemaName='AvanpostIntegrationTestTaskSchema';"},
-            { "POSTGRE", $"ConnectionString='{postgreConnectionString}';Provider='PostgreSQL.9.5';SchemaName='AvanpostIntegrationTestTaskSchema';"}
+            { "POSTGRE", postgreConnectionString }
         };
         static Dictionary<string, string> dataBasesCS = new Dictionary<string, string>
         {
@@ -34,7 +34,7 @@ namespace Task.Connector.Tests
         {
             IConnector connector = new ConnectorDb();
             connector.StartUp(connectorsCS[provider]);
-            connector.Logger = new FileLogger($"{DateTime.Now}connector{provider}.Log", $"{DateTime.Now}connector{provider}");
+            connector.Logger = new FileLogger($"{DateTime.Now.ToFileTime()}connector{provider}.Log", $"{DateTime.Now.ToFileTime()}connector{provider}");
             return connector;
         }
 
