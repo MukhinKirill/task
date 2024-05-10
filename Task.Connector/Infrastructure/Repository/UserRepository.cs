@@ -6,7 +6,7 @@ using Task.Integration.Data.Models;
 
 namespace Task.Connector.Infrastructure.Repository;
 
-public class UserRepository : IUserRepository
+public sealed class UserRepository : IUserRepository
 {
     private readonly AvanpostContext _context;
     private readonly ILogger _logger;

@@ -7,7 +7,7 @@ using Task.Integration.Data.Models.Models;
 
 namespace Task.Connector.Infrastructure.Repository;
 
-public class PermissionRepository : IPermissionRepository
+public sealed class PermissionRepository : IPermissionRepository
 {
     private readonly AvanpostContext _context;
     private readonly ILogger _logger;
