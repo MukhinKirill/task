@@ -10,7 +10,7 @@ namespace Task.Connector.Tests
 
         public FileLogger(string fileName, string connectorName)
         {
-            _fileName = fileName;
+            _fileName = fileName.Replace(':','.');
             _connectorName = connectorName;
         }
         void Append(string text)
@@ -21,6 +21,7 @@ namespace Task.Connector.Tests
         public void Debug(string message) => Append($"{DateTime.Now}:{_connectorName}:DEBUG:{message}");
 
         public void Error(string message) => Append($"{DateTime.Now}:{_connectorName}:ERROR:{message}");
+        
         public void Warn(string message) => Append($"{DateTime.Now}:{_connectorName}:WARNING{message}");
 
     }
