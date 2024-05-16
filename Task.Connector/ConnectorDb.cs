@@ -191,7 +191,7 @@ namespace Task.Connector
 
                 var requestRights = m_Context.RequestRights.AsNoTracking().Select(x=> new Permission(x.Id!.Value.ToString() ?? "", x.Name, string.Empty)).ToList();
                 var itRoles = m_Context.ITRoles.AsNoTracking().Select(x => new Permission(x.Id!.Value.ToString() ?? "", x.Name, string.Empty)).ToList();
-                var resultPermissions = requestRights.Union(itRoles);
+                var resultPermissions = requestRights.Union(itRoles).Where(x=>!String.IsNullOrEmpty(x.Id));
 
                 Logger.Debug($"GetAllPermissions - Successfull");
                 return resultPermissions;
