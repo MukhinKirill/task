@@ -1,27 +1,26 @@
-﻿
-using Task.Integration.Data.Models;
+﻿using Task.Integration.Data.Models;
 
 namespace Task.Connector.Tests
 {
     public class FileLogger : ILogger
     {
-        string _fileName;
-        string _connectorName;
+        private readonly string _fileName;
+        private readonly string _connectorName;
 
         public FileLogger(string fileName, string connectorName)
         {
             _fileName = fileName;
             _connectorName = connectorName;
         }
-        void Append(string text)
+        private void Append(string text)
         {
-            using (var sw = File.AppendText(_fileName))
-                sw.WriteLine(text);
+            using var sw = File.AppendText(_fileName);
+            sw.Write(text);
         }
-        public void Debug(string message) => Append($"{DateTime.Now}:{_connectorName}:DEBUG:{message}");
-
-        public void Error(string message) => Append($"{DateTime.Now}:{_connectorName}:ERROR:{message}");
-        public void Warn(string message) => Append($"{DateTime.Now}:{_connectorName}:WARNING{message}");
+        private void AddMessage(string type, string content) => Append($"{DateTime.UtcNow}:{_connectorName}:{type}:{content}");
+        public void Debug(string message) => AddMessage("DEBUG", message);
+        public void Error(string message) => AddMessage("ERROR", message);
+        public void Warn(string message) => AddMessage("WARNING", message);
 
     }
 }

@@ -6,35 +6,34 @@ namespace Task.Connector.Tests
 {
     public class UnitTest1
     {
-        static string requestRightGroupName = "Request";
-        static string itRoleRightGroupName = "Role";
-        static string delimeter = ":";
-        static string mssqlConnectionString = "";
-        static string postgreConnectionString = "";
-        static Dictionary<string, string> connectorsCS = new Dictionary<string, string>
+        private const string _requestRightGroupName = "Request";
+        private const string _itRoleRightGroupName = "Role";
+        private const string _delimeter = ":";
+        private const string _mssqlConnectionString = "Server=localhost;Database=testDb;User Id=sa;Password=!PassWord#;TrustServerCertificate=True;";
+        private const string _postgreConnectionString = "Server=127.0.0.1;Port=5432;Database=testDb;User ID=postgres;Password=!PassWord#";
+        private readonly static Dictionary<string, string> _connectorsCS = new ()
         {
-            { "MSSQL",$"ConnectionString='{mssqlConnectionString}';Provider='SqlServer.2019';SchemaName='AvanpostIntegrationTestTaskSchema';"},
-            { "POSTGRE", $"ConnectionString='{postgreConnectionString}';Provider='PostgreSQL.9.5';SchemaName='AvanpostIntegrationTestTaskSchema';"}
+            { "MSSQL",$"ConnectionString='{_mssqlConnectionString}';Provider='SqlServer.2019';SchemaName='AvanpostIntegrationTestTaskSchema';"},
+            { "POSTGRE", $"ConnectionString='{_postgreConnectionString}';Provider='PostgreSQL.9.5';SchemaName='AvanpostIntegrationTestTaskSchema';"}
         };
-        static Dictionary<string, string> dataBasesCS = new Dictionary<string, string>
+        private readonly static Dictionary<string, string> _dataBasesCS = new()
         {
-            { "MSSQL",mssqlConnectionString},
-            { "POSTGRE", postgreConnectionString}
+            { "MSSQL",_mssqlConnectionString},
+            { "POSTGRE", _postgreConnectionString}
         };
 
-        public DataManager Init(string providerName)
+        private static DataManager Init(string providerName)
         {
-            var factory = new DbContextFactory(dataBasesCS[providerName]);
+            var factory = new DbContextFactory(_dataBasesCS[providerName]);
             var dataSetter = new DataManager(factory, providerName);
             dataSetter.PrepareDbForTest();
             return dataSetter;
         }
 
-        public IConnector GetConnector(string provider)
+        private static IConnector GetConnector(string provider)
         {
-            IConnector connector = new ConnectorDb();
-            connector.StartUp(connectorsCS[provider]);
-            connector.Logger = new FileLogger($"{DateTime.Now}connector{provider}.Log", $"{DateTime.Now}connector{provider}");
+            IConnector connector = new ConnectorDb() { Logger = new FileLogger($"{DateTime.UtcNow.ToShortDateString()}connector{provider}.Log", $"{DateTime.UtcNow}connector{provider}")};
+            connector.StartUp(_connectorsCS[provider]);
             return connector;
         }
 
@@ -46,7 +45,13 @@ namespace Task.Connector.Tests
         {
             var dataSetter = Init(provider);
             var connector = GetConnector(provider);
-            connector.CreateUser(new UserToCreate("testUserToCreate", "testPassword") { Properties = new UserProperty[] { new UserProperty("isLead", "false") } });
+            connector.CreateUser(new UserToCreate("testUserToCreate", "testPassword") { Properties = new UserProperty[] { 
+                new ("isLead", "false"), 
+                new("firstName", "Ivan"), 
+                new ("lastName", "Ivanov"), 
+                new ("middleName", "Ivanovich"),
+                new ("telephoneNumber", "999")
+            } });
             Assert.NotNull(dataSetter.GetUser("testUserToCreate"));
             Assert.Equal(DefaultData.MasterUserDefaultPassword, dataSetter.GetUserPassword(DefaultData.MasterUserLogin));
         }
@@ -97,7 +102,7 @@ namespace Task.Connector.Tests
             var propertyName = connector.GetUserProperties(DefaultData.MasterUserLogin).First(_ => _.Value.Equals(DefaultData.MasterUser.TelephoneNumber)).Name;
             var propsToUpdate = new UserProperty[]
             {
-                new UserProperty(propertyName,TestData.NewPhoneValueForMasterUser)
+                new (propertyName,TestData.NewPhoneValueForMasterUser)
             };
             connector.UpdateUserProperties(propsToUpdate, DefaultData.MasterUserLogin);
             Assert.Equal(TestData.NewPhoneValueForMasterUser, dataSetter.GetUser(DefaultData.MasterUserLogin).TelephoneNumber);
@@ -122,7 +127,7 @@ namespace Task.Connector.Tests
         {
             var dataSetter = Init(provider);
             var connector = GetConnector(provider);
-            var RoleId = $"{itRoleRightGroupName}{delimeter}{dataSetter.GetITRoleId()}";
+            var RoleId = $"{_itRoleRightGroupName}{_delimeter}{dataSetter.GetITRoleId()}";
             connector.AddUserPermissions(
                 DefaultData.MasterUserLogin,
                 new [] { RoleId });
@@ -137,7 +142,7 @@ namespace Task.Connector.Tests
         {
             var dataSetter = Init(provider);
             var connector = GetConnector(provider);
-            var requestRightIdToDrop = $"{requestRightGroupName}{delimeter}{dataSetter.GetRequestRightId(DefaultData.RequestRights[DefaultData.MasterUserRequestRights.First()].Name)}";
+            var requestRightIdToDrop = $"{_requestRightGroupName}{_delimeter}{dataSetter.GetRequestRightId(DefaultData.RequestRights[DefaultData.MasterUserRequestRights.First()].Name)}";
             connector.RemoveUserPermissions(
                 DefaultData.MasterUserLogin,
                 new [] { requestRightIdToDrop });
