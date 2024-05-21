@@ -1,53 +1,62 @@
-﻿using System.Reflection;
-using Task.Integration.Data.DbCommon.DbModels;
+﻿using Task.Integration.Data.DbCommon.DbModels;
 using Task.Integration.Data.Models.Models;
 
 namespace Task.Connector.Mapper;
 
 public sealed class UserMapper
 {
-    public static User CreateUserFromUserProps(IEnumerable<UserProperty> props)
+    public static User CreateUserFromUserProps(UserToCreate userToCreate)
     {
-        var user = new User();
+        if (userToCreate.Login == string.Empty)
+            throw new ArgumentException($"Property 'Login' is required for creating a User.");
 
-        foreach (var property in user.GetType().GetProperties().Where(p => p.Name != "Login"))
+        var user = new User
         {
-            var propertyName = property.Name;
-            var propertyValue = props.FirstOrDefault(p => p.Name.Equals(propertyName, StringComparison.OrdinalIgnoreCase))?.Value;
+            Login = userToCreate.Login
+        };
 
-            if (propertyValue != null)
-            {
-                if (property.PropertyType == typeof(bool))
-                {
-                    bool parsedValue = Convert.ToBoolean(propertyValue);
-                    property.SetValue(user, parsedValue, null);
-                }
-                else
-                {
-                    object parsedValue = Convert.ChangeType(propertyValue, property.PropertyType);
-                    property.SetValue(user, parsedValue, null);
-                }
-            }
-            else
-            {
-                throw new NullReferenceException($"The Properties has not value for { propertyName } field");
-            }
-        }
+        if (!MapProperty(userToCreate.Properties, "LastName", (value) => user.LastName = value))
+            throw new ArgumentException($"Property 'LastName' is required for creating a User.");
+
+        if (!MapProperty(userToCreate.Properties, "FirstName", (value) => user.FirstName = value))
+            throw new ArgumentException($"Property 'FirstName' is required for creating a User.");
+
+        MapProperty(userToCreate.Properties, "MiddleName", (value) => user.MiddleName = value);
+        MapProperty(userToCreate.Properties, "TelephoneNumber", (value) => user.TelephoneNumber = value);
+
+        if (!MapBooleanProperty(userToCreate.Properties, "IsLead", (value) => user.IsLead = value))
+            throw new ArgumentException($"Property 'IsLead' is required for creating a User.");
 
         return user;
     }
 
-    public static bool SetUserProperty(User user, string propName, object value)
+    private static bool MapProperty(IEnumerable<UserProperty> properties, string propertyName, Action<string> setProperty)
     {
-        var prop = user.GetType().GetProperty(propName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+        var property = properties.FirstOrDefault(p => p.Name.Equals(propertyName, StringComparison.OrdinalIgnoreCase));
+        if (property != null)
+        {
+            setProperty(property.Value);
+            return true;
+        }
 
-        if (prop == null)
-            return false;
+        return false;
+    }
 
-        if (prop.PropertyType == typeof(bool))
-            value = bool.Parse(value.ToString());
+    private static bool MapBooleanProperty(IEnumerable<UserProperty> properties, string propertyName, Action<bool> setProperty)
+    {
+        var propertyValue = GetPropertyValue(properties, propertyName);
+        if (propertyValue != null && bool.TryParse(propertyValue, out var result))
+        {
+            setProperty(result);
+            return true;
+        }
 
-        prop.SetValue(user, value);
-        return true;
+        return false;
+    }
+
+    private static string GetPropertyValue(IEnumerable<UserProperty> properties, string propertyName)
+    {
+        var property = properties.FirstOrDefault(p => p.Name.Equals(propertyName, StringComparison.OrdinalIgnoreCase));
+        return property?.Value;
     }
 }

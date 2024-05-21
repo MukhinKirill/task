@@ -71,6 +71,11 @@ namespace Task.Connector
                 Logger.Error(e.Message);
                 throw;
             }
+            catch (ArgumentException e)
+            {
+                Logger.Error($"Unable to create user! {e.Message}");
+                throw;
+            }
             catch (NullReferenceException e)
             {
                 Logger.Error($"Unable to create user! {e.Message}");

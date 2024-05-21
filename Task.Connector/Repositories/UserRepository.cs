@@ -1,5 +1,6 @@
 ﻿using Task.Connector.Interfaces;
 using Task.Connector.Mapper;
+using Task.Connector.Utils;
 using Task.Integration.Data.DbCommon;
 using Task.Integration.Data.DbCommon.DbModels;
 using Task.Integration.Data.Models;
@@ -34,14 +35,13 @@ internal class UserRepository : IUserRepository
         if (!IsUserExists(user.Login))
             throw new InvalidOperationException("The user with login {user.Login} is exist!");
 
-        var entity = UserMapper.CreateUserFromUserProps(user.Properties);
-        entity.Login = user.Login;
+        var entity = UserMapper.CreateUserFromUserProps(user);
 
         _context.Users.Add(entity);
         _context.Passwords.Add(
             new()
             {
-                UserId = user.Login,
+                UserId = entity.Login,
                 Password = user.HashPassword
             }
         );
@@ -89,7 +89,7 @@ internal class UserRepository : IUserRepository
 
         foreach (var property in properties)
         {
-            if (UserMapper.SetUserProperty(user, property.Name, property.Value))
+            if (user.WithProperty(property.Name, property.Value))
                 _logger.Warn($"The property with name {property.Name} does not exist!");
         }
         _context.SaveChanges();
