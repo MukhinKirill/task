@@ -50,7 +50,16 @@ namespace Task.Connector
 
         public IEnumerable<Property> GetAllProperties()
         {
-            throw new NotImplementedException();
+            Logger.Debug($"A list of user properties has been requested.");
+            return new Property[]
+            {
+                new Property("First name", "Имя"),
+                new Property("Middle name", "Отчество"),
+                new Property("Last name", "Фамилия"),
+                new Property("Telephone number", "Номер телефона"),
+                new Property("Is lead", "Является ли лидером"),
+                new Property("Password", "Пароль")
+            };
         }
 
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
