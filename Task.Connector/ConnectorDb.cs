@@ -64,7 +64,41 @@ namespace Task.Connector
 
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
         {
-            throw new NotImplementedException();
+            User? user = null;
+            var properties = Array.Empty<UserProperty>();
+            try
+            {
+                using (var context = _dbContextFactory.GetContext(_provider))
+                {
+                    user = context.Users.Find(userLogin);
+                }
+            }
+            catch(Exception e)
+            {
+                Logger.Error($"It was not possible to get the properties of the user \"{userLogin}\" from the database!\n" +
+                             $"The following error occurred: {e.Message}\n" +
+                             $"The inner exception: {e.InnerException?.Message}");
+            }
+
+            if (user == null)
+            {
+                Logger.Warn($"The properties of the user \"{userLogin}\" were requested, but it was not found in the database!");
+            }
+            else
+            {
+                properties = new UserProperty[]
+                {
+                    new UserProperty("First name", user.FirstName),
+                    new UserProperty("Middle name", user.MiddleName),
+                    new UserProperty("Last name", user.LastName),
+                    new UserProperty("Telephone number", user.TelephoneNumber),
+                    new UserProperty("Is lead", user.IsLead.ToString()),
+                };
+
+                Logger.Debug($"The properties of the \"{userLogin}\" user have been requested.");
+            }
+
+            return properties;
         }
 
         public bool IsUserExists(string userLogin)
