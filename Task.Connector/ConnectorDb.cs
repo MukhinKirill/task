@@ -103,7 +103,32 @@ namespace Task.Connector
 
         public bool IsUserExists(string userLogin)
         {
-            throw new NotImplementedException();
+            var status = false;
+
+            try
+            {
+                using (var context = _dbContextFactory.GetContext(_provider))
+                {
+                    if (context.Users.Find(userLogin) != null)
+                    {
+                        Logger.Debug($"A user with the username \"{userLogin}\" is present in the database.");
+                        status = true;
+                    }
+                    else
+                    {
+                        Logger.Warn($"A user with the username {userLogin} is not present in the database.");
+                        status = false;
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+                Logger.Error($"It was not possible to get information from the database, whether there is a user \"{userLogin}\" in it!\n" +
+                             $"The following error occurred: {e.Message}\n" +
+                             $"The inner exception: {e.InnerException?.Message}");
+            }
+
+            return status;
         }
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
