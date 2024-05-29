@@ -133,7 +133,39 @@ namespace Task.Connector
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
         {
-            throw new NotImplementedException();
+            try
+            {
+                using (var context = _dbContextFactory.GetContext(_provider))
+                {
+                    var user = context.Users.Find(userLogin);
+                    if (user == null)
+                    {
+                        Logger.Warn($"A request to change the properties of the user \"{userLogin}\", but it was not found in the database!");
+                    }
+                    else
+                    {
+                        foreach (var property in properties)
+                        {
+                            if (property.Name == "First name") user.FirstName = property.Value;
+                            else if (property.Name == "Middle name") user.MiddleName = property.Value;
+                            else if (property.Name == "Last name") user.LastName = property.Value;
+                            else if (property.Name == "Telephone number") user.TelephoneNumber = property.Value;
+                            else if (property.Name == "Is lead") user.IsLead = Convert.ToBoolean(property.Value);
+                        }
+                        context.Users.Update(user);
+                        context.SaveChanges();
+
+                        Logger.Warn($"The properties of the user \"{userLogin}\" have been changed.");
+                    }
+
+                }
+            }
+            catch(Exception e)
+            {
+                Logger.Error($"Changing the properties of the user \"{userLogin}\" failed!\n" +
+                             $"The following error occurred: {e.Message}\n" +
+                             $"The inner exception: {e.InnerException?.Message}");
+            }
         }
 
         public IEnumerable<Permission> GetAllPermissions()
