@@ -287,7 +287,34 @@ namespace Task.Connector
 
         public IEnumerable<string> GetUserPermissions(string userLogin)
         {
-            throw new NotImplementedException();
+            var permissions = new List<string>();
+            try
+            {
+                using (var context = _dbContextFactory.GetContext(_provider))
+                {
+                    if (context.Users.Find(userLogin) == null)
+                    {
+                        Logger.Warn($"A request was received to get rights to the user \"{userLogin}\", but it was not found in the database!");
+                    }
+                    else
+                    {
+                        permissions.AddRange(context.UserITRoles.Where(r => r.UserId == userLogin)
+                            .Select(r => $"Role:{r.RoleId}"));
+                        permissions.AddRange(context.UserRequestRights.Where(r => r.UserId == userLogin)
+                            .Select(r => $"Request:{r.RightId}"));
+
+                        Logger.Debug($"The \"{userLogin}\" user rights have been requested.");
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error($"Failed to get rights to the user \"{userLogin}\"!\n" +
+                             $"The following error occurred: {e.Message}\n" +
+                             $"The inner exception: {e.InnerException?.Message}");
+            }
+
+            return permissions;
         }
     }
 }
