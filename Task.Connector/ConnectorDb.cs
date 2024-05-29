@@ -170,7 +170,27 @@ namespace Task.Connector
 
         public IEnumerable<Permission> GetAllPermissions()
         {
-            throw new NotImplementedException();
+            var permissions = new List<Permission>();
+            try
+            {
+                using (var context = _dbContextFactory.GetContext(_provider))
+                {
+                    permissions.AddRange(context.ITRoles.Select(itRole =>
+                        new Permission(itRole.Id.ToString(), itRole.Name, "The role of the employee.")));
+                    permissions.AddRange(context.RequestRights.Select(requestRight =>
+                        new Permission(requestRight.Id.ToString(), requestRight.Name, "Access permissions.")));
+
+                    Logger.Debug("Requesting a list of all rights in the database.");
+                }
+            }
+            catch(Exception e)
+            {
+                Logger.Error($"Couldn't get a list of all rights in the database!\n" +
+                             $"The following error occurred: {e.Message}\n" +
+                             $"The inner exception: {e.InnerException?.Message}");
+            }
+
+            return permissions;
         }
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
