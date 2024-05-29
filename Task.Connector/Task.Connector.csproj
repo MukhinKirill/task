@@ -14,4 +14,11 @@
     </Reference>
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Dapper" Version="2.1.35" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.1" />
+    <PackageReference Include="Npgsql" Version="7.0.6" />
+    <PackageReference Include="Z.Dapper.Plus" Version="7.4.2" />
+  </ItemGroup>
+
 </Project>
