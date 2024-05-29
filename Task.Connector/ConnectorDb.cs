@@ -195,7 +195,48 @@ namespace Task.Connector
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            throw new NotImplementedException();
+            try
+            {
+                using (var context = _dbContextFactory.GetContext(_provider))
+                {
+                    if (context.Users.Find(userLogin) == null)
+                    {
+                        Logger.Warn($"A request was received to add rights to the user \"{userLogin}\", but it was not found in the database!");
+                    }
+                    else
+                    {
+                        foreach (var rightInfo in rightIds)
+                        {
+                            var right = rightInfo.Split(':');
+                            if (right[0] == "Role")
+                            {
+                                context.UserITRoles.Add(new UserITRole()
+                                {
+                                    UserId = userLogin,
+                                    RoleId = int.Parse(right[1])
+                                });
+                            }
+                            else
+                            {
+                                context.UserRequestRights.Add(new UserRequestRight()
+                                {
+                                    UserId = userLogin,
+                                    RightId = int.Parse(right[1])
+                                });
+                            }
+                        }
+                        context.SaveChanges();
+
+                        Logger.Debug($"Rights have been added to the user \"{userLogin}\".");
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error($"Failed to add rights to the user \"{userLogin}\"!\n" +
+                             $"The following error occurred: {e.Message}\n" +
+                             $"The inner exception: {e.InnerException?.Message}");
+            }
         }
 
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
