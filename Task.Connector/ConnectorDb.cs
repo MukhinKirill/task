@@ -7,6 +7,7 @@ namespace Task.Connector
     {
         public void StartUp(string connectionString)
         {
+            // Разобраться как подключиться к БД по строке.
             throw new NotImplementedException();
         }
 
