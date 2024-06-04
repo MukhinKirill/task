@@ -37,28 +37,7 @@ namespace Task.Connector.Services
             {
                 Login = userToCreate.Login
             };
-            var props = user.GetType().GetProperties().Where(p => p.GetCustomAttribute<PropertyAttribute>() != null);
-            foreach (var property in props)
-            {
-                var propertyAttributes = property.GetCustomAttributes(typeof(PropertyAttribute), false);
-                foreach (var attribute in propertyAttributes)
-                {
-                    var propertyAttribute = attribute as PropertyAttribute;
-                    if (propertyAttribute != null)
-                    {
-                        var value = userProps.Where(u => u.Name == propertyAttribute.Name).SingleOrDefault();
-                        if (property.PropertyType == typeof(string))
-                        {
-                            property.SetValue(user, value != null ? value.Value : propertyAttribute.DefaultValue);
-                        }
-                        else if (property.PropertyType == typeof(bool))
-                        {
-                            if (value == null) value = new UserProperty("", propertyAttribute.DefaultValue);
-                            property.SetValue(user, value.Value == "false" ? false : true);
-                        }
-                    }
-                }
-            }
+            SetUserProperties(user, userProps);
             return user;
         }
 
@@ -92,6 +71,32 @@ namespace Task.Connector.Services
                 }
             }
             return properties;
+        }
+
+        public void SetUserProperties(User user, IEnumerable<UserProperty> userProps)
+        {
+            var props = user.GetType().GetProperties().Where(p => p.GetCustomAttribute<PropertyAttribute>() != null);
+            foreach (var property in props)
+            {
+                var propertyAttributes = property.GetCustomAttributes(typeof(PropertyAttribute), false);
+                foreach (var attribute in propertyAttributes)
+                {
+                    var propertyAttribute = attribute as PropertyAttribute;
+                    if (propertyAttribute != null)
+                    {
+                        var value = userProps.Where(u => u.Name == propertyAttribute.Name).SingleOrDefault();
+                        if (property.PropertyType == typeof(string))
+                        {
+                            property.SetValue(user, value != null ? value.Value : propertyAttribute.DefaultValue);
+                        }
+                        else if (property.PropertyType == typeof(bool))
+                        {
+                            if (value == null) value = new UserProperty("", propertyAttribute.DefaultValue);
+                            property.SetValue(user, value.Value == "false" ? false : true);
+                        }
+                    }
+                }
+            }
         }
 
         private Password GetPasswordFrom(UserToCreate userToCreate)

@@ -1,5 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.Data;
+using System.Net;
+using System.Reflection;
+using Task.Connector.Attributes;
 using Task.Connector.Models;
 using Task.Connector.Repositories;
 using Task.Connector.Services;
@@ -13,16 +16,15 @@ namespace Task.Connector
         private string _connectionString;
         private IStorage storage;
         private UserConverter userConverter;
+        private PropertyAttConverter propConverter;
 
         public ILogger Logger { get; set; }
 
-        public ConnectorDb()
-        {
-            userConverter = new UserConverter();
-        }
 
         public void StartUp(string connectionString)
         {
+            userConverter = new UserConverter();
+            propConverter = new PropertyAttConverter();
             storage = new Repository(connectionString, Logger);
         }
 
@@ -34,20 +36,10 @@ namespace Task.Connector
 
         public IEnumerable<Property> GetAllProperties()
         {
-            var optionsBuilder = new DbContextOptionsBuilder<TestDbContext>();
-            optionsBuilder.UseSqlServer(_connectionString);
-            using (TestDbContext db = new TestDbContext(optionsBuilder.Options))
-            {
-                var properties = new List<Property>();
-                    properties.Add(new Property("lastName", "Фамилия"));
-                    properties.Add(new Property("firstName", "Имя"));
-                    properties.Add(new Property("midleName", "Отчество"));
-                    properties.Add(new Property("telephonenumber", "Номер телефона"));
-                    properties.Add(new Property("isLead", "Лидерство"));
-                    properties.Add(new Property("password", "Пароль"));
-
-                return properties;
-            }
+            var properties = new List<Property>();
+            properties.AddRange(propConverter.GetAttributesFromType(typeof(User)));
+            properties.AddRange(propConverter.GetAttributesFromType(typeof(Password)));
+            return properties;
         }
 
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
@@ -64,22 +56,17 @@ namespace Task.Connector
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
         {
-            using (TestDbContext db = storage.ConnectToDatabase())
+            var user = storage.GetUserFromLogin(userLogin);
+            var userProps = userConverter.GetUserPropertiesFromUser(user);
+            foreach (var prop in properties)
             {
-                var user = db.Users.FirstOrDefault(u => u.Login == userLogin);
-                var lastname = properties.FirstOrDefault(u => u.Name.ToLower() == "lastname")?.Value.ToString();
-                var firstname = properties.FirstOrDefault(u => u.Name.ToLower() == "firstname")?.Value.ToString();
-                var middleName = properties.FirstOrDefault(u => u.Name.ToLower() == "middleame")?.Value.ToString();
-                var telePhoneNumber = properties.FirstOrDefault(u => u.Name.ToLower() == "telephonenumber")?.Value.ToString();
-                var isLead = properties.FirstOrDefault(u => u.Name.ToLower() == "islead")?.Value.ToLower() == "true";
-                if (lastname != null && lastname != "lastname") user.LastName = lastname;
-                if (firstname != null && firstname != "firstname") user.FirstName = firstname;
-                if (middleName != null && middleName != "midlename") user.MiddleName = middleName;
-                if (telePhoneNumber != null && middleName != "telephonenumber") user.TelephoneNumber = telePhoneNumber;
-                if (properties.Any(p => p.Name.ToLower() == "islead")) user.IsLead = isLead;
-                db.Users.Update(user);
-                db.SaveChanges();
+                foreach (var userProp in userProps)
+                {
+                    if (prop.Name.Equals(userProp.Name)) userProp.Value = prop.Value;
+                }
             }
+            userConverter.SetUserProperties(user, userProps);
+            storage.UpdateUser(user);
         }
 
         public IEnumerable<Permission> GetAllPermissions()

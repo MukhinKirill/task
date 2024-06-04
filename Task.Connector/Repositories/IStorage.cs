@@ -8,5 +8,6 @@ namespace Task.Connector.Repositories
         void AddUser(User user, Password password);
         User GetUserFromLogin(string userLogin);
         bool IsUserExists(string userLogin);
+        void UpdateUser(User user);
     }
 }

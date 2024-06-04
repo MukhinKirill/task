@@ -48,5 +48,14 @@ namespace Task.Connector.Repositories
                 return db.Users.Any(u => u.Login == userLogin);
             }
         }
+
+        public void UpdateUser(User user)
+        {
+            using (TestDbContext db = ConnectToDatabase())
+            {
+                db.Users.Update(user);
+                db.SaveChanges();
+            }
+        }
     }
 }
