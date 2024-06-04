@@ -9,5 +9,11 @@ namespace Task.Connector.Repositories
         User GetUserFromLogin(string userLogin);
         bool IsUserExists(string userLogin);
         void UpdateUser(User user);
+
+        List<ItRole> GetAllItRoles();
+        List<RequestRight> GetAllItRequestRights();
+
+        List<ItRole> GetItRolesFromUser(string userLogin);
+        List<RequestRight> GetItRequestRightsFromUser(string UserLogin);
     }
 }

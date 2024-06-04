@@ -1,8 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System.Data;
-using System.Net;
-using System.Reflection;
-using Task.Connector.Attributes;
+﻿using System.Data;
 using Task.Connector.Models;
 using Task.Connector.Repositories;
 using Task.Connector.Services;
@@ -13,18 +9,22 @@ namespace Task.Connector
 {
     public class ConnectorDb : IConnector
     {
-        private string _connectionString;
+        private readonly UserConverter userConverter;
+        private readonly PropertyAttConverter propConverter;
+        private readonly PermissionConverter permissionConverter;
+
         private IStorage storage;
-        private UserConverter userConverter;
-        private PropertyAttConverter propConverter;
 
         public ILogger Logger { get; set; }
 
-
-        public void StartUp(string connectionString)
+        public ConnectorDb()
         {
             userConverter = new UserConverter();
             propConverter = new PropertyAttConverter();
+            permissionConverter = new PermissionConverter();
+        }
+        public void StartUp(string connectionString)
+        {
             storage = new Repository(connectionString, Logger);
         }
 
@@ -71,21 +71,9 @@ namespace Task.Connector
 
         public IEnumerable<Permission> GetAllPermissions()
         {
-            var allPermissions = new List<Permission>();
-            using (TestDbContext db = storage.ConnectToDatabase())
-            {
-                var roles = db.ItRoles.ToList();
-                var rights = db.RequestRights.ToList();
-                foreach(var role in roles)
-                {
-                    allPermissions.Add(new Permission(role.Id.ToString(), role.Name, $"Role"));
-                }
-                foreach (var right in rights)
-                {
-                    allPermissions.Add(new Permission(right.Id.ToString(), right.Name, $"Request"));
-                }
-                return allPermissions;
-            }
+            var roles = storage.GetAllItRoles(); 
+            var rights = storage.GetAllItRequestRights();
+            return permissionConverter.GetAllPermissionFrom(roles, rights);
         }
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
@@ -154,24 +142,12 @@ namespace Task.Connector
 
         public IEnumerable<string> GetUserPermissions(string userLogin)
         {
-            var allUserPermissions = new List<string>();
-
-            using (TestDbContext db = storage.ConnectToDatabase())
-            {
-                var roles = db.UserItroles.Where(u=> u.UserId == userLogin).ToList();
-                var rights = db.UserRequestRights.Where(u => u.UserId == userLogin).ToList();
-                foreach (var role in roles)
-                {
-                    var name = db.ItRoles.Where(u => u.Id == role.RoleId).SingleOrDefault();
-                    allUserPermissions.Add(name.Name);
-                }
-                foreach (var right in rights)
-                {
-                    var name = db.RequestRights.Where(u => u.Id == right.RightId).SingleOrDefault();
-                    allUserPermissions.Add(name.Name);
-                }
-                return allUserPermissions;
-            }
+            var roles = storage.GetItRolesFromUser(userLogin);
+            var rights = storage.GetItRequestRightsFromUser(userLogin);
+            var permissions = permissionConverter.GetAllPermissionFrom(roles, rights);
+            List<string> strings = new();
+            foreach (var perm in permissions) strings.Add(perm.Name);
+            return strings;
         }
 
     }

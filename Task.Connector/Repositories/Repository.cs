@@ -57,5 +57,49 @@ namespace Task.Connector.Repositories
                 db.SaveChanges();
             }
         }
+
+        public List<ItRole> GetAllItRoles()
+        {
+            using (TestDbContext db = ConnectToDatabase())
+            {
+                return db.ItRoles.ToList();
+            }
+        }
+
+        public List<RequestRight> GetAllItRequestRights()
+        {
+            using (TestDbContext db = ConnectToDatabase())
+            {
+                return db.RequestRights.ToList();
+            }
+        }
+
+        public List<ItRole> GetItRolesFromUser(string userLogin)
+        {
+            var userRoles = new List<ItRole>();
+            using (TestDbContext db = ConnectToDatabase())
+            {
+                var ids = db.UserItroles.Where(u => u.UserId == userLogin);
+                foreach(var id in ids)
+                {
+                    userRoles.Add(db.ItRoles.Where(r => r.Id == id.RoleId).SingleOrDefault());
+                }
+            }
+            return userRoles;
+        }
+
+        public List<RequestRight> GetItRequestRightsFromUser(string userLogin)
+        {
+            var userRequestRight = new List<RequestRight>();
+            using (TestDbContext db = ConnectToDatabase())
+            {
+                var ids = db.UserRequestRights.Where(u => u.UserId == userLogin);
+                foreach (var id in ids)
+                {
+                    userRequestRight.Add(db.RequestRights.Where(r => r.Id == id.RightId).SingleOrDefault());
+                }
+            }
+            return userRequestRight;
+        }
     }
 }

@@ -14,9 +14,6 @@ namespace Task.Connector.Services
 {
     public class UserConverter
     {
-        public UserConverter() 
-        {
-        }
 
         public (User usr, Password pass) GetDataUser(UserToCreate userToCreate)
         {

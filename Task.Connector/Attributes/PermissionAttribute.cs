@@ -6,14 +6,15 @@ using System.Threading.Tasks;
 
 namespace Task.Connector.Attributes
 {
-    public class PropertyAttribute : Attribute
+    public class PermissionAttribute : Attribute
     {
+        public int Id { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
-        public string? DefaultValue { get; set; }
 
-        public PropertyAttribute(string name, string description)
+        public PermissionAttribute(int id, string name, string description) 
         {
+            Id = id;
             Name = name;
             Description = description;
         }
