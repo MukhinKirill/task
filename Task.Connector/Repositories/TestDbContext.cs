@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Task.Connector.Models;
 
-namespace Task.Connector.Repository;
+namespace Task.Connector.Repositories;
 
 public partial class TestDbContext : DbContext
 {

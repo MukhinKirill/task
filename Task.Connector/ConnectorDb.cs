@@ -1,7 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.Data;
 using Task.Connector.Models;
-using Task.Connector.Repository;
+using Task.Connector.Repositories;
+using Task.Connector.Services;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
 
@@ -10,25 +11,25 @@ namespace Task.Connector
     public class ConnectorDb : IConnector
     {
         private string _connectionString;
+        private IStorage storage;
+        private UserConverter userConverter;
+
+        public ILogger Logger { get; set; }
+
+        public ConnectorDb()
+        {
+            userConverter = new UserConverter();
+        }
+
         public void StartUp(string connectionString)
         {
-            var str = connectionString.Split("ConnectionString=\'");
-            var st = str[1].Split("\'");
-            _connectionString = st[0];
+            storage = new Repository(connectionString, Logger);
         }
 
         public void CreateUser(UserToCreate user)
         {
-            var optionsBuilder = new DbContextOptionsBuilder<TestDbContext>();
-            optionsBuilder.UseSqlServer(_connectionString);
-            using (TestDbContext db = new TestDbContext(optionsBuilder.Options))
-            {
-                User usr = User.AddUser(user);
-                db.Users.Add(usr);
-                Password pass = new Password() { Password1 = user.HashPassword, UserId = usr.Login };
-                db.Passwords.Add(pass);
-                db.SaveChanges();
-            }
+            var data = userConverter.GetDataUser(user);
+            storage.AddUser(data.usr, data.pass);
         }
 
         public IEnumerable<Property> GetAllProperties()
@@ -51,37 +52,19 @@ namespace Task.Connector
 
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
         {
-            var optionsBuilder = new DbContextOptionsBuilder<TestDbContext>();
-            optionsBuilder.UseSqlServer(_connectionString);
-            using (TestDbContext db = new TestDbContext(optionsBuilder.Options))
-            {
-                var user = db.Users.FirstOrDefault(u => u.Login == userLogin);
-                var properties = new List<UserProperty>();
-                if (user.LastName != null && user.LastName != "") properties.Add(new UserProperty("lastName", user.LastName));
-                if (user.FirstName != null && user.FirstName != "") properties.Add(new UserProperty("firstName", user.FirstName));
-                if (user.MiddleName != null && user.MiddleName != "") properties.Add(new UserProperty("midleName", user.MiddleName));
-                if (user.TelephoneNumber != null && user.TelephoneNumber != "") properties.Add(new UserProperty("telephonenumber", user.TelephoneNumber));
-                if (user.IsLead != null) properties.Add(new UserProperty("isLead", user.IsLead ? "true" : "false"));
-
-                return properties;
-            }
+            var user = storage.GetUserFromLogin(userLogin);
+            var properties = userConverter.GetUserPropertiesFromUser(user);
+            return properties;
         }
 
         public bool IsUserExists(string userLogin)
         {
-            var optionsBuilder = new DbContextOptionsBuilder<TestDbContext>();
-            optionsBuilder.UseSqlServer(_connectionString);
-            using (TestDbContext db = new TestDbContext(optionsBuilder.Options))
-            {
-                return db.Users.Any(u => u.Login == userLogin);
-            }
+            return storage.IsUserExists(userLogin);
         }
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
         {
-            var optionsBuilder = new DbContextOptionsBuilder<TestDbContext>();
-            optionsBuilder.UseSqlServer(_connectionString);
-            using (TestDbContext db = new TestDbContext(optionsBuilder.Options))
+            using (TestDbContext db = storage.ConnectToDatabase())
             {
                 var user = db.Users.FirstOrDefault(u => u.Login == userLogin);
                 var lastname = properties.FirstOrDefault(u => u.Name.ToLower() == "lastname")?.Value.ToString();
@@ -102,9 +85,7 @@ namespace Task.Connector
         public IEnumerable<Permission> GetAllPermissions()
         {
             var allPermissions = new List<Permission>();
-            var optionsBuilder = new DbContextOptionsBuilder<TestDbContext>();
-            optionsBuilder.UseSqlServer(_connectionString);
-            using (TestDbContext db = new TestDbContext(optionsBuilder.Options))
+            using (TestDbContext db = storage.ConnectToDatabase())
             {
                 var roles = db.ItRoles.ToList();
                 var rights = db.RequestRights.ToList();
@@ -132,10 +113,8 @@ namespace Task.Connector
                     {
                         RoleId = id,
                         UserId = userLogin
-                    }; 
-                    var optionsBuilder = new DbContextOptionsBuilder<TestDbContext>();
-                    optionsBuilder.UseSqlServer(_connectionString);
-                    using (TestDbContext db = new TestDbContext(optionsBuilder.Options))
+                    };
+                    using (TestDbContext db = storage.ConnectToDatabase())
                     {
                         db.UserItroles.Add(userItRole);
                         db.SaveChanges();
@@ -149,9 +128,7 @@ namespace Task.Connector
                         RightId = id,
                         UserId = userLogin
                     };
-                    var optionsBuilder = new DbContextOptionsBuilder<TestDbContext>();
-                    optionsBuilder.UseSqlServer(_connectionString);
-                    using (TestDbContext db = new TestDbContext(optionsBuilder.Options))
+                    using (TestDbContext db = storage.ConnectToDatabase())
                     {
                         db.UserRequestRights.Add(userItRole);
                     }
@@ -166,10 +143,8 @@ namespace Task.Connector
                 var splitString = rightId.Split(":");
                 if (splitString[0] == "Role")
                 {
-                    var optionsBuilder = new DbContextOptionsBuilder<TestDbContext>();
-                    optionsBuilder.UseSqlServer(_connectionString);
                     var id = int.Parse(splitString[1]);
-                    using (TestDbContext db = new TestDbContext(optionsBuilder.Options))
+                    using (TestDbContext db = storage.ConnectToDatabase())
                     {
                         var userItRole = db.UserItroles.Where(u => userLogin == u.UserId && u.RoleId == id);
                         db.UserItroles.RemoveRange(userItRole);
@@ -179,10 +154,8 @@ namespace Task.Connector
                 }
                 else if (splitString[0] == "Request")
                 {
-                    var optionsBuilder = new DbContextOptionsBuilder<TestDbContext>();
-                    optionsBuilder.UseSqlServer(_connectionString);
                     var id = int.Parse(splitString[1]);
-                    using (TestDbContext db = new TestDbContext(optionsBuilder.Options))
+                    using (TestDbContext db = storage.ConnectToDatabase())
                     {
                         var userItRole = db.UserRequestRights.Where(u => userLogin == u.UserId && u.RightId == id);
                         db.UserRequestRights.RemoveRange(userItRole);
@@ -196,9 +169,7 @@ namespace Task.Connector
         {
             var allUserPermissions = new List<string>();
 
-            var optionsBuilder = new DbContextOptionsBuilder<TestDbContext>();
-            optionsBuilder.UseSqlServer(_connectionString);
-            using (TestDbContext db = new TestDbContext(optionsBuilder.Options))
+            using (TestDbContext db = storage.ConnectToDatabase())
             {
                 var roles = db.UserItroles.Where(u=> u.UserId == userLogin).ToList();
                 var rights = db.UserRequestRights.Where(u => u.UserId == userLogin).ToList();
@@ -216,6 +187,5 @@ namespace Task.Connector
             }
         }
 
-        public ILogger Logger { get; set; }
     }
 }
