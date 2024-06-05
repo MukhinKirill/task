@@ -4,6 +4,7 @@ using Task.Connector.Converters;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
 using Task.Connector.Repositories.Factory;
+using System.Data.Common;
 
 namespace Task.Connector
 {

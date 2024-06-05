@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.Data.Common;
 using Task.Connector.Context;
 using Task.Connector.Context.Mssql;
 
@@ -7,10 +8,12 @@ namespace Task.Connector.Repositories.MSSsql
     public class MSSqlRepository : BaseRepository
     {
         private readonly string connectionString;
-        public MSSqlRepository(string _connectionString)
+        public MSSqlRepository(string connectionString)
         {
-            var str = _connectionString.Split("ConnectionString=\'")[1].Split("\'")[0];
-            connectionString = str;
+            DbConnectionStringBuilder builder = new DbConnectionStringBuilder();
+            builder.ConnectionString = connectionString;
+            if (!builder.ContainsKey("Provider")) throw new Exception("Отсутвует ConnectionString в строке подключения.");
+            this.connectionString = builder["ConnectionString"] as string;
         }
 
         protected override SqlDbContext ConnectToDatabase()
