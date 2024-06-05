@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Task.Connector.Repositories.MSSsql;
 using Task.Connector.Repositories.Postgres;
 
-namespace Task.Connector.Repositories
+namespace Task.Connector.Repositories.Factory
 {
     public static class RepositoryFactory
     {

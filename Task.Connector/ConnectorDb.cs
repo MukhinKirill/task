@@ -6,6 +6,7 @@ using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
 using Task.Connector.Repositories.MSSsql;
 using Task.Connector.Repositories.Postgres;
+using Task.Connector.Repositories.Factory;
 
 namespace Task.Connector
 {

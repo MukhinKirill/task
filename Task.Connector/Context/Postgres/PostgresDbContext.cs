@@ -3,32 +3,18 @@ using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Task.Connector.Models;
 
-namespace Task.Connector.Repositories.MSSsql;
+namespace Task.Connector.Context.Postgres;
 
-public partial class MSSqlDbContext : DbContext
+public partial class PostgresDbContext : SqlDbContext
 {
-    public MSSqlDbContext()
+    public PostgresDbContext()
     {
     }
 
-    public MSSqlDbContext(DbContextOptions<MSSqlDbContext> options)
+    public PostgresDbContext(DbContextOptions<PostgresDbContext> options)
         : base(options)
     {
     }
-
-    public virtual DbSet<ItRole> ItRoles { get; set; }
-
-    public virtual DbSet<MigrationHistory> MigrationHistories { get; set; }
-
-    public virtual DbSet<Password> Passwords { get; set; }
-
-    public virtual DbSet<RequestRight> RequestRights { get; set; }
-
-    public virtual DbSet<User> Users { get; set; }
-
-    public virtual DbSet<UserItrole> UserItroles { get; set; }
-
-    public virtual DbSet<UserRequestRight> UserRequestRights { get; set; }
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
