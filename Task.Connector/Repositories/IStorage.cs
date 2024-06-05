@@ -1,10 +1,10 @@
 ﻿using Task.Connector.Models;
+using Task.Connector.Repositories.MSSsql;
 
 namespace Task.Connector.Repositories
 {
     public interface IStorage
     {
-        MSSqlDbContext ConnectToDatabase();
         void AddUser(User user, Password password);
         User GetUserFromLogin(string userLogin);
         bool IsUserExists(string userLogin);

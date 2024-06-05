@@ -3,27 +3,27 @@ using Task.Integration.Data.Models.Models;
 using Task.Connector.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace Task.Connector.Repositories
+namespace Task.Connector.Repositories.MSSsql
 {
-    public class Repository : IStorage
+    public class MSSqlRepository : IStorage
     {
         private readonly string connectionString;
-        public Repository(string _connectionString)
+        public MSSqlRepository(string _connectionString)
         {
             var str = _connectionString.Split("ConnectionString=\'")[1].Split("\'")[0];
             connectionString = str;
         }
 
-        public MSSqlDbContext ConnectToDatabase()
+        private MSSqlDbContext ConnectToDatabase()
         {
             var optionsBuilder = new DbContextOptionsBuilder<MSSqlDbContext>();
             optionsBuilder.UseSqlServer(connectionString);
             return new MSSqlDbContext(optionsBuilder.Options);
         }
 
-        public void AddUser(User user, Password password) 
+        public void AddUser(User user, Password password)
         {
-            using (MSSqlDbContext db = ConnectToDatabase())
+            using (var db = ConnectToDatabase())
             {
                 db.Users.Add(user);
                 db.Passwords.Add(password);
@@ -33,7 +33,7 @@ namespace Task.Connector.Repositories
 
         public User GetUserFromLogin(string userLogin)
         {
-            using (MSSqlDbContext db = ConnectToDatabase())
+            using (var db = ConnectToDatabase())
             {
                 var user = db.Users.FirstOrDefault(u => u.Login == userLogin);
                 return user ?? throw new NullReferenceException();
@@ -49,7 +49,7 @@ namespace Task.Connector.Repositories
 
         public void UpdateUser(User user)
         {
-            using (MSSqlDbContext db = ConnectToDatabase())
+            using (var db = ConnectToDatabase())
             {
                 db.Users.Update(user);
                 db.SaveChanges();
@@ -58,7 +58,7 @@ namespace Task.Connector.Repositories
 
         public List<ItRole> GetAllItRoles()
         {
-            using (MSSqlDbContext db = ConnectToDatabase())
+            using (var db = ConnectToDatabase())
             {
                 return db.ItRoles.ToList();
             }
@@ -66,7 +66,7 @@ namespace Task.Connector.Repositories
 
         public List<RequestRight> GetAllItRequestRights()
         {
-            using (MSSqlDbContext db = ConnectToDatabase())
+            using (var db = ConnectToDatabase())
             {
                 return db.RequestRights.ToList();
             }
@@ -75,10 +75,10 @@ namespace Task.Connector.Repositories
         public List<ItRole> GetItRolesFromUser(string userLogin)
         {
             var userRoles = new List<ItRole>();
-            using (MSSqlDbContext db = ConnectToDatabase())
+            using (var db = ConnectToDatabase())
             {
                 var ids = db.UserItroles.Where(u => u.UserId == userLogin);
-                foreach(var id in ids)
+                foreach (var id in ids)
                 {
                     userRoles.Add(db.ItRoles.Where(r => r.Id == id.RoleId).SingleOrDefault() ?? throw new NullReferenceException());
                 }
@@ -89,7 +89,7 @@ namespace Task.Connector.Repositories
         public List<RequestRight> GetItRequestRightsFromUser(string userLogin)
         {
             var userRequestRight = new List<RequestRight>();
-            using (MSSqlDbContext db = ConnectToDatabase())
+            using (var db = ConnectToDatabase())
             {
                 var ids = db.UserRequestRights.Where(u => u.UserId == userLogin);
                 foreach (var id in ids)
@@ -101,7 +101,7 @@ namespace Task.Connector.Repositories
         }
         public void AddRolesToUser(string userLogin, List<UserItrole> userItRoles)
         {
-            using (MSSqlDbContext db = ConnectToDatabase())
+            using (var db = ConnectToDatabase())
             {
                 db.UserItroles.AddRange(userItRoles);
                 db.SaveChanges();
@@ -110,7 +110,7 @@ namespace Task.Connector.Repositories
 
         public void AddRequestRightsToUser(string userLogin, List<UserRequestRight> userRequestRights)
         {
-            using (MSSqlDbContext db = ConnectToDatabase())
+            using (var db = ConnectToDatabase())
             {
                 db.UserRequestRights.AddRange(userRequestRights);
                 db.SaveChanges();
@@ -119,7 +119,7 @@ namespace Task.Connector.Repositories
 
         public void RemoveRolesToUser(string userLogin, List<UserItrole> userItRoles)
         {
-            using (MSSqlDbContext db = ConnectToDatabase())
+            using (var db = ConnectToDatabase())
             {
                 db.UserItroles.RemoveRange(userItRoles);
                 db.SaveChanges();
@@ -128,7 +128,7 @@ namespace Task.Connector.Repositories
 
         public void RemoveRequestRightsToUser(string userLogin, List<UserRequestRight> userRequestRights)
         {
-            using (MSSqlDbContext db = ConnectToDatabase())
+            using (var db = ConnectToDatabase())
             {
                 db.UserRequestRights.RemoveRange(userRequestRights);
                 db.SaveChanges();

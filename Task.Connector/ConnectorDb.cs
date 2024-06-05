@@ -1,9 +1,11 @@
 ﻿using System.Data;
 using Task.Connector.Models;
 using Task.Connector.Repositories;
-using Task.Connector.Services;
+using Task.Connector.Converters;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
+using Task.Connector.Repositories.MSSsql;
+using Task.Connector.Repositories.Postgres;
 
 namespace Task.Connector
 {
@@ -19,7 +21,7 @@ namespace Task.Connector
 
         public void StartUp(string connectionString)
         {
-            storage = new Repository(connectionString);
+            storage = RepositoryFactory.CreateRepositoryFrom(connectionString);
             userConverter = new UserConverter();
             propConverter = new PropertyAttrConverter();
             permissionConverter = new PermissionConverter();
@@ -87,12 +89,12 @@ namespace Task.Connector
             if (data.userRequestRights != null && data.userRequestRights.Count != 0) storage.RemoveRequestRightsToUser(userLogin, data.userRequestRights);
         }
 
-        public IEnumerable<string> GetUserPermissions(string userLogin)
+        public  IEnumerable<string> GetUserPermissions(string userLogin)
         {
             var roles = storage.GetItRolesFromUser(userLogin);
-            var rights = storage.GetItRequestRightsFromUser(userLogin);
+            var rights =  storage.GetItRequestRightsFromUser(userLogin);
             var permissions = permissionConverter.GetAllPermissionFrom(roles, rights);
-            List<string> strings = new();
+            var strings = new List<string>();
             foreach (var perm in permissions) strings.Add(perm.Name);
             return strings;
         }

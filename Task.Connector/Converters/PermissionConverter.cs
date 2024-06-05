@@ -9,7 +9,7 @@ using Task.Connector.Models;
 using Task.Connector.Repositories;
 using Task.Integration.Data.Models.Models;
 
-namespace Task.Connector.Services
+namespace Task.Connector.Converters
 {
     public class PermissionConverter
     {

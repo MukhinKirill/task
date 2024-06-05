@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Task.Connector.Models;
 
-namespace Task.Connector.Repositories;
+namespace Task.Connector.Repositories.MSSsql;
 
 public partial class MSSqlDbContext : DbContext
 {
