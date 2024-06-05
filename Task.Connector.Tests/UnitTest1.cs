@@ -1,3 +1,5 @@
+using Task.Connector.Connector;
+using Task.Connector.Logger;
 using Task.Integration.Data.DbCommon;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;

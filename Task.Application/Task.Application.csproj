@@ -4,14 +4,18 @@
     <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <AssemblyName>Task.Connector</AssemblyName>
     <RootNamespace>Task.Connector</RootNamespace>
+    <PackageId>Task.Application</PackageId>
   </PropertyGroup>
 
   <ItemGroup>
     <Reference Include="Task.Integration.Data.Models">
       <HintPath>..\libs\Models\Task.Integration.Data.Models.dll</HintPath>
     </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Task.Domain\Task.Domain.csproj" />
   </ItemGroup>
 
 </Project>
