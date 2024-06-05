@@ -13,7 +13,7 @@ namespace Task.Connector.Repositories.MSSsql
             DbConnectionStringBuilder builder = new DbConnectionStringBuilder();
             builder.ConnectionString = connectionString;
             if (!builder.ContainsKey("Provider")) throw new Exception("Отсутвует ConnectionString в строке подключения.");
-            this.connectionString = builder["ConnectionString"] as string;
+            this.connectionString = (string)builder["ConnectionString"];
         }
 
         protected override SqlDbContext ConnectToDatabase()
