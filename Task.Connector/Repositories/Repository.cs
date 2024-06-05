@@ -8,24 +8,22 @@ namespace Task.Connector.Repositories
     public class Repository : IStorage
     {
         private readonly string connectionString;
-        private readonly ILogger logger;
-        public Repository(string _connectionString, ILogger _logger)
+        public Repository(string _connectionString)
         {
-            logger = _logger;
             var str = _connectionString.Split("ConnectionString=\'")[1].Split("\'")[0];
             connectionString = str;
         }
 
-        public TestDbContext ConnectToDatabase()
+        public MSSqlDbContext ConnectToDatabase()
         {
-            var optionsBuilder = new DbContextOptionsBuilder<TestDbContext>();
+            var optionsBuilder = new DbContextOptionsBuilder<MSSqlDbContext>();
             optionsBuilder.UseSqlServer(connectionString);
-            return new TestDbContext(optionsBuilder.Options);
+            return new MSSqlDbContext(optionsBuilder.Options);
         }
 
         public void AddUser(User user, Password password) 
         {
-            using (TestDbContext db = ConnectToDatabase())
+            using (MSSqlDbContext db = ConnectToDatabase())
             {
                 db.Users.Add(user);
                 db.Passwords.Add(password);
@@ -35,15 +33,15 @@ namespace Task.Connector.Repositories
 
         public User GetUserFromLogin(string userLogin)
         {
-            using (TestDbContext db = ConnectToDatabase())
+            using (MSSqlDbContext db = ConnectToDatabase())
             {
                 var user = db.Users.FirstOrDefault(u => u.Login == userLogin);
-                return user;
+                return user ?? throw new NullReferenceException();
             }
         }
         public bool IsUserExists(string userLogin)
         {
-            using (TestDbContext db = ConnectToDatabase())
+            using (MSSqlDbContext db = ConnectToDatabase())
             {
                 return db.Users.Any(u => u.Login == userLogin);
             }
@@ -51,7 +49,7 @@ namespace Task.Connector.Repositories
 
         public void UpdateUser(User user)
         {
-            using (TestDbContext db = ConnectToDatabase())
+            using (MSSqlDbContext db = ConnectToDatabase())
             {
                 db.Users.Update(user);
                 db.SaveChanges();
@@ -60,7 +58,7 @@ namespace Task.Connector.Repositories
 
         public List<ItRole> GetAllItRoles()
         {
-            using (TestDbContext db = ConnectToDatabase())
+            using (MSSqlDbContext db = ConnectToDatabase())
             {
                 return db.ItRoles.ToList();
             }
@@ -68,7 +66,7 @@ namespace Task.Connector.Repositories
 
         public List<RequestRight> GetAllItRequestRights()
         {
-            using (TestDbContext db = ConnectToDatabase())
+            using (MSSqlDbContext db = ConnectToDatabase())
             {
                 return db.RequestRights.ToList();
             }
@@ -77,12 +75,12 @@ namespace Task.Connector.Repositories
         public List<ItRole> GetItRolesFromUser(string userLogin)
         {
             var userRoles = new List<ItRole>();
-            using (TestDbContext db = ConnectToDatabase())
+            using (MSSqlDbContext db = ConnectToDatabase())
             {
                 var ids = db.UserItroles.Where(u => u.UserId == userLogin);
                 foreach(var id in ids)
                 {
-                    userRoles.Add(db.ItRoles.Where(r => r.Id == id.RoleId).SingleOrDefault());
+                    userRoles.Add(db.ItRoles.Where(r => r.Id == id.RoleId).SingleOrDefault() ?? throw new NullReferenceException());
                 }
             }
             return userRoles;
@@ -91,15 +89,50 @@ namespace Task.Connector.Repositories
         public List<RequestRight> GetItRequestRightsFromUser(string userLogin)
         {
             var userRequestRight = new List<RequestRight>();
-            using (TestDbContext db = ConnectToDatabase())
+            using (MSSqlDbContext db = ConnectToDatabase())
             {
                 var ids = db.UserRequestRights.Where(u => u.UserId == userLogin);
                 foreach (var id in ids)
                 {
-                    userRequestRight.Add(db.RequestRights.Where(r => r.Id == id.RightId).SingleOrDefault());
+                    userRequestRight.Add(db.RequestRights.Where(r => r.Id == id.RightId).SingleOrDefault() ?? throw new NullReferenceException());
                 }
             }
             return userRequestRight;
+        }
+        public void AddRolesToUser(string userLogin, List<UserItrole> userItRoles)
+        {
+            using (MSSqlDbContext db = ConnectToDatabase())
+            {
+                db.UserItroles.AddRange(userItRoles);
+                db.SaveChanges();
+            }
+        }
+
+        public void AddRequestRightsToUser(string userLogin, List<UserRequestRight> userRequestRights)
+        {
+            using (MSSqlDbContext db = ConnectToDatabase())
+            {
+                db.UserRequestRights.AddRange(userRequestRights);
+                db.SaveChanges();
+            }
+        }
+
+        public void RemoveRolesToUser(string userLogin, List<UserItrole> userItRoles)
+        {
+            using (MSSqlDbContext db = ConnectToDatabase())
+            {
+                db.UserItroles.RemoveRange(userItRoles);
+                db.SaveChanges();
+            }
+        }
+
+        public void RemoveRequestRightsToUser(string userLogin, List<UserRequestRight> userRequestRights)
+        {
+            using (MSSqlDbContext db = ConnectToDatabase())
+            {
+                db.UserRequestRights.RemoveRange(userRequestRights);
+                db.SaveChanges();
+            }
         }
     }
 }

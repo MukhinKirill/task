@@ -10,7 +10,7 @@ using Task.Integration.Data.Models.Models;
 
 namespace Task.Connector.Services
 {
-    public class PropertyAttConverter
+    public class PropertyAttrConverter
     {
         public List<Property> GetAttributesFromType(Type type)
         {

@@ -9,23 +9,20 @@ namespace Task.Connector
 {
     public class ConnectorDb : IConnector
     {
-        private readonly UserConverter userConverter;
-        private readonly PropertyAttConverter propConverter;
-        private readonly PermissionConverter permissionConverter;
+        private UserConverter userConverter;
+        private PropertyAttrConverter propConverter;
+        private PermissionConverter permissionConverter;
 
         private IStorage storage;
 
         public ILogger Logger { get; set; }
 
-        public ConnectorDb()
-        {
-            userConverter = new UserConverter();
-            propConverter = new PropertyAttConverter();
-            permissionConverter = new PermissionConverter();
-        }
         public void StartUp(string connectionString)
         {
-            storage = new Repository(connectionString, Logger);
+            storage = new Repository(connectionString);
+            userConverter = new UserConverter();
+            propConverter = new PropertyAttrConverter();
+            permissionConverter = new PermissionConverter();
         }
 
         public void CreateUser(UserToCreate user)
@@ -78,66 +75,16 @@ namespace Task.Connector
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            foreach(var rightId in rightIds)
-            {
-                var splitString = rightId.Split(":");
-                if (splitString[0] == "Role")
-                {
-                    var id = int.Parse(splitString[1]);
-                    var userItRole = new UserItrole()
-                    {
-                        RoleId = id,
-                        UserId = userLogin
-                    };
-                    using (TestDbContext db = storage.ConnectToDatabase())
-                    {
-                        db.UserItroles.Add(userItRole);
-                        db.SaveChanges();
-                    }
-                
-                } else if (splitString[0] == "Request")
-                {
-                    var id = int.Parse(splitString[1]);
-                    var userItRole = new UserRequestRight()
-                    {
-                        RightId = id,
-                        UserId = userLogin
-                    };
-                    using (TestDbContext db = storage.ConnectToDatabase())
-                    {
-                        db.UserRequestRights.Add(userItRole);
-                    }
-                }
-            }
+            var data = permissionConverter.SortPermissonsToData(userLogin, rightIds);
+            if (data.userItRole != null && data.userItRole.Count != 0) storage.AddRolesToUser(userLogin, data.userItRole);
+            if (data.userRequestRights != null && data.userRequestRights.Count != 0) storage.AddRequestRightsToUser(userLogin, data.userRequestRights);
         }
 
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            foreach (var rightId in rightIds)
-            {
-                var splitString = rightId.Split(":");
-                if (splitString[0] == "Role")
-                {
-                    var id = int.Parse(splitString[1]);
-                    using (TestDbContext db = storage.ConnectToDatabase())
-                    {
-                        var userItRole = db.UserItroles.Where(u => userLogin == u.UserId && u.RoleId == id);
-                        db.UserItroles.RemoveRange(userItRole);
-                        db.SaveChanges();
-                    }
-
-                }
-                else if (splitString[0] == "Request")
-                {
-                    var id = int.Parse(splitString[1]);
-                    using (TestDbContext db = storage.ConnectToDatabase())
-                    {
-                        var userItRole = db.UserRequestRights.Where(u => userLogin == u.UserId && u.RightId == id);
-                        db.UserRequestRights.RemoveRange(userItRole);
-                        db.SaveChanges();
-                    }
-                }
-            }
+            var data = permissionConverter.SortPermissonsToData(userLogin, rightIds);
+            if(data.userItRole != null && data.userItRole.Count != 0) storage.RemoveRolesToUser(userLogin, data.userItRole);
+            if (data.userRequestRights != null && data.userRequestRights.Count != 0) storage.RemoveRequestRightsToUser(userLogin, data.userRequestRights);
         }
 
         public IEnumerable<string> GetUserPermissions(string userLogin)

@@ -5,13 +5,13 @@ using Task.Connector.Models;
 
 namespace Task.Connector.Repositories;
 
-public partial class TestDbContext : DbContext
+public partial class MSSqlDbContext : DbContext
 {
-    public TestDbContext()
+    public MSSqlDbContext()
     {
     }
 
-    public TestDbContext(DbContextOptions<TestDbContext> options)
+    public MSSqlDbContext(DbContextOptions<MSSqlDbContext> options)
         : base(options)
     {
     }
