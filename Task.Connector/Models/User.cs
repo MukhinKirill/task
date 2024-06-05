@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using Task.Connector.Attributes;
-using Task.Integration.Data.Models.Models;
+﻿using Task.Connector.Attributes;
 
 namespace Task.Connector.Models;
 

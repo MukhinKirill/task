@@ -1,12 +1,4 @@
-﻿using Microsoft.Identity.Client.Extensions.Msal;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Text;
-using System.Threading.Tasks;
-using Task.Connector.Models;
-using Task.Connector.Repositories;
+﻿using Task.Connector.Models;
 using Task.Integration.Data.Models.Models;
 
 namespace Task.Connector.Converters

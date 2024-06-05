@@ -1,11 +1,8 @@
-﻿using System.Data;
-using Task.Connector.Models;
+﻿using Task.Connector.Models;
 using Task.Connector.Repositories;
 using Task.Connector.Converters;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
-using Task.Connector.Repositories.MSSsql;
-using Task.Connector.Repositories.Postgres;
 using Task.Connector.Repositories.Factory;
 
 namespace Task.Connector
@@ -71,7 +68,7 @@ namespace Task.Connector
 
         public IEnumerable<Permission> GetAllPermissions()
         {
-            var roles = storage.GetAllItRoles(); 
+            var roles = storage.GetAllItRoles();
             var rights = storage.GetAllItRequestRights();
             return permissionConverter.GetAllPermissionFrom(roles, rights);
         }
@@ -86,14 +83,14 @@ namespace Task.Connector
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
             var data = permissionConverter.SortPermissonsToData(userLogin, rightIds);
-            if(data.userItRole != null && data.userItRole.Count != 0) storage.RemoveRolesToUser(userLogin, data.userItRole);
+            if (data.userItRole != null && data.userItRole.Count != 0) storage.RemoveRolesToUser(userLogin, data.userItRole);
             if (data.userRequestRights != null && data.userRequestRights.Count != 0) storage.RemoveRequestRightsToUser(userLogin, data.userRequestRights);
         }
 
-        public  IEnumerable<string> GetUserPermissions(string userLogin)
+        public IEnumerable<string> GetUserPermissions(string userLogin)
         {
             var roles = storage.GetItRolesFromUser(userLogin);
-            var rights =  storage.GetItRequestRightsFromUser(userLogin);
+            var rights = storage.GetItRequestRightsFromUser(userLogin);
             var permissions = permissionConverter.GetAllPermissionFrom(roles, rights);
             var strings = new List<string>();
             foreach (var perm in permissions) strings.Add(perm.Name);

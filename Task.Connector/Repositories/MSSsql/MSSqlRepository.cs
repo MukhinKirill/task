@@ -1,7 +1,4 @@
-﻿using Task.Integration.Data.Models;
-using Task.Integration.Data.Models.Models;
-using Task.Connector.Models;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Task.Connector.Context;
 using Task.Connector.Context.Mssql;
 

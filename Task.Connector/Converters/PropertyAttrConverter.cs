@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Reflection;
 using Task.Connector.Attributes;
-using Task.Connector.Models;
 using Task.Integration.Data.Models.Models;
 
 namespace Task.Connector.Converters

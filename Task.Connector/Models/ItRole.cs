@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Task.Connector.Models;
+﻿namespace Task.Connector.Models;
 
 public partial class ItRole
 {
