@@ -21,7 +21,7 @@
         <HintPath>..\DbCreationUtility\Microsoft.EntityFrameworkCore.Relational.dll</HintPath>
       </Reference>
       <Reference Include="Microsoft.Extensions.Configuration.Abstractions">
-        <HintPath>bin\Debug\net7.0\Microsoft.Extensions.Configuration.Abstractions.dll</HintPath>
+        <HintPath>..\DbCreationUtility\Microsoft.Extensions.Configuration.Abstractions.dll</HintPath>
       </Reference>
       <Reference Include="Microsoft.Extensions.DependencyInjection">
         <HintPath>..\DbCreationUtility\Microsoft.Extensions.DependencyInjection.dll</HintPath>
