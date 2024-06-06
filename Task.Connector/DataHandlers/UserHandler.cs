@@ -3,9 +3,9 @@ using Task.Connector.Attributes;
 using Task.Connector.Models;
 using Task.Integration.Data.Models.Models;
 
-namespace Task.Connector.Converters
+namespace Task.Connector.DataHandlers
 {
-    internal class UserConverter
+    internal class UserHandler
     {
 
         public (User usr, Password pass) GetDataUser(UserToCreate userToCreate)

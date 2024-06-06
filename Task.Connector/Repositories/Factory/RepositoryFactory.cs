@@ -6,7 +6,7 @@ namespace Task.Connector.Repositories.Factory
 {
     internal static class RepositoryFactory
     {
-        public static IStorage CreateRepositoryFrom(string connectionString)
+        public static IRepository CreateRepositoryFrom(string connectionString)
         {
             DbConnectionStringBuilder builder = new DbConnectionStringBuilder();
             builder.ConnectionString = connectionString;

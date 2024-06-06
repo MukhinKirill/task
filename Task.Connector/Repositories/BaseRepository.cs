@@ -3,7 +3,7 @@ using Task.Connector.Models;
 
 namespace Task.Connector.Repositories
 {
-    internal abstract class BaseRepository : IStorage
+    internal abstract class BaseRepository : IRepository
     {
         protected abstract SqlDbContext ConnectToDatabase();
 

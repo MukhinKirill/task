@@ -1,37 +1,41 @@
 ﻿using Task.Connector.Models;
 using Task.Connector.Repositories;
-using Task.Connector.Converters;
+using Task.Connector.DataHandlers;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
 using Task.Connector.Repositories.Factory;
-using System.Data.Common;
 
 namespace Task.Connector
 {
     public class ConnectorDb : IConnector
     {
-        private UserConverter userConverter;
-        private PropertyAttrConverter propConverter;
-        private PermissionConverter permissionConverter;
+        private UserHandler userHandler;
+        private PropertyHandler propertyHandler;
+        private PermissionHandler permissionHandler;
 
-        private IStorage storage;
+        private IRepository repository;
 
         public ILogger Logger { get; set; }
 
+        public ConnectorDb()
+        {
+            userHandler = new UserHandler();
+            propertyHandler = new PropertyHandler();
+            permissionHandler = new PermissionHandler();
+        }
+
         public void StartUp(string connectionString)
         {
-            storage = RepositoryFactory.CreateRepositoryFrom(connectionString);
-            userConverter = new UserConverter();
-            propConverter = new PropertyAttrConverter();
-            permissionConverter = new PermissionConverter();
+            repository = RepositoryFactory.CreateRepositoryFrom(connectionString);
         }
 
         public void CreateUser(UserToCreate user)
         {
             try
             {
-                var data = userConverter.GetDataUser(user);
-                storage.AddUser(data.usr, data.pass);
+                CheckRepository();
+                var data = userHandler.GetDataUser(user);
+                repository.AddUser(data.usr, data.pass);
                 Logger?.Debug($"Пользователь {user.Login} успешно добавлен.");
             }
             catch (Exception ex)
@@ -46,10 +50,12 @@ namespace Task.Connector
         {
             try
             {
+                CheckRepository();
+                Logger?.Debug($"Получаем все Property...");
                 var properties = new List<Property>();
-                properties.AddRange(propConverter.GetAttributesFromType(typeof(User)));
-                properties.AddRange(propConverter.GetAttributesFromType(typeof(Password)));
-                Logger?.Debug($"Получаем все Property.");
+                properties.AddRange(propertyHandler.GetAttributesFromType(typeof(User)));
+                properties.AddRange(propertyHandler.GetAttributesFromType(typeof(Password)));
+                Logger?.Debug($"Получили все Property.");
                 return properties;
             }
             catch (Exception ex)
@@ -64,9 +70,10 @@ namespace Task.Connector
         {
             try
             {
-                var user = storage.GetUserFromLogin(userLogin);
+                CheckRepository();
+                var user = repository.GetUserFromLogin(userLogin);
                 Logger?.Debug($"Пользователь {userLogin} получен.");
-                var properties = userConverter.GetUserPropertiesFromUser(user);
+                var properties = userHandler.GetUserPropertiesFromUser(user);
                 Logger?.Debug($"Property успешно получены.");
                 return properties;
             }
@@ -82,8 +89,9 @@ namespace Task.Connector
         {
             try
             {
+                CheckRepository();
                 Logger?.Debug($"Проверяем наличие пользователя {userLogin}.");
-                return storage.IsUserExists(userLogin);
+                return repository.IsUserExists(userLogin);
             }
             catch (Exception ex)
             {
@@ -97,9 +105,10 @@ namespace Task.Connector
         {
             try
             {
-                var user = storage.GetUserFromLogin(userLogin);
+                CheckRepository();
+                var user = repository.GetUserFromLogin(userLogin);
                 Logger?.Debug($"Пользователь {userLogin} получен.");
-                var userProps = userConverter.GetUserPropertiesFromUser(user);
+                var userProps = userHandler.GetUserPropertiesFromUser(user);
                 Logger?.Debug($"UserProperty для {userLogin} получены.");
                 foreach (var prop in properties)
                 {
@@ -108,9 +117,9 @@ namespace Task.Connector
                         if (prop.Name.Equals(userProp.Name)) userProp.Value = prop.Value;
                     }
                 }
-                userConverter.SetUserProperties(user, userProps);
+                userHandler.SetUserProperties(user, userProps);
                 Logger?.Debug($"UserProperty изменены для пользователя {userLogin}.");
-                storage.UpdateUser(user);
+                repository.UpdateUser(user);
                 Logger?.Debug($"Успешно сохранили UserProperty для пользователя {userLogin}.");
             }
             catch (Exception ex)
@@ -125,11 +134,12 @@ namespace Task.Connector
         {
             try
             {
-                var roles = storage.GetAllItRoles();
+                CheckRepository();
+                var roles = repository.GetAllItRoles();
                 Logger?.Debug($"Успешно получили все роли.");
-                var rights = storage.GetAllItRequestRights();
+                var rights = repository.GetAllItRequestRights();
                 Logger?.Debug($"Успешно получили все права.");
-                return permissionConverter.GetAllPermissionFrom(roles, rights);
+                return permissionHandler.GetAllPermissionFrom(roles, rights);
 
             }
             catch (Exception ex)
@@ -144,10 +154,11 @@ namespace Task.Connector
         {
             try
             {
-                var data = permissionConverter.SortPermissonsToData(userLogin, rightIds);
+                CheckRepository();
+                var data = permissionHandler.SortPermissonsToData(userLogin, rightIds);
                 Logger?.Debug($"Успешно отсортировали все разрешения.");
-                if (data.userItRole != null && data.userItRole.Count != 0) storage.AddRolesToUser(userLogin, data.userItRole);
-                if (data.userRequestRights != null && data.userRequestRights.Count != 0) storage.AddRequestRightsToUser(userLogin, data.userRequestRights);
+                if (data.userItRole != null && data.userItRole.Count != 0) repository.AddRolesToUser(userLogin, data.userItRole);
+                if (data.userRequestRights != null && data.userRequestRights.Count != 0) repository.AddRequestRightsToUser(userLogin, data.userRequestRights);
                 Logger?.Debug($"Успешно добавили в базу данных разрешения.");
             }
             catch (Exception ex)
@@ -162,10 +173,11 @@ namespace Task.Connector
         {
             try
             {
-                var data = permissionConverter.SortPermissonsToData(userLogin, rightIds);
+                CheckRepository();
+                var data = permissionHandler.SortPermissonsToData(userLogin, rightIds);
                 Logger?.Debug($"Успешно отсортировали все разрешения.");
-                if (data.userItRole != null && data.userItRole.Count != 0) storage.RemoveRolesToUser(userLogin, data.userItRole);
-                if (data.userRequestRights != null && data.userRequestRights.Count != 0) storage.RemoveRequestRightsToUser(userLogin, data.userRequestRights);
+                if (data.userItRole != null && data.userItRole.Count != 0) repository.RemoveRolesToUser(userLogin, data.userItRole);
+                if (data.userRequestRights != null && data.userRequestRights.Count != 0) repository.RemoveRequestRightsToUser(userLogin, data.userRequestRights);
                 Logger?.Debug($"Успешно удалил из базу данных разрешения.");
             }
             catch (Exception ex)
@@ -180,11 +192,12 @@ namespace Task.Connector
         {
             try
             {
-                var roles = storage.GetItRolesFromUser(userLogin);
+                CheckRepository();
+                var roles = repository.GetItRolesFromUser(userLogin);
                 Logger?.Debug($"Успешно получили роли для пользователя {userLogin}.");
-                var rights = storage.GetItRequestRightsFromUser(userLogin);
+                var rights = repository.GetItRequestRightsFromUser(userLogin);
                 Logger?.Debug($"Успешно получили права для пользователя {userLogin}.");
-                var permissions = permissionConverter.GetAllPermissionFrom(roles, rights);
+                var permissions = permissionHandler.GetAllPermissionFrom(roles, rights);
                 var strings = new List<string>();
                 foreach (var perm in permissions) strings.Add(perm.Name);
                 Logger?.Debug($"Успешно сформировали список всех разрешений для пользователя {userLogin}.");
@@ -196,6 +209,12 @@ namespace Task.Connector
                 Logger?.Error(ex.Message);
                 throw;
             }
+        }
+
+        private void CheckRepository()
+        {
+            if (repository == null) 
+                throw new NullReferenceException("Перед этой операцией, необходимо вызвать метод StartUp и указать строку подключения.");
         }
 
     }

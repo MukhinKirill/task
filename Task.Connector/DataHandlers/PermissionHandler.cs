@@ -1,9 +1,9 @@
 ﻿using Task.Connector.Models;
 using Task.Integration.Data.Models.Models;
 
-namespace Task.Connector.Converters
+namespace Task.Connector.DataHandlers
 {
-    internal class PermissionConverter
+    internal class PermissionHandler
     {
         private const string ROLE = "Role";
         private const string REQUEST = "Request";

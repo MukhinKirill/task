@@ -2,9 +2,9 @@
 using Task.Connector.Attributes;
 using Task.Integration.Data.Models.Models;
 
-namespace Task.Connector.Converters
+namespace Task.Connector.DataHandlers
 {
-    internal class PropertyAttrConverter
+    internal class PropertyHandler
     {
         public List<Property> GetAttributesFromType(Type type)
         {
