@@ -5,7 +5,7 @@ using Task.Integration.Data.Models.Models;
 
 namespace Task.Connector.Converters
 {
-    public class UserConverter
+    internal class UserConverter
     {
 
         public (User usr, Password pass) GetDataUser(UserToCreate userToCreate)

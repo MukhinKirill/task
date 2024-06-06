@@ -3,7 +3,7 @@ using Task.Connector.Models;
 
 namespace Task.Connector.Context
 {
-    public abstract class SqlDbContext : DbContext
+    internal abstract class SqlDbContext : DbContext
     {
         protected SqlDbContext()
         {

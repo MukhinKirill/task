@@ -4,7 +4,7 @@ using Task.Connector.Context.Postgres;
 
 namespace Task.Connector.Repositories.Postgres
 {
-    public class PostgresRepository : BaseRepository
+    internal class PostgresRepository : BaseRepository
     {
         private readonly string connectionString;
         public PostgresRepository(string connectionString)

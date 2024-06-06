@@ -1,6 +1,6 @@
 ﻿namespace Task.Connector.Models;
 
-public partial class UserRequestRight
+internal partial class UserRequestRight
 {
     public string UserId { get; set; } = null!;
 

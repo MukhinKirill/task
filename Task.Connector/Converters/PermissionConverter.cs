@@ -3,7 +3,7 @@ using Task.Integration.Data.Models.Models;
 
 namespace Task.Connector.Converters
 {
-    public class PermissionConverter
+    internal class PermissionConverter
     {
         private const string ROLE = "Role";
         private const string REQUEST = "Request";

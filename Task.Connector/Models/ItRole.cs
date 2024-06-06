@@ -1,6 +1,6 @@
 ﻿namespace Task.Connector.Models;
 
-public partial class ItRole
+internal partial class ItRole
 {
     public int Id { get; set; }
 

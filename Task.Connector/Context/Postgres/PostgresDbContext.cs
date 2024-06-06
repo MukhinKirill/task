@@ -3,7 +3,7 @@ using Task.Connector.Models;
 
 namespace Task.Connector.Context.Postgres;
 
-public partial class PostgresDbContext : SqlDbContext
+internal partial class PostgresDbContext : SqlDbContext
 {
     public PostgresDbContext()
     {

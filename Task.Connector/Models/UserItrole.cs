@@ -1,6 +1,6 @@
 ﻿namespace Task.Connector.Models;
 
-public partial class UserItrole
+internal partial class UserItrole
 {
     public string UserId { get; set; } = null!;
 

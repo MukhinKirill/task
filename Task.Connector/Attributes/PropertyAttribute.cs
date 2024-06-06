@@ -1,6 +1,6 @@
 ﻿namespace Task.Connector.Attributes
 {
-    public class PropertyAttribute : Attribute
+    internal class PropertyAttribute : Attribute
     {
         public string Name { get; set; }
         public string Description { get; set; }

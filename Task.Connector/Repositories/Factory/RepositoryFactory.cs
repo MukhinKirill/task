@@ -4,7 +4,7 @@ using Task.Connector.Repositories.Postgres;
 
 namespace Task.Connector.Repositories.Factory
 {
-    public static class RepositoryFactory
+    internal static class RepositoryFactory
     {
         public static IStorage CreateRepositoryFrom(string connectionString)
         {

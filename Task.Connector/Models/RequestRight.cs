@@ -1,6 +1,6 @@
 ﻿namespace Task.Connector.Models;
 
-public partial class RequestRight
+internal partial class RequestRight
 {
     public int Id { get; set; }
 

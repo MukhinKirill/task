@@ -1,6 +1,6 @@
 ﻿namespace Task.Connector.Models;
 
-public partial class MigrationHistory
+internal partial class MigrationHistory
 {
     public string MigrationId { get; set; } = null!;
 

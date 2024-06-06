@@ -3,7 +3,7 @@ using Task.Connector.Models;
 
 namespace Task.Connector.Repositories
 {
-    public abstract class BaseRepository : IStorage
+    internal abstract class BaseRepository : IStorage
     {
         protected abstract SqlDbContext ConnectToDatabase();
 
@@ -22,8 +22,7 @@ namespace Task.Connector.Repositories
         {
             using (var db = ConnectToDatabase())
             {
-                var user = db.Users.FirstOrDefault(u => u.Login == userLogin);
-                return user ?? throw new NullReferenceException();
+                return db.Users.FirstOrDefault(u => u.Login == userLogin) ?? throw new NullReferenceException();
             }
         }
         public bool IsUserExists(string userLogin)

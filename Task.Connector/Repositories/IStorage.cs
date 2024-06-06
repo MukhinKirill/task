@@ -2,7 +2,7 @@
 
 namespace Task.Connector.Repositories
 {
-    public interface IStorage
+    internal interface IStorage
     {
         void AddUser(User user, Password password);
         User GetUserFromLogin(string userLogin);

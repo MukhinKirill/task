@@ -4,7 +4,7 @@ using Task.Integration.Data.Models.Models;
 
 namespace Task.Connector.Converters
 {
-    public class PropertyAttrConverter
+    internal class PropertyAttrConverter
     {
         public List<Property> GetAttributesFromType(Type type)
         {

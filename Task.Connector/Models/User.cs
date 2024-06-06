@@ -2,7 +2,7 @@
 
 namespace Task.Connector.Models;
 
-public partial class User
+internal partial class User
 {
     public string Login { get; set; } = null!;
 

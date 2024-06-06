@@ -5,7 +5,7 @@ using Task.Connector.Context.Mssql;
 
 namespace Task.Connector.Repositories.MSSsql
 {
-    public class MSSqlRepository : BaseRepository
+    internal class MSSqlRepository : BaseRepository
     {
         private readonly string connectionString;
         public MSSqlRepository(string connectionString)

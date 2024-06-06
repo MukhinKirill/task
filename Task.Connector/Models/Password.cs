@@ -2,7 +2,7 @@
 
 namespace Task.Connector.Models;
 
-public partial class Password
+internal partial class Password
 {
     public int Id { get; set; }
 

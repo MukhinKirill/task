@@ -3,7 +3,7 @@ using Task.Connector.Models;
 
 namespace Task.Connector.Context.Mssql;
 
-public partial class MSSqlDbContext : SqlDbContext
+internal partial class MSSqlDbContext : SqlDbContext
 {
     public MSSqlDbContext()
     {
