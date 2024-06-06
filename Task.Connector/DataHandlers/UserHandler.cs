@@ -57,7 +57,7 @@ namespace Task.Connector.DataHandlers
                         var value = (bool)property.GetValue(user) ? "true" : "false";
                         properties.Add(new UserProperty(propertyAttribute.Name, value));
                     }
-
+                    else throw new Exception("Указан неподдерживаемый тип данных.");
                 }
             }
             return properties;

@@ -50,7 +50,7 @@ namespace Task.Connector.DataHandlers
                     userRequestRights.Add(userRequestRight);
                 } else
                 {
-                    throw new Exception($"Incorrect string {idString}.");
+                    throw new Exception($"Неподдерживаемая строка {idString}.");
                 }
             }
             return (userItRoles, userRequestRights);

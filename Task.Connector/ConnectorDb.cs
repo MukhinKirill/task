@@ -214,7 +214,7 @@ namespace Task.Connector
         private void CheckRepository()
         {
             if (repository == null) 
-                throw new NullReferenceException("Перед этой операцией, необходимо вызвать метод StartUp и указать строку подключения.");
+                throw new Exception("Перед этой операцией, необходимо вызвать метод StartUp и указать строку подключения.");
         }
 
     }
