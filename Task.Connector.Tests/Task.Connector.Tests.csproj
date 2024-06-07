@@ -25,16 +25,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Task.Connector\Task.Connector.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Reference Include="Task.Integration.Data.DbCommon">
       <HintPath>..\libs\CommonForTest\Task.Integration.Data.DbCommon.dll</HintPath>
     </Reference>
     <Reference Include="Task.Integration.Data.Models">
       <HintPath>..\libs\Models\Task.Integration.Data.Models.dll</HintPath>
     </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Task.Infrastructure\Task.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

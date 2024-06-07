@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Task.Application\Task.Application.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="Microsoft.EntityFrameworkCore">
+        <HintPath>..\DbCreationUtility\Microsoft.EntityFrameworkCore.dll</HintPath>
+      </Reference>
+      <Reference Include="Microsoft.EntityFrameworkCore.Abstractions">
+        <HintPath>..\DbCreationUtility\Microsoft.EntityFrameworkCore.Abstractions.dll</HintPath>
+      </Reference>
+      <Reference Include="Microsoft.EntityFrameworkCore.Relational">
+        <HintPath>..\DbCreationUtility\Microsoft.EntityFrameworkCore.Relational.dll</HintPath>
+      </Reference>
+      <Reference Include="Microsoft.Extensions.Configuration.Abstractions">
+        <HintPath>..\DbCreationUtility\Microsoft.Extensions.Configuration.Abstractions.dll</HintPath>
+      </Reference>
+      <Reference Include="Microsoft.Extensions.DependencyInjection">
+        <HintPath>..\DbCreationUtility\Microsoft.Extensions.DependencyInjection.dll</HintPath>
+      </Reference>
+      <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions">
+        <HintPath>..\DbCreationUtility\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
+      </Reference>
+      <Reference Include="Npgsql">
+        <HintPath>..\DbCreationUtility\Npgsql.dll</HintPath>
+      </Reference>
+      <Reference Include="Npgsql.EntityFrameworkCore.PostgreSQL">
+        <HintPath>..\DbCreationUtility\Npgsql.EntityFrameworkCore.PostgreSQL.dll</HintPath>
+      </Reference>
+      <Reference Include="Task.Integration.Data.DbCommon">
+        <HintPath>..\libs\CommonForTest\Task.Integration.Data.DbCommon.dll</HintPath>
+      </Reference>
+      <Reference Include="Task.Integration.Data.Models">
+        <HintPath>..\libs\Models\Task.Integration.Data.Models.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
+</Project>
