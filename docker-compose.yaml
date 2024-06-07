@@ -1,17 +1,17 @@
 version: '3.9'
 services:
-  example-service:
-    container_name: example-service
-    restart: always
-    build:
-      context: .
-      dockerfile: ./Task.Example/Dockerfile
-    environment:
-      ConnectionStrings: ${CONNECTION_STRING}
-    ports:
-      - "5100:5100"
-    depends_on:
-      - taskDb
+#  example-service:
+#    container_name: example-service
+#    restart: always
+#    build:
+#      context: .
+#      dockerfile: ./Task.Example/Dockerfile
+#    environment:
+#      ConnectionStrings: ${CONNECTION_STRING}
+#    ports:
+#      - "5100:5100"
+#    depends_on:
+#      - taskDb
   
   taskDb:
     image: postgres
