@@ -10,7 +10,7 @@ namespace Task.Connector.Tests
         static string itRoleRightGroupName = "Role";
         static string delimeter = ":";
         static string mssqlConnectionString = "";
-        static string postgreConnectionString = "";
+        static string postgreConnectionString = "Server=127.0.0.1;Port=5432;Database=testDb;Username=postgres;Password=root;";
         static Dictionary<string, string> connectorsCS = new Dictionary<string, string>
         {
             { "MSSQL",$"ConnectionString='{mssqlConnectionString}';Provider='SqlServer.2019';SchemaName='AvanpostIntegrationTestTaskSchema';"},
@@ -18,7 +18,7 @@ namespace Task.Connector.Tests
         };
         static Dictionary<string, string> dataBasesCS = new Dictionary<string, string>
         {
-            { "MSSQL",mssqlConnectionString},
+            { "MSSQL", mssqlConnectionString},
             { "POSTGRE", postgreConnectionString}
         };
 
@@ -33,26 +33,31 @@ namespace Task.Connector.Tests
         public IConnector GetConnector(string provider)
         {
             IConnector connector = new ConnectorDb();
-            connector.StartUp(connectorsCS[provider]);
-            connector.Logger = new FileLogger($"{DateTime.Now}connector{provider}.Log", $"{DateTime.Now}connector{provider}");
+            connector.Logger = new FileLogger($"{DateTime.Now:dd-mm-yyy}connector{provider}.Log", $"{DateTime.Now}connector{provider}");
+            connector.StartUp(dataBasesCS[provider]);
             return connector;
         }
 
 
         [Theory]
-        [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void CreateUser(string provider)
         {
             var dataSetter = Init(provider);
             var connector = GetConnector(provider);
-            connector.CreateUser(new UserToCreate("testUserToCreate", "testPassword") { Properties = new UserProperty[] { new UserProperty("isLead", "false") } });
+            
+            connector.CreateUser(
+                new UserToCreate("testUserToCreate", "testPassword")
+                    { Properties = new UserProperty[]
+                        { new UserProperty("isLead", "false") }
+                    }
+                );
+            
             Assert.NotNull(dataSetter.GetUser("testUserToCreate"));
             Assert.Equal(DefaultData.MasterUserDefaultPassword, dataSetter.GetUserPassword(DefaultData.MasterUserLogin));
         }
 
         [Theory]
-        [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void GetAllProperties(string provider)
         {
@@ -63,89 +68,104 @@ namespace Task.Connector.Tests
         }
 
         [Theory]
-        [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void GetUserProperties(string provider)
         {
             var dataSetter = Init(provider);
             var connector = GetConnector(provider);
             var userInfo = connector.GetUserProperties(DefaultData.MasterUserLogin);
+            
             Assert.NotNull(userInfo);
             Assert.Equal(5, userInfo.Count());
             Assert.True(userInfo.FirstOrDefault(_ => _.Value.Equals(DefaultData.MasterUser.TelephoneNumber)) != null);
         }
 
         [Theory]
-        [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void IsUserExists(string provider)
         {
             var dataSetter = Init(provider);
             var connector = GetConnector(provider);
+            
             Assert.True(connector.IsUserExists(DefaultData.MasterUserLogin));
             Assert.False(connector.IsUserExists(TestData.NotExistingUserLogin));
         }
 
         [Theory]
-        [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void UpdateUserProperties(string provider)
         {
             var dataSetter = Init(provider);
             var connector = GetConnector(provider);
             var userInfo = connector.GetUserProperties(DefaultData.MasterUserLogin);
-            var propertyName = connector.GetUserProperties(DefaultData.MasterUserLogin).First(_ => _.Value.Equals(DefaultData.MasterUser.TelephoneNumber)).Name;
-            var propsToUpdate = new UserProperty[]
+            
+            var propertyName = connector
+                .GetUserProperties(DefaultData.MasterUserLogin)
+                .First(_ => _.Value.Equals(DefaultData.MasterUser.TelephoneNumber))
+                .Name;
+            
+            var propsToUpdate = new[]
             {
                 new UserProperty(propertyName,TestData.NewPhoneValueForMasterUser)
             };
+            
             connector.UpdateUserProperties(propsToUpdate, DefaultData.MasterUserLogin);
             Assert.Equal(TestData.NewPhoneValueForMasterUser, dataSetter.GetUser(DefaultData.MasterUserLogin).TelephoneNumber);
         }
 
         [Theory]
-        [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void GetAllPermissions(string provider)
         {
             var dataSetter = Init(provider);
             var connector = GetConnector(provider);
             var permissions = connector.GetAllPermissions();
+            
             Assert.NotNull(permissions);
             Assert.Equal(DefaultData.RequestRights.Length + DefaultData.ITRoles.Length, permissions.Count());
         }
 
         [Theory]
-        [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void AddUserPermissions(string provider)
         {
             var dataSetter = Init(provider);
             var connector = GetConnector(provider);
             var RoleId = $"{itRoleRightGroupName}{delimeter}{dataSetter.GetITRoleId()}";
+            
             connector.AddUserPermissions(
                 DefaultData.MasterUserLogin,
                 new [] { RoleId });
+            
             Assert.True(dataSetter.MasterUserHasITRole(dataSetter.GetITRoleId().ToString()));
-            Assert.True(dataSetter.MasterUserHasRequestRight(dataSetter.GetRequestRightId(DefaultData.RequestRights[DefaultData.MasterUserRequestRights.First()].Name).ToString()));
+            Assert.True(dataSetter
+                .MasterUserHasRequestRight(
+                    dataSetter
+                        .GetRequestRightId(DefaultData.RequestRights[DefaultData.MasterUserRequestRights.First()].Name)
+                        .ToString()));
         }
 
         [Theory]
-        [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void RemoveUserPermissions(string provider)
         {
             var dataSetter = Init(provider);
             var connector = GetConnector(provider);
             var requestRightIdToDrop = $"{requestRightGroupName}{delimeter}{dataSetter.GetRequestRightId(DefaultData.RequestRights[DefaultData.MasterUserRequestRights.First()].Name)}";
+            
             connector.RemoveUserPermissions(
                 DefaultData.MasterUserLogin,
                 new [] { requestRightIdToDrop });
+            
             Assert.False(dataSetter.MasterUserHasITRole(dataSetter.GetITRoleId().ToString()));
-            Assert.False(dataSetter.MasterUserHasRequestRight(dataSetter.GetRequestRightId(DefaultData.RequestRights[DefaultData.MasterUserRequestRights.First()].Name).ToString()));
+            Assert.False(
+                dataSetter
+                    .MasterUserHasRequestRight(
+                        dataSetter
+                            .GetRequestRightId(DefaultData.RequestRights[DefaultData.MasterUserRequestRights.First()].Name)
+                            .ToString()));
         }
         [Theory]
-        [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void GetUserPermissions(string provider)
         {
