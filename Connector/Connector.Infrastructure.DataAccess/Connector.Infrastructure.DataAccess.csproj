@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Dapper" Version="2.1.35" />
+    <PackageReference Include="Npgsql" Version="7.0.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Base\Base.Models\Base.Models.csproj" />
+    <ProjectReference Include="..\..\Core\Core.Models\Core.Models.csproj" />
+    <ProjectReference Include="..\Connector.Core.Interfaces\Connector.Core.Interfaces.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Task.Integration.Data.Models">
+      <HintPath>..\..\libs\Models\Task.Integration.Data.Models.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

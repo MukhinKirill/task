@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Core\Core.Models\Core.Models.csproj" />
+    <ProjectReference Include="..\Connector.Core.Interfaces\Connector.Core.Interfaces.csproj" />
+    <ProjectReference Include="..\Connector.Infrastructure.DataAccess\Connector.Infrastructure.DataAccess.csproj" />
+    <ProjectReference Include="..\Connector.Utils\Connector.Utils.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Task.Integration.Data.Models">
+      <HintPath>..\..\libs\Models\Task.Integration.Data.Models.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

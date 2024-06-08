@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Task.Connector\Task.Connector.csproj" />
+    <ProjectReference Include="..\Connector\Connector.Logic\Connector.Logic.csproj" />
   </ItemGroup>
 
   <ItemGroup>
