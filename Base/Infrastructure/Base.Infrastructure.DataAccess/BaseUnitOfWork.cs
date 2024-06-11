@@ -11,14 +11,11 @@ namespace Base.Infrastructure.DataAccess
 
         public BaseUnitOfWork(string connectionString)
         {
-            _connection = DbConnect(connectionString);
+            ConnectToDb(connectionString);
         }
 
         public virtual void BeginTran()
         {
-            if (_connection.State is not ConnectionState.Open)
-                _connection.Open();
-
             _transaction = _connection.BeginTransaction();
         }
 
@@ -57,7 +54,7 @@ namespace Base.Infrastructure.DataAccess
 
         #region Protected
 
-        protected abstract IDbConnection DbConnect(string connectionString);
+        protected abstract void ConnectToDb(string connectionString);
 
         #endregion
     }

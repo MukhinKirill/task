@@ -13,7 +13,7 @@ namespace Connector.Infrastructure.DataAccess.Maps
             foreach (var role in roles)
             {
                 yield return new Permission(
-                    string.Join(delimeter, groupName, role.Id),
+                    GetId(role.Id),
                     role.Name,
                     role.CorporatePhoneNumber);
             }

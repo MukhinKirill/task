@@ -26,9 +26,18 @@ namespace Connector.Infrastructure.DataAccess
 
         #region Protected Methods
 
-        protected override IDbConnection DbConnect(string connectionString)
+        protected override void ConnectToDb(string connectionString)
         {
-            return new NpgsqlConnection(connectionString);
+            try
+            {
+                _connection =  new NpgsqlConnection(connectionString);
+                _connection.Open();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Исключение при подключении к базе данных. Ex = {ex.Message}");
+                throw;
+            }
         }
 
         #endregion
