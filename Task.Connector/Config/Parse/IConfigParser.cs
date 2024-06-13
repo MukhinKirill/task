@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace Task.Connector.Config.Parse;
 
@@ -11,6 +12,13 @@ public class ConnectionScheme
     public string Host { get; set; } = "";
     public int Port { get; set; } = -1;
     public IReadOnlyDictionary<string, string>? Parameters { get; set; } = null;
+
+    public bool TryGetParameter(string s, [NotNullWhen(true)] out string? res)
+    {
+        res = null;
+        return Parameters?.TryGetValue(s, out res) ?? false;
+    }
+    
     public override string ToString()
     {
         var sb = new StringBuilder();

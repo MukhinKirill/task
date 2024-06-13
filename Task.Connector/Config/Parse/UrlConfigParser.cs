@@ -65,7 +65,7 @@ public sealed class ConnectionUrlParser : IConfigParser
         Uri uri;
         try
         {
-            uri = new Uri(s);
+            uri = new Uri(s, dontEscape:true);
         }
         catch (Exception)
         {
