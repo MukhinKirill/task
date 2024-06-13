@@ -10,7 +10,7 @@ namespace Task.Connector.Tests
 
         public FileLogger(string fileName, string connectorName)
         {
-            _fileName = fileName;
+            _fileName = fileName.Replace(":", "-").Replace(" ", "");
             _connectorName = connectorName;
         }
         void Append(string text)
