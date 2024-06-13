@@ -1,0 +1,11 @@
+services: 
+  postgres:
+    image: postgres:14
+    container_name: postgres-testDb
+    ports:
+      - 8080:5432
+    environment:
+      POSTGRES_PASSWORD: 123
+      POSTGRES_USER: testUser
+      POSTGRES_DB: testDb
+    shm_size: 128mb
