@@ -22,9 +22,9 @@ namespace Task.Connector
                 throw new InvalidOperationException("No database connection available");
             }
 
-            _userService = new UserService();
-            _permissionService = new PermissionService();
-            _userPermissionService = new UserPermissionService();
+            _userService = new UserService(_db, Logger);
+            _permissionService = new PermissionService(_db, Logger);
+            _userPermissionService = new UserPermissionService(_db, Logger);
         }
 
         public void CreateUser(UserToCreate user)
