@@ -1,13 +1,20 @@
-﻿using Task.Integration.Data.Models;
+﻿using Task.Connector.Database;
+using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
 
 namespace Task.Connector
 {
     public class ConnectorDb : IConnector
     {
+        private DataBaseContext _db;
+
         public void StartUp(string connectionString)
         {
-            throw new NotImplementedException();
+            _db = new DataBaseContext(connectionString);
+            if (!_db.Connected)
+            {
+                throw new InvalidOperationException("No database connection available");
+            }
         }
 
         public void CreateUser(UserToCreate user)
