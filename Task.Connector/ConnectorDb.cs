@@ -1,60 +1,54 @@
-﻿using Task.Integration.Data.Models;
+﻿using Task.Connector.Database;
+using Task.Connector.Services.Permission;
+using Task.Connector.Services.User;
+using Task.Connector.Services.UserPermission;
+using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
 
 namespace Task.Connector
 {
     public class ConnectorDb : IConnector
     {
+        private DataBaseContext _db;
+        private IUserService _userService;
+        private IPermissionService _permissionService;
+        private IUserPermission _userPermissionService;
+
+        public ILogger Logger { get; set; }
+
         public void StartUp(string connectionString)
         {
-            throw new NotImplementedException();
+            _db = new DataBaseContext(connectionString);
+            if (!_db.Connected)
+            {
+                Logger?.Error("No database connection available");
+                throw new InvalidOperationException("No database connection available");
+            }
+
+            _userService = new UserService(_db, Logger);
+            _permissionService = new PermissionService(_db, Logger);
+            _userPermissionService = new UserPermissionService(_db, Logger);
         }
 
         public void CreateUser(UserToCreate user)
-        {
-            throw new NotImplementedException();
-        }
-
+            => _userService.CreateUser(user);
         public IEnumerable<Property> GetAllProperties()
-        {
-            throw new NotImplementedException();
-        }
-
+            => _userService.GetAllProperties();
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
-        {
-            throw new NotImplementedException();
-        }
-
+            => _userService.GetUserProperties(userLogin);
         public bool IsUserExists(string userLogin)
-        {
-            throw new NotImplementedException();
-        }
-
+            => _userService.IsUserExists(userLogin);
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
-        {
-            throw new NotImplementedException();
-        }
+            => _userService.UpdateUserProperties(properties, userLogin);
 
         public IEnumerable<Permission> GetAllPermissions()
-        {
-            throw new NotImplementedException();
-        }
+            => _permissionService.GetAllPermissions();
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
-        {
-            throw new NotImplementedException();
-        }
-
+            => _userPermissionService.AddUserPermissions(userLogin, rightIds);
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
-        {
-            throw new NotImplementedException();
-        }
-
+            => _userPermissionService.RemoveUserPermissions(userLogin, rightIds);
         public IEnumerable<string> GetUserPermissions(string userLogin)
-        {
-            throw new NotImplementedException();
-        }
-
-        public ILogger Logger { get; set; }
+            => _userPermissionService.GetUserPermissions(userLogin);
     }
 }
