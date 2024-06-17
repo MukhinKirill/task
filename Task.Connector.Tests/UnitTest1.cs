@@ -1,3 +1,4 @@
+using Task.Connector.Services.UserPermission;
 using Task.Integration.Data.DbCommon;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
@@ -6,9 +7,9 @@ namespace Task.Connector.Tests
 {
     public class UnitTest1
     {
-        static string requestRightGroupName = "Request";
-        static string itRoleRightGroupName = "Role";
-        static string delimeter = ":";
+        static string requestRightGroupName = PermissionTypes.RequestRight;
+        static string itRoleRightGroupName = PermissionTypes.ITRole;
+        static string delimeter = PermissionHelper.Delimiter;
         static string mssqlConnectionString = "";
         static string postgreConnectionString = "Server=192.168.0.4;Port=5432;Database=connectorDB;Username=postgres;Password=example";
         static Dictionary<string, string> connectorsCS = new Dictionary<string, string>
