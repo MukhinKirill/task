@@ -14,11 +14,14 @@ namespace Task.Connector
         private IPermissionService _permissionService;
         private IUserPermission _userPermissionService;
 
+        public ILogger Logger { get; set; }
+
         public void StartUp(string connectionString)
         {
             _db = new DataBaseContext(connectionString);
             if (!_db.Connected)
             {
+                Logger?.Error("No database connection available");
                 throw new InvalidOperationException("No database connection available");
             }
 
@@ -47,7 +50,5 @@ namespace Task.Connector
             => _userPermissionService.RemoveUserPermissions(userLogin, rightIds);
         public IEnumerable<string> GetUserPermissions(string userLogin)
             => _userPermissionService.GetUserPermissions(userLogin);
-
-        public ILogger Logger { get; set; }
     }
 }
