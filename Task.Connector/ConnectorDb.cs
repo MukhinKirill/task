@@ -2,10 +2,6 @@
 using Task.Integration.Data.DbCommon.DbModels;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
-using System.Collections;
-using System.ComponentModel;
-using System.Reflection;
-using Microsoft.EntityFrameworkCore;
 
 namespace Task.Connector
 {
@@ -204,7 +200,34 @@ namespace Task.Connector
 
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
         {
-            throw new NotImplementedException();
+            Logger?.Debug($"Request for get user properties: {userLogin}");
+
+            if (dataContext == null)
+            {
+                Logger?.Error($"{nameof(GetUserProperties)}: dataContext not initialised");
+                return Enumerable.Empty<UserProperty>();
+            }
+
+            if (!IsUserExists(userLogin))
+            {
+                Logger?.Warn($"User with login: {userLogin} - not exists");
+                return Enumerable.Empty<UserProperty>();
+            }
+
+            var user = dataContext.Users.Find(userLogin);
+
+            var userProperties = new UserProperty[]
+            {
+                new("lastName ", user!.LastName ?? ""),
+                new("firstName", user!.FirstName ?? ""),
+                new("middleName", user!.MiddleName ?? ""),
+                new("telephoneNumber", user!.TelephoneNumber ?? ""),
+                new("isLead", user!.IsLead.ToString()),
+            };
+
+            Logger?.Debug($"User properties successfully sended: {userLogin}");
+
+            return userProperties;
         }
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
