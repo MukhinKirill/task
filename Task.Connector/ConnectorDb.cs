@@ -104,7 +104,21 @@ namespace Task.Connector
 
         public IEnumerable<Permission> GetAllPermissions()
         {
-            throw new NotImplementedException();
+            var permissions = new List<Permission>();
+            Logger?.Debug("Request for all permissions");
+
+            if (dataContext == null)
+            {
+                Logger?.Error($"{nameof(GetAllPermissions)}: dataContext not initialised");
+                return permissions;
+            }
+
+            permissions.AddRange(dataContext.RequestRights.Select(x => new Permission (x.Id.ToString(), x.Name, "description")));
+            permissions.AddRange(dataContext.ITRoles.Select(x => new Permission(x.Id.ToString(), x.Name, "description")));
+
+            Logger?.Debug("Done - request for all permissions");
+
+            return permissions;
         }
 
         public IEnumerable<Property> GetAllProperties()
