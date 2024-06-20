@@ -5,6 +5,7 @@ using Task.Integration.Data.Models.Models;
 using System.Collections;
 using System.ComponentModel;
 using System.Reflection;
+using Microsoft.EntityFrameworkCore;
 
 namespace Task.Connector
 {
@@ -80,8 +81,26 @@ namespace Task.Connector
 
         public IEnumerable<string> GetUserPermissions(string userLogin)
         {
+            Logger?.Debug($"Request for get user permissions: {userLogin}");
 
-            throw new NotImplementedException();
+            if (dataContext == null)
+            {
+                Logger?.Error($"{nameof(GetUserPermissions)}: dataContext not initialised");
+                return Enumerable.Empty<string>();
+            }
+
+            if (!IsUserExists(userLogin))
+            {
+                Logger?.Warn($"User with login: {userLogin} - not exists");
+                return Enumerable.Empty<string>();
+            }
+
+            var userPermissions = dataContext.UserRequestRights.Where(x => x.UserId == userLogin)
+                .Join(dataContext.RequestRights, x => x.RightId, y => y.Id, (x, y) => y.Name);
+
+            Logger?.Debug($"User permissions successfully sended: {userLogin}");
+
+            return userPermissions;
         }
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
