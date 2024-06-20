@@ -232,7 +232,57 @@ namespace Task.Connector
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
         {
-            throw new NotImplementedException();
+            Logger?.Debug($"Request for update user properties: {userLogin}");
+
+            if (dataContext == null)
+            {
+                Logger?.Error($"{nameof(UpdateUserProperties)}: dataContext not initialised");
+                return ;
+            }
+
+            if (!IsUserExists(userLogin))
+            {
+                Logger?.Warn($"User with login: {userLogin} - not exists");
+                return ;
+            }
+
+            var user = dataContext.Users.Find(userLogin);
+
+            foreach (var property in properties)
+            {
+                if(property == null)
+                {
+                    Logger?.Error($"Property is null");
+                    return;
+                }
+                if (property.Name == "lastName") user!.LastName = property.Value;
+                else if (property.Name == "firstName") user!.FirstName = property.Value;
+                else if (property.Name == "middleName") user!.MiddleName = property.Value;
+                else if (property.Name == "telephoneNumber") user!.TelephoneNumber = property.Value;
+                else if (property.Name == "isLead")
+                {
+                    if(!bool.TryParse(property.Value, out bool result))
+                    {
+                        Logger?.Error($"Property isn't bool");
+                        return;
+                    }
+                    user!.IsLead = result;
+                }
+            }
+
+            Logger?.Debug($"Trying to save updated User properties: {userLogin}");
+
+            try
+            {
+                dataContext.SaveChanges();
+            }
+            catch (Exception)
+            {
+                Logger?.Error($"New properties for user: {userLogin} - not saved");
+                return;
+            }
+
+            Logger?.Debug($"User properties successfully updated: {userLogin}");
         }
 
         /*GetAll methods*/
