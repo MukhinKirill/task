@@ -2,12 +2,15 @@
 using Task.Integration.Data.DbCommon.DbModels;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
+using System.Collections;
+using System.ComponentModel;
+using System.Reflection;
 
 namespace Task.Connector
 {
     public class ConnectorDb : IConnector
     {
-        public ILogger Logger { get; set; }
+        public ILogger? Logger { get; set; }
 
         private DataContext? dataContext;
 
@@ -24,7 +27,7 @@ namespace Task.Connector
         {
             if(dataContext == null)
             {
-                Logger?.Warn("dataContext not initialised");
+                Logger?.Error("dataContext not initialised");
                 return;
             }
 
@@ -106,7 +109,16 @@ namespace Task.Connector
 
         public IEnumerable<Property> GetAllProperties()
         {
-            throw new NotImplementedException();
+            Logger?.Warn("List of properties was requested");
+            return new Property[]
+            {
+                new("lastName ", "Last Name"),
+                new("firstName", "First Name"),
+                new("middleName", "Middle Name"),
+                new("telephoneNumber", "Telephone Number"),
+                new("isLead", "Is Lead"),
+                new("password", "Password"),
+            };
         }
     }
 }
