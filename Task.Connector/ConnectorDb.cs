@@ -25,9 +25,11 @@ namespace Task.Connector
 
         public void CreateUser(UserToCreate user)
         {
-            if(dataContext == null)
+            Logger?.Debug($"Request for adding user: {user.Login}");
+
+            if (dataContext == null)
             {
-                Logger?.Error("dataContext not initialised");
+                Logger?.Error($"{nameof(CreateUser)}: dataContext not initialised");
                 return;
             }
 
@@ -56,7 +58,8 @@ namespace Task.Connector
             dataContext.Users.Add(newUser);
             dataContext.Passwords.Add(newPass);
 
-            Logger?.Debug($"Trying to add new User: {user.Login}");
+            Logger?.Debug($"Trying to save new User: {user.Login}");
+
             try
             {
                 dataContext.SaveChanges();
@@ -66,8 +69,8 @@ namespace Task.Connector
                 Logger?.Error($"User: {user.Login} - not saved");
                 return;
             }
-            Logger?.Debug($"Successfully aded user: {user.Login}");
 
+            Logger?.Debug($"Successfully aded user: {user.Login}");
         }
 
         public bool IsUserExists(string userLogin)
