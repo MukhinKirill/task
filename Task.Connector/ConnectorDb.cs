@@ -80,7 +80,53 @@ namespace Task.Connector
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            throw new NotImplementedException();
+            Logger?.Debug($"Request for add permission for user: {userLogin}");
+
+            if (dataContext == null)
+            {
+                Logger?.Error($"{nameof(AddUserPermissions)}: dataContext not initialised");
+                return;
+            }
+
+            if (!IsUserExists(userLogin))
+            {
+                Logger?.Warn($"User with login: {userLogin} - not exists");
+                return;
+            }
+
+            foreach (var rightId in rightIds)
+            {
+                var splitedRightId = rightId.Split(':');
+
+                if (!int.TryParse(splitedRightId[1], out int val))
+                {
+                    Logger?.Error($"RightId isn't int. userLogin: {userLogin}");
+                    return;
+                }
+
+                if(!dataContext.UserRequestRights.Any(x => x.UserId == userLogin && x.RightId == val))
+                {
+                    dataContext.UserRequestRights.Add(new UserRequestRight { UserId = userLogin, RightId = val });
+                    Logger?.Debug($"Successfully added new request right: {userLogin} - {val}");
+                }
+                
+                dataContext.UserITRoles.Add(new UserITRole { UserId = userLogin, RoleId = val});
+                Logger?.Debug($"Successfully added new role: {userLogin} - {val}");
+            }
+
+            Logger?.Debug($"Trying to save User rights: {userLogin}");
+
+            try
+            {
+                dataContext.SaveChanges();
+            }
+            catch (Exception)
+            {
+                Logger?.Error($"New rights for user: {userLogin} - not saved");
+                return;
+            }
+
+            Logger?.Debug($"Successfully added rights for: {userLogin}");
         }
 
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
