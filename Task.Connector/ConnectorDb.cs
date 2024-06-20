@@ -80,6 +80,7 @@ namespace Task.Connector
 
         public IEnumerable<string> GetUserPermissions(string userLogin)
         {
+
             throw new NotImplementedException();
         }
 
@@ -131,7 +132,7 @@ namespace Task.Connector
                 return;
             }
 
-            Logger?.Debug($"Successfully added rights for: {userLogin}");
+            Logger?.Debug($"Successfully saved rights for: {userLogin}");
         }
 
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
@@ -179,9 +180,8 @@ namespace Task.Connector
                 return;
             }
 
-            Logger?.Debug($"Successfully removed rights for: {userLogin}");
+            Logger?.Debug($"Successfully saved rights for: {userLogin}");
         }
-
 
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
         {
