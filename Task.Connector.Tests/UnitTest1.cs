@@ -9,7 +9,7 @@ namespace Task.Connector.Tests
         static string requestRightGroupName = "Request";
         static string itRoleRightGroupName = "Role";
         static string delimeter = ":";
-        static string mssqlConnectionString = "";
+        static string mssqlConnectionString = "Server=127.0.0.1,1433;Database=testDb;User Id=sa;Password=yourStrong(!)Password;TrustServerCertificate=true";
         static string postgreConnectionString = "Server=127.0.0.1;Port=5438;Database=test;Username=postgres;Password=12345;";
         static Dictionary<string, string> connectorsCS = new Dictionary<string, string>
         {

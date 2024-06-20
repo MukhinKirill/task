@@ -17,6 +17,11 @@ namespace Task.Connector
         {
             var updatedConnectionString = connectionString.Split('\'')[1];
             var factory = new DbContextFactory(updatedConnectionString);
+            if (connectionString.Contains("SqlServer"))
+            {
+                dataContext = factory.GetContext("MSSQL");
+                return;
+            }
             dataContext = factory.GetContext("POSTGRE");
         }
 
