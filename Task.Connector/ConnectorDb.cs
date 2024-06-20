@@ -78,6 +78,11 @@ namespace Task.Connector
             return dataContext!.Users.Any(x => x.Login == userLogin);
         }
 
+        public IEnumerable<string> GetUserPermissions(string userLogin)
+        {
+            throw new NotImplementedException();
+        }
+
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
             Logger?.Debug($"Request for add permission for user: {userLogin}");
@@ -131,13 +136,52 @@ namespace Task.Connector
 
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            throw new NotImplementedException();
+            Logger?.Debug($"Request for remove permission for user: {userLogin}");
+
+            if (dataContext == null)
+            {
+                Logger?.Error($"{nameof(RemoveUserPermissions)}: dataContext not initialised");
+                return;
+            }
+
+            if (!IsUserExists(userLogin))
+            {
+                Logger?.Warn($"User with login: {userLogin} - not exists");
+                return;
+            }
+
+            foreach (var rightId in rightIds)
+            {
+                var splitedRightId = rightId.Split(':');
+
+                if (!int.TryParse(splitedRightId[1], out int val))
+                {
+                    Logger?.Error($"RightId isn't int. userLogin: {userLogin}");
+                    return;
+                }
+
+                if (dataContext.UserRequestRights.Any(x => x.UserId == userLogin && x.RightId == val))
+                {
+                    dataContext.UserRequestRights.Remove(new UserRequestRight { UserId = userLogin, RightId = val });
+                    Logger?.Debug($"Successfully remove right: {userLogin} - {val}");
+                }
+            }
+
+            Logger?.Debug($"Trying to save User removed rights: {userLogin}");
+
+            try
+            {
+                dataContext.SaveChanges();
+            }
+            catch (Exception)
+            {
+                Logger?.Error($"Removed rights for user: {userLogin} - not saved");
+                return;
+            }
+
+            Logger?.Debug($"Successfully removed rights for: {userLogin}");
         }
 
-        public IEnumerable<string> GetUserPermissions(string userLogin)
-        {
-            throw new NotImplementedException();
-        }
 
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
         {
