@@ -11,6 +11,7 @@ namespace Task.Connector.Tests
         public FileLogger(string fileName, string connectorName)
         {
             _fileName = fileName;
+            _fileName = fileName.Replace(':', '_');
             _connectorName = connectorName;
         }
         void Append(string text)
