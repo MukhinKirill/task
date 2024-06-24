@@ -39,6 +39,8 @@ namespace Task.Connector
                 context.Users.Add(userForDb);
                 context.Passwords.Add(password);
                 context.SaveChanges();
+
+                Logger.Debug($"Created user with login {user.Login}.");
             }
             catch (Exception ex)
             {
@@ -49,22 +51,74 @@ namespace Task.Connector
 
         public IEnumerable<Property> GetAllProperties()
         {
-            throw new NotImplementedException();
+            return UserHelper.AllProperties;
         }
 
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
         {
-            throw new NotImplementedException();
+            try
+            {
+                using var context = GetDataContext();
+
+                var user = context.Users.Find(userLogin);
+
+                if (user == null) 
+                    return Array.Empty<UserProperty>();
+
+                return new UserProperty[]
+                {
+                    new("firstName", user.FirstName),
+                    new("lastName", user.LastName),
+                    new("middleName", user.MiddleName),
+                    new("telephoneNumber", user.TelephoneNumber),
+                    new("isLead", user.IsLead.ToString())
+                };
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"An error occurred while getting user properties. \nError: {ex}");
+                throw;
+            }
         }
 
         public bool IsUserExists(string userLogin)
         {
-            throw new NotImplementedException();
+            try
+            {
+                using var context = GetDataContext();
+
+                var user = context.Users.Find(userLogin);
+
+                return user != null;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"An error occurred while checking user existance. \nError: {ex}");
+                throw;
+            }
         }
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
         {
-            throw new NotImplementedException();
+            try
+            {
+                using var context = GetDataContext();
+
+                var user = context.Users.Find(userLogin);
+
+                if (user == null)
+                    throw new Exception($"User with login {userLogin} not found.");
+
+                user.SetPropertiesToUser(properties);
+
+                context.Users.Update(user);
+                context.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"An error occurred while updating user properties. \nError: {ex}");
+                throw;
+            }
         }
 
         public IEnumerable<Permission> GetAllPermissions()

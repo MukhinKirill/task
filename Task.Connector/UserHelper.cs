@@ -5,21 +5,22 @@ namespace Task.Connector;
 
 public static class UserHelper
 {
+    public static readonly Property[] AllProperties = new Property[] {
+        new("firstName", "First name"),
+        new("lastName", "Last name"),
+        new("middleName", "Middle name"),
+        new("telephoneNumber", "Telephone number"),
+        new("isLead", "Is the user a lead?"), 
+        new("password", "User password"),
+    };
+
     public static void SetPropertiesToUser(this User user, IEnumerable<UserProperty> properties)
     {
-        var isLead = false;
-        var isLeadString = GetPropertyValueOrEmpty(properties, "isLead");
-
-        if (isLeadString != null && !bool.TryParse(isLeadString, out isLead))
-        {
-            throw new ArgumentException("isLead property should be boolean.");
-        } 
-
         user.FirstName = GetPropertyValueOrEmpty(properties, "firstName");
         user.LastName = GetPropertyValueOrEmpty(properties, "lastName");
         user.MiddleName = GetPropertyValueOrEmpty(properties, "middleName");
         user.TelephoneNumber = GetPropertyValueOrEmpty(properties, "telephoneNumber");
-        user.IsLead = isLead;
+        user.IsLead = GetPropertyValueOrEmpty(properties, "isLead") == "true";
     }
 
     private static string GetPropertyValueOrEmpty(IEnumerable<UserProperty> properties, string propertyName)
