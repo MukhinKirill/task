@@ -32,9 +32,10 @@ namespace Task.Connector.Tests
 
         public IConnector GetConnector(string provider)
         {
-            IConnector connector = new ConnectorDb();
+            IConnector connector = new ConnectorDb() { 
+                Logger = new FileLogger($"{DateTime.Now:dd.MM.yyyy_HH:mm}connector{provider}.Log", $"{DateTime.Now}connector{provider}")
+            };
             connector.StartUp(connectorsCS[provider]);
-            connector.Logger = new FileLogger($"{DateTime.Now}connector{provider}.Log", $"{DateTime.Now}connector{provider}");
             return connector;
         }
 
