@@ -3,7 +3,6 @@ using Task.Integration.Data.Models.Models;
 using Task.Integration.Data.DbCommon;
 using Task.Integration.Data.DbCommon.DbModels;
 using Task.Connector.Helpers;
-using Microsoft.EntityFrameworkCore;
 
 namespace Task.Connector
 {
@@ -129,12 +128,10 @@ namespace Task.Connector
                 using var context = GetDataContext();
 
                 var itRolePermisions = context.ITRoles
-                    .AsNoTracking()
                     .Select(x => new Permission(x.Id.ToString() ?? "", x.Name, string.Empty))
                     .ToList();
 
                 var requestRightPermisions = context.RequestRights
-                    .AsNoTracking()
                     .Select(x => new Permission(x.Id.ToString() ?? "", x.Name, string.Empty))
                     .ToList();
 

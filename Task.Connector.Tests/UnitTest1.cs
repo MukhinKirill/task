@@ -9,8 +9,8 @@ namespace Task.Connector.Tests
         static string requestRightGroupName = "Request";
         static string itRoleRightGroupName = "Role";
         static string delimeter = ":";
-        static string mssqlConnectionString = "";
-        static string postgreConnectionString = "";
+        static string mssqlConnectionString = "Server=localhost;Database=TestAvanpostTask;Trusted_Connection=True;TrustServerCertificate=True;";
+        static string postgreConnectionString = "Server=127.0.0.1;Port=5432;Database=testDb;Username=postgres;Password=1234;";
         static Dictionary<string, string> connectorsCS = new Dictionary<string, string>
         {
             { "MSSQL",$"ConnectionString='{mssqlConnectionString}';Provider='SqlServer.2019';SchemaName='AvanpostIntegrationTestTaskSchema';"},
