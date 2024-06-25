@@ -1,7 +1,7 @@
 ﻿using Task.Integration.Data.DbCommon.DbModels;
 using Task.Integration.Data.Models.Models;
 
-namespace Task.Connector;
+namespace Task.Connector.Helpers;
 
 public static class UserHelper
 {
@@ -10,7 +10,7 @@ public static class UserHelper
         new("lastName", "Last name"),
         new("middleName", "Middle name"),
         new("telephoneNumber", "Telephone number"),
-        new("isLead", "Is the user a lead?"), 
+        new("isLead", "Is the user a lead?"),
         new("password", "User password"),
     };
 
