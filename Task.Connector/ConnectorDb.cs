@@ -1,6 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Reflection.Metadata;
 using System.Text.RegularExpressions;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
@@ -10,7 +13,7 @@ namespace Task.Connector
 
     public class ConnectorDb : IConnector
     {
-        private readonly DbContextOptionsBuilder<ConnectorDbContext> optionsBuilder = new DbContextOptionsBuilder<ConnectorDbContext>();
+        private readonly DbContextOptionsBuilder<ConnectorDbContext> optionsBuilder = new();
         public void StartUp(string connectionString)
         {
             var reg = new Regex("(?=(?:(?:[^']*'){2})*[^']*$)\\;"); //TODO: Parse the connection string in a better way and switch optionsbuilder to include MSSQL db
@@ -25,14 +28,37 @@ namespace Task.Connector
             throw new NotImplementedException();
         }
 
-        public IEnumerable<Property> GetAllProperties()
+        public IEnumerable<Property> GetAllProperties() //TODO: Include password as property
         {
-            throw new NotImplementedException();
+            using (var context = new ConnectorDbContext(optionsBuilder.Options)) { // would ideally want some way to get descriptions from db comments but idk how rn...
+                var UserType = context.GetService<IDesignTimeModel>().Model.GetEntityTypes().Where(type => type.ClrType.Name == nameof(User)).First();
+                var UserProperties = UserType!.GetProperties()
+                    .Where(prop => prop.Name != nameof(User.Login))
+                    .Select(prop => new Property(prop.Name, prop.GetComment() ?? prop.Name));                
+
+                foreach (var property in UserProperties) {
+                    Logger.Debug(" --- " + property.Name + " : " + property.Description);
+                }
+
+                return UserProperties;
+            }
+            
         }
 
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
         {
-            throw new NotImplementedException();
+            using (var context = new ConnectorDbContext(optionsBuilder.Options)) {
+                var query = from user in context.Users
+                            where user.Login == userLogin
+                            select new UserProperty[] {
+                                new(nameof(user.FirstName),         user.FirstName),
+                                new(nameof(user.MiddleName),        user.MiddleName),
+                                new(nameof(user.LastName),          user.LastName),
+                                new(nameof(user.TelephoneNumber),   user.TelephoneNumber),
+                                new(nameof(user.IsLead),            user.IsLead.ToString()),
+                            };
+                return query.First();
+            }
         }
 
         public bool IsUserExists(string userLogin)
@@ -65,15 +91,15 @@ namespace Task.Connector
         public IEnumerable<string> GetUserPermissions(string userLogin)
         {
             using (var context = new ConnectorDbContext(optionsBuilder.Options)) {
-                var query = from usr in context.UserRequestRights
-                            where usr.UserId == userLogin
+                var query = from user in context.UserRequestRights
+                            where user.UserId == userLogin
                             join right in context.RequestRights
-                                on usr.RightId equals right.Id
+                                on user.RightId equals right.Id
                             select right.Name;
                 return query.ToList();
             }
         }
 
-        public ILogger Logger { get; set; }
+        public ILogger Logger { get; set; } = null!;
     }
 }
