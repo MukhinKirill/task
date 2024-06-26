@@ -28,44 +28,43 @@ namespace Task.Connector
             throw new NotImplementedException();
         }
 
-        public IEnumerable<Property> GetAllProperties() //TODO: Include password as property
+        public IEnumerable<Property> GetAllProperties() 
         {
-            using (var context = new ConnectorDbContext(optionsBuilder.Options)) { // would ideally want some way to get descriptions from db comments but idk how rn...
+            using (var context = new ConnectorDbContext(optionsBuilder.Options)) { 
                 var UserType = context.GetService<IDesignTimeModel>().Model.GetEntityTypes().Where(type => type.ClrType.Name == nameof(User)).First();
                 var UserProperties = UserType!.GetProperties()
                     .Where(prop => prop.Name != nameof(User.Login))
-                    .Select(prop => new Property(prop.Name, prop.GetComment() ?? prop.Name));                
+                    .Select(prop => new Property(prop.Name, prop.GetComment() ?? prop.Name));
 
-                foreach (var property in UserProperties) {
-                    Logger.Debug(" --- " + property.Name + " : " + property.Description);
-                }
+                var PwdType = context.GetService<IDesignTimeModel>().Model.GetEntityTypes().Where(type => type.ClrType.Name == nameof(Password)).First();
+                var PwdProp = PwdType!.GetProperty(nameof(Password.Password1));
 
-                return UserProperties;
+                return UserProperties.Append(new(PwdProp.Name, PwdProp.GetComment() ?? PwdProp.Name));
             }
             
         }
 
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
         {
-            using (var context = new ConnectorDbContext(optionsBuilder.Options)) {
-                var query = from user in context.Users
-                            where user.Login == userLogin
-                            select new UserProperty[] {
-                                new(nameof(user.FirstName),         user.FirstName),
-                                new(nameof(user.MiddleName),        user.MiddleName),
-                                new(nameof(user.LastName),          user.LastName),
-                                new(nameof(user.TelephoneNumber),   user.TelephoneNumber),
-                                new(nameof(user.IsLead),            user.IsLead.ToString()),
-                            };
-                return query.First();
-            }
+            using var context = new ConnectorDbContext(optionsBuilder.Options);
+
+            var query = from user in context.Users
+                        where user.Login == userLogin
+                        select new UserProperty[] {
+                            new (nameof(user.FirstName),         user.FirstName),
+                            new (nameof(user.MiddleName),        user.MiddleName),
+                            new (nameof(user.LastName),          user.LastName),
+                            new (nameof(user.TelephoneNumber),   user.TelephoneNumber),
+                            new (nameof(user.IsLead),            user.IsLead.ToString()),
+                        };
+            return query.First();
+
         }
 
         public bool IsUserExists(string userLogin)
         {
-            using (var context = new ConnectorDbContext(optionsBuilder.Options)) {
-                return context.Users.Any(u => u.Login == userLogin);
-            }
+            using var context = new ConnectorDbContext(optionsBuilder.Options);
+            return context.Users.Any(u => u.Login == userLogin);
         }
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
@@ -90,14 +89,13 @@ namespace Task.Connector
 
         public IEnumerable<string> GetUserPermissions(string userLogin)
         {
-            using (var context = new ConnectorDbContext(optionsBuilder.Options)) {
-                var query = from user in context.UserRequestRights
-                            where user.UserId == userLogin
-                            join right in context.RequestRights
-                                on user.RightId equals right.Id
-                            select right.Name;
-                return query.ToList();
-            }
+            using var context = new ConnectorDbContext(optionsBuilder.Options);
+            var query = from user in context.UserRequestRights
+                        where user.UserId == userLogin
+                        join right in context.RequestRights
+                            on user.RightId equals right.Id
+                        select right.Name;
+            return query.ToList(); 
         }
 
         public ILogger Logger { get; set; } = null!;
