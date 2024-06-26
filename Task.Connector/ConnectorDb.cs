@@ -25,22 +25,49 @@ namespace Task.Connector
 
         public void CreateUser(UserToCreate user)
         {
-            throw new NotImplementedException();
+            try {
+                using var context = new ConnectorDbContext(optionsBuilder.Options);
+
+                var newUser = new User() { //this can be simplified
+                    Login = user.Login,
+                    FirstName =         user.Properties.FirstOrDefault(p => p.Name.Equals(nameof(User.FirstName),       StringComparison.OrdinalIgnoreCase))?.Value ?? "",
+                    MiddleName =        user.Properties.FirstOrDefault(p => p.Name.Equals(nameof(User.MiddleName),      StringComparison.OrdinalIgnoreCase))?.Value ?? "",
+                    LastName =          user.Properties.FirstOrDefault(p => p.Name.Equals(nameof(User.LastName),        StringComparison.OrdinalIgnoreCase))?.Value ?? "",
+                    TelephoneNumber =   user.Properties.FirstOrDefault(p => p.Name.Equals(nameof(User.TelephoneNumber), StringComparison.OrdinalIgnoreCase))?.Value ?? "",
+                    IsLead = bool.Parse(user.Properties.FirstOrDefault(p => p.Name.Equals(nameof(User.IsLead),          StringComparison.OrdinalIgnoreCase))?.Value ?? "false")
+                };
+
+                var newPassword = new Password() {
+                    UserId = user.Login,
+                    Password1 = user.HashPassword
+                };
+
+                context.Users.Add(newUser);
+                context.Passwords.Add(newPassword);
+                context.SaveChanges();
+            }
+            catch (FormatException e) {
+                Logger.Error($"Ошибка при создании пользователя - неверный формат свойства: {e}");
+            }
+            catch (Exception e) {
+                Logger.Error($"Ошибка при создании пользователя: {e}");
+            }
         }
 
         public IEnumerable<Property> GetAllProperties() 
         {
-            using (var context = new ConnectorDbContext(optionsBuilder.Options)) { 
-                var UserType = context.GetService<IDesignTimeModel>().Model.GetEntityTypes().Where(type => type.ClrType.Name == nameof(User)).First();
-                var UserProperties = UserType!.GetProperties()
-                    .Where(prop => prop.Name != nameof(User.Login))
-                    .Select(prop => new Property(prop.Name, prop.GetComment() ?? prop.Name));
+            using var context = new ConnectorDbContext(optionsBuilder.Options); 
 
-                var PwdType = context.GetService<IDesignTimeModel>().Model.GetEntityTypes().Where(type => type.ClrType.Name == nameof(Password)).First();
-                var PwdProp = PwdType!.GetProperty(nameof(Password.Password1));
+            var UserType = context.GetService<IDesignTimeModel>().Model.GetEntityTypes().Where(type => type.ClrType.Name == nameof(User)).First();
+            var UserProperties = UserType!.GetProperties()
+                .Where(prop => prop.Name != nameof(User.Login))
+                .Select(prop => new Property(prop.Name, prop.GetComment() ?? prop.Name));
 
-                return UserProperties.Append(new(PwdProp.Name, PwdProp.GetComment() ?? PwdProp.Name));
-            }
+            var PwdType = context.GetService<IDesignTimeModel>().Model.GetEntityTypes().Where(type => type.ClrType.Name == nameof(Password)).First();
+            var PwdProp = PwdType!.GetProperty(nameof(Password.Password1));
+
+            return UserProperties.Append(new(PwdProp.Name, PwdProp.GetComment() ?? PwdProp.Name));
+            
             
         }
 
@@ -64,6 +91,7 @@ namespace Task.Connector
         public bool IsUserExists(string userLogin)
         {
             using var context = new ConnectorDbContext(optionsBuilder.Options);
+
             return context.Users.Any(u => u.Login == userLogin);
         }
 
@@ -90,6 +118,7 @@ namespace Task.Connector
         public IEnumerable<string> GetUserPermissions(string userLogin)
         {
             using var context = new ConnectorDbContext(optionsBuilder.Options);
+
             var query = from user in context.UserRequestRights
                         where user.UserId == userLogin
                         join right in context.RequestRights
