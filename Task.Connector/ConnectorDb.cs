@@ -14,8 +14,8 @@ namespace Task.Connector
     public class ConnectorDb : IConnector
     {
         private readonly DbContextOptionsBuilder<ConnectorDbContext> optionsBuilder = new();
-        public void StartUp(string connectionString)
-        {
+
+        public void StartUp(string connectionString) {
             var reg = new Regex("(?=(?:(?:[^']*'){2})*[^']*$)\\;"); //TODO: Parse the connection string in a better way and switch optionsbuilder to include MSSQL db
             var args = reg.Split(connectionString);
             var argreg = new Regex("(?<=\').*?(?=\')");
@@ -23,8 +23,7 @@ namespace Task.Connector
             optionsBuilder.UseNpgsql(cs.ToString());
         }
 
-        public void CreateUser(UserToCreate user)
-        {
+        public void CreateUser(UserToCreate user) {
             try {
                 using var context = new ConnectorDbContext(optionsBuilder.Options);
 
@@ -47,15 +46,14 @@ namespace Task.Connector
                 context.SaveChanges();
             }
             catch (FormatException e) {
-                Logger.Error($"Ошибка при создании пользователя - неверный формат свойства: {e}");
+                Logger.Error($"Ошибка при создании пользователя - неверный формат свойства: {e.Message}");
             }
             catch (Exception e) {
-                Logger.Error($"Ошибка при создании пользователя: {e}");
+                Logger.Error($"Ошибка при создании пользователя: {e.Message}");
             }
         }
 
-        public IEnumerable<Property> GetAllProperties() 
-        {
+        public IEnumerable<Property> GetAllProperties() {
             using var context = new ConnectorDbContext(optionsBuilder.Options); 
 
             var UserType = context.GetService<IDesignTimeModel>().Model.GetEntityTypes().Where(type => type.ClrType.Name == nameof(User)).First();
@@ -66,13 +64,10 @@ namespace Task.Connector
             var PwdType = context.GetService<IDesignTimeModel>().Model.GetEntityTypes().Where(type => type.ClrType.Name == nameof(Password)).First();
             var PwdProp = PwdType!.GetProperty(nameof(Password.Password1));
 
-            return UserProperties.Append(new(PwdProp.Name, PwdProp.GetComment() ?? PwdProp.Name));
-            
-            
+            return UserProperties.Append(new(PwdProp.Name, PwdProp.GetComment() ?? PwdProp.Name));                     
         }
 
-        public IEnumerable<UserProperty> GetUserProperties(string userLogin)
-        {
+        public IEnumerable<UserProperty> GetUserProperties(string userLogin) {
             using var context = new ConnectorDbContext(optionsBuilder.Options);
 
             var query = from user in context.Users
@@ -85,38 +80,49 @@ namespace Task.Connector
                             new (nameof(user.IsLead),            user.IsLead.ToString()),
                         };
             return query.First();
-
         }
 
-        public bool IsUserExists(string userLogin)
-        {
+        public bool IsUserExists(string userLogin) {
             using var context = new ConnectorDbContext(optionsBuilder.Options);
 
             return context.Users.Any(u => u.Login == userLogin);
         }
 
-        public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
-        {
+        public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin) { //invalid operation - user not found
+            try {
+                using var context = new ConnectorDbContext(optionsBuilder.Options);
+
+                var query = from user in context.Users where user.Login == userLogin select user;
+                var UserToUpdate = query.First();
+
+                //this can also be simplified
+                UserToUpdate.FirstName =         properties.FirstOrDefault(p => p.Name.Equals(nameof(User.FirstName),       StringComparison.OrdinalIgnoreCase))?.Value ?? UserToUpdate.FirstName;
+                UserToUpdate.MiddleName =        properties.FirstOrDefault(p => p.Name.Equals(nameof(User.MiddleName),      StringComparison.OrdinalIgnoreCase))?.Value ?? UserToUpdate.MiddleName;
+                UserToUpdate.LastName =          properties.FirstOrDefault(p => p.Name.Equals(nameof(User.LastName),        StringComparison.OrdinalIgnoreCase))?.Value ?? UserToUpdate.LastName;
+                UserToUpdate.TelephoneNumber =   properties.FirstOrDefault(p => p.Name.Equals(nameof(User.TelephoneNumber), StringComparison.OrdinalIgnoreCase))?.Value ?? UserToUpdate.TelephoneNumber;
+                UserToUpdate.IsLead = bool.Parse(properties.FirstOrDefault(p => p.Name.Equals(nameof(User.IsLead),          StringComparison.OrdinalIgnoreCase))?.Value ?? UserToUpdate.IsLead.ToString());
+
+                context.Users.Update(UserToUpdate);
+                context.SaveChanges();
+            }
+            catch (Exception e) {
+                Logger.Error($"Ошибка при обновлении данных пользователя: {e.Message}");
+            }
+        }
+
+        public IEnumerable<Permission> GetAllPermissions() {
             throw new NotImplementedException();
         }
 
-        public IEnumerable<Permission> GetAllPermissions()
-        {
+        public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds) {
             throw new NotImplementedException();
         }
 
-        public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
-        {
+        public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds) {
             throw new NotImplementedException();
         }
 
-        public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IEnumerable<string> GetUserPermissions(string userLogin)
-        {
+        public IEnumerable<string> GetUserPermissions(string userLogin) {
             using var context = new ConnectorDbContext(optionsBuilder.Options);
 
             var query = from user in context.UserRequestRights
