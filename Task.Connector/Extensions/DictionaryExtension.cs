@@ -11,5 +11,17 @@
 
             return string.Empty;
         }
+
+        public static string GetValueOrDefault<T>(this Dictionary<string, string> dict, string key, string @default)
+        {
+            if (dict.GetValueOrEmpty(key) == string.Empty)
+            {
+                return @default;
+            }
+            else
+            {
+                return dict[key];
+            }
+        }
     }
 }

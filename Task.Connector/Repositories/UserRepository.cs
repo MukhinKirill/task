@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 using Task.Connector.Extensions;
 using Task.Connector.Mappers;
 using Task.Integration.Data.Models.Models;
@@ -69,15 +70,20 @@ namespace Task.Connector.Repositories
                 propertyDict.Add(property.Name, property.Value);
             }
 
-            _dbContext.Users
+            var user = _dbContext.Users
                 .Where(user => user.Login == userLogin)
-                .ExecuteUpdate(set => set
-                    .SetProperty(user => user.FirstName, propertyDict.GetValueOrEmpty("firstName"))
-                    .SetProperty(user => user.MiddleName, propertyDict.GetValueOrEmpty("middleName"))
-                    .SetProperty(user => user.LastName, propertyDict.GetValueOrEmpty("lastName"))
-                    .SetProperty(user => user.TelephoneNumber, propertyDict.GetValueOrEmpty("telephoneNumber"))
-                    .SetProperty(user => user.IsLead, propertyDict.GetValueOrEmpty("isLead") == "True" ? true : false)
-                );
+                .FirstOrDefault();
+
+            if(user != null)
+            {
+                user.FirstName = propertyDict.GetValueOrDefault("firstName", user.FirstName);
+                user.MiddleName = propertyDict.GetValueOrDefault("middleName", user.MiddleName);
+                user.LastName = propertyDict.GetValueOrDefault("lastName", user.LastName);
+                user.TelephoneNumber = propertyDict.GetValueOrDefault("telephoneNumber", user.TelephoneNumber);
+                user.IsLead = propertyDict.GetValueOrDefault("isLead", user.IsLead.ToString()).ToLower() == "true" ? true : false;
+
+                _dbContext.SaveChanges();
+            }
         }
     }
 }

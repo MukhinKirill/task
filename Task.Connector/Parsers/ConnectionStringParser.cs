@@ -1,59 +1,40 @@
 ﻿using System.Text;
 using System.Text.RegularExpressions;
+using Task.Connector.Parsers.Records;
 
 namespace Task.Connector.Parsers
 {
-    public class ConnectionStringParser : IStringParser<string>
+    public class ConnectionStringParser : IStringParser<ConnectionConfiguration>
     {
-        private readonly Dictionary<string, string> _keyValues = new();
+        private const string ConnectionString = "ConnectionString";
+        private const string Provider = "Provider";
 
-        public ConnectionStringParser()
+        public ConnectionConfiguration Parse(string input)
         {
-            InitializeDictionary();
-        }
+            var regexp = new Regex(@"(\w+)\W+([^']+)");
+            var matches = regexp.Matches(input);
 
-        public string Parse(string input)
-        {
-            //(\w+[^\W])\W*'([^']*)
-            input = Regex.Match(input, "ConnectionString='([^']*)", RegexOptions.IgnoreCase).Groups[1].Value;
-            var regexp = new Regex(@"(\w+[^\W])\W+([\d\w._]+[^\W\D]?)");
+            var connectionString = string.Empty;
+            var provider = string.Empty;
 
-            foreach (Match match in regexp.Matches(input))
+            foreach (Match match in matches)
             {
-                var key = match.Groups[1].Value;
-                var value = match.Groups[2].Value;
-
-                if (_keyValues.ContainsKey(key))
+                if (match.Groups[1].Value.ToLower() == ConnectionString.ToLower())
                 {
-                    _keyValues[key] = value;
+                    connectionString = match.Groups[2].Value;
+                }
+                else if(match.Groups[1].Value.ToLower() == Provider.ToLower())
+                {
+                    provider = match.Groups[2].Value;
+                }
+
+                if(connectionString != string.Empty && provider != string.Empty)
+                {
+                    break;
                 }
             }
-
-            return ConvertDictToString(_keyValues);
-        }
-
-        private string ConvertDictToString(Dictionary<string, string> keyValues)
-        {
-            var stringBuilder = new StringBuilder();
-
-            foreach (var key in keyValues.Keys)
-            {
-                stringBuilder.Append(key);
-                stringBuilder.Append('=');
-                stringBuilder.Append(keyValues[key]);
-                stringBuilder.Append(";");
-            }
-
-            return stringBuilder.ToString();
-        }
-
-        private void InitializeDictionary()
-        {
-            _keyValues.Add("Server", string.Empty);
-            _keyValues.Add("Port", string.Empty);
-            _keyValues.Add("Database", string.Empty);
-            _keyValues.Add("Username", string.Empty);
-            _keyValues.Add("Password", string.Empty);
+            
+            return new ConnectionConfiguration(connectionString, provider);
         }
     }
 }

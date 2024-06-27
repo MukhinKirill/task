@@ -11,7 +11,7 @@ public class TaskDbContext : DbContext
     public DbSet<UserItRole> UserItroles => Set<UserItRole>();
     public DbSet<UserRequestRight> UserRequestRights => Set<UserRequestRight>();
 
-    public TaskDbContext(DbContextOptions<TaskDbContext> options) : base(options) { }
+    public TaskDbContext(DbContextOptions options) : base(options) { }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

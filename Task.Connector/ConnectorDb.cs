@@ -15,11 +15,9 @@ namespace Task.Connector
 
         public void StartUp(string connectionString)
         {
-            connectionString = new ConnectionStringParser().Parse(connectionString);
-
             try
             {
-                ServiceProviderSingleton.RegisterServices(connectionString);
+                ServiceProviderSingleton.RegisterServices(new ConnectionStringParser().Parse(connectionString));
 
                 _userRepository = ServiceProviderSingleton.ServiceProvider?.GetRequiredService<IUserRepository>();
                 _permissionRepository = ServiceProviderSingleton.ServiceProvider?.GetRequiredService<IPermissionRepository>();
@@ -142,7 +140,24 @@ namespace Task.Connector
                 {
                     Logger.Debug($"Update {userLogin} properties");
 
+                    var _properties = _userRepository.GetUserProperties(userLogin);
+                    var oldPropertiesDict = new Dictionary<string, string>();
+
+                    foreach (var property in _properties)
+                        oldPropertiesDict.Add(property.Name, property.Value);
+
+
                     _userRepository.UpdateUserProperties(properties, userLogin);
+
+                    _properties = _userRepository.GetUserProperties(userLogin);
+
+                    foreach (var property in _properties)
+                    {
+                        if (oldPropertiesDict[property.Name] != property.Value)
+                        {
+                            Logger.Debug($"\t- {property.Name}: {oldPropertiesDict[property.Name]} -> {property.Value}");
+                        }
+                    }
                 }
                 else
                 {

@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Task.Connector.Mappers;
+using Task.Connector.Parsers.Records;
 using Task.Connector.Repositories;
 
 namespace Task.Connector
@@ -11,11 +12,11 @@ namespace Task.Connector
 
         public static IServiceProvider? ServiceProvider { get; private set; }
 
-        public static void RegisterServices(string connectionString)
+        public static void RegisterServices(ConnectionConfiguration connectionConfiguration)
         {
             if (ServiceProvider == null) 
             {
-                var options = new DbContextOptionsBuilder<TaskDbContext>().UseNpgsql(connectionString).Options;
+                var options = ConnectionBuilder.GetConnection(connectionConfiguration);
 
                 using (var context = new TaskDbContext(options))
                 {
