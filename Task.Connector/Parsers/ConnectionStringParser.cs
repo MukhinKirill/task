@@ -1,9 +1,9 @@
 ﻿using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Task.Connector
+namespace Task.Connector.Parsers
 {
-    public class ConnectionStringParser
+    public class ConnectionStringParser : IStringParser<string>
     {
         private readonly Dictionary<string, string> _keyValues = new();
 
@@ -14,8 +14,9 @@ namespace Task.Connector
 
         public string Parse(string input)
         {
+            //(\w+[^\W])\W*'([^']*)
             input = Regex.Match(input, "ConnectionString='([^']*)", RegexOptions.IgnoreCase).Groups[1].Value;
-            var regexp = new Regex(@"(\w+)\s*=([^;]*)");
+            var regexp = new Regex(@"(\w+[^\W])\W+([\d\w._]+[^\W\D]?)");
 
             foreach (Match match in regexp.Matches(input))
             {

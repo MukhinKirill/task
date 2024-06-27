@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Task.Connector.Parsers;
 using Task.Connector.Repositories;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
@@ -37,10 +38,12 @@ namespace Task.Connector
             {
                 Logger.Debug($"Try create user: {user.Login}");
 
+                _userRepository.CreateUser(user);
+
                 foreach (var property in user.Properties)
                     Logger.Debug($"\t- {property.Name} -> {property.Value}");
 
-                /*if (_userRepository.IsUserExists(user.Login))
+                if (_userRepository.IsUserExists(user.Login))
                 {
                     Logger.Debug($"User {user.Login} created");
 
@@ -52,9 +55,7 @@ namespace Task.Connector
                 else
                 {
                     Logger.Error("User creating failure");
-                }*/
-                
-                _userRepository.CreateUser(user);
+                }
             }
             else
             {
@@ -91,7 +92,6 @@ namespace Task.Connector
             {
                 if (_userRepository.IsUserExists(userLogin))
                 {
-
                     IEnumerable<UserProperty> userProperties = _userRepository.GetUserProperties(userLogin);
 
                     Logger.Debug($"Get {userLogin} properties");
@@ -120,7 +120,11 @@ namespace Task.Connector
         {
             if (_userRepository != null)
             {
-                return _userRepository.IsUserExists(userLogin);
+                var result = _userRepository.IsUserExists(userLogin);
+
+                Logger.Debug(result ? $"User {userLogin} exist" : $"User {userLogin} doesnt exist");
+
+                return result;
             }
             else
             {
@@ -138,19 +142,7 @@ namespace Task.Connector
                 {
                     Logger.Debug($"Update {userLogin} properties");
 
-                    /*var _properties = _userRepository.GetUserProperties(userLogin);
-                    var dictProperties = new Dictionary<string, string>();
-
-                    foreach (var property in _properties)
-                        dictProperties.Add(property.Name, property.Value);*/
-
                     _userRepository.UpdateUserProperties(properties, userLogin);
-
-                   /* _properties = _userRepository.GetUserProperties(userLogin);
-
-                    foreach(var property in _properties)
-                       if(dictProperties[property.Name] != property.Value)
-                            Logger.Debug($"\t - Change {property.Name} \t {dictProperties[property.Name]} -> {property.Value}");*/
                 }
                 else
                 {
@@ -159,28 +151,113 @@ namespace Task.Connector
             }
             else
             {
-                Logger.Error(new NullReferenceException().Message);
+                Logger.Error("The class must be initialized before calling methods");
+
+                throw new NullReferenceException();
             }
         }
 
         public IEnumerable<Permission> GetAllPermissions()
         {
-            throw new NotImplementedException();
+            if (_permissionRepository != null)
+            {
+                Logger.Debug("Get All permissions");
+
+                var permissions = _permissionRepository.GetAllPermissions();
+
+                foreach(var permission in permissions)
+                    Logger.Debug($"\t- {permission.Id} -> {permission.Description}");
+
+                return permissions;
+            }
+            else
+            {
+                Logger.Error("The class must be initialized before calling methods");
+
+                throw new NullReferenceException();
+            }
         }
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            throw new NotImplementedException();
+            if (_permissionRepository != null && _userRepository != null)
+            {
+                if (_userRepository.IsUserExists(userLogin))
+                {
+                    Logger.Debug($"Add {userLogin} permissions");
+
+                    foreach(var right in rightIds)
+                        Logger.Debug($"\t- {right}");
+
+                    _permissionRepository.AddUserPermissions(userLogin, rightIds);
+                }
+                else
+                {
+                    Logger.Error($"User {userLogin} doesnt exist");
+                }
+            }
+            else
+            {
+                Logger.Error("The class must be initialized before calling methods");
+
+                throw new NullReferenceException();
+            }
         }
 
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            throw new NotImplementedException();
+            if (_permissionRepository != null && _userRepository != null)
+            {
+                if (_userRepository.IsUserExists(userLogin))
+                {
+                    Logger.Debug($"Remove {userLogin} permissions");
+
+                    foreach (var right in rightIds)
+                        Logger.Debug($"\t- {right}");
+
+                    _permissionRepository.RemoveUserPermissions(userLogin, rightIds);
+                }
+                else
+                {
+                    Logger.Error($"User {userLogin} doesnt exist");
+                }
+            }
+            else
+            {
+                Logger.Error("The class must be initialized before calling methods");
+
+                throw new NullReferenceException();
+            }
         }
 
         public IEnumerable<string> GetUserPermissions(string userLogin)
         {
-            throw new NotImplementedException();
+            if (_permissionRepository != null && _userRepository != null)
+            {
+                if (_userRepository.IsUserExists(userLogin))
+                {
+                    Logger.Debug($"Get {userLogin} permissions");
+
+                    var permissions = _permissionRepository.GetUserPermissions(userLogin);
+
+                    foreach (var permission in permissions)
+                        Logger.Debug($"\t- {permission}");
+
+                    return permissions;
+                }
+                else
+                {
+                    Logger.Error($"User {userLogin} doesnt exist");
+
+                    return null;
+                }
+            }
+            else
+            {
+                Logger.Error("The class must be initialized before calling methods");
+
+                throw new NullReferenceException();
+            }
         }
     }
 }
