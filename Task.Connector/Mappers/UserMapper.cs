@@ -19,7 +19,7 @@ namespace Task.Connector.Mappers
             result.MiddleName = properties.GetValueOrEmpty("middleName");
             result.LastName = properties.GetValueOrEmpty("lastName");
             result.TelephoneNumber = properties.GetValueOrEmpty("telephoneNumber");
-            result.IsLead = properties.GetValueOrEmpty("isLead") == "True" ? true : false;
+            result.IsLead = properties.GetValueOrEmpty("isLead").ToLower() == "true" ? true : false;
 
             return result;
         }
