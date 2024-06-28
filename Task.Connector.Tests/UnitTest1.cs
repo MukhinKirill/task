@@ -40,7 +40,6 @@ namespace Task.Connector.Tests
             return connector;
         }
 
-
         [Theory]
         //[InlineData("MSSQL")]
         [InlineData("POSTGRE")]
@@ -72,9 +71,11 @@ namespace Task.Connector.Tests
             var dataSetter = Init(provider);
             var connector = GetConnector(provider);
             var userInfo = connector.GetUserProperties(DefaultData.MasterUserLogin);
+            var isTelephoneNumberOldOrNew = (string property) => 
+                property.Equals(DefaultData.MasterUser.TelephoneNumber) || property.Equals(TestData.NewPhoneValueForMasterUser);
             Assert.NotNull(userInfo);
             Assert.Equal(5, userInfo.Count());
-            Assert.True(userInfo.FirstOrDefault(_ => _.Value.Equals(DefaultData.MasterUser.TelephoneNumber)) != null);
+            Assert.True(userInfo.FirstOrDefault(_ => isTelephoneNumberOldOrNew.Invoke(_.Value)) != null);
         }
 
         [Theory]

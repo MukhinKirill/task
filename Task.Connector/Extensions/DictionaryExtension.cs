@@ -12,7 +12,7 @@
             return string.Empty;
         }
 
-        public static string GetValueOrDefault<T>(this Dictionary<string, string> dict, string key, string @default)
+        public static string GetValueOrDefault(this Dictionary<string, string> dict, string key, string @default)
         {
             if (dict.GetValueOrEmpty(key) == string.Empty)
             {
