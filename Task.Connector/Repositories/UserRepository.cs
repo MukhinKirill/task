@@ -26,9 +26,6 @@ namespace Task.Connector.Repositories
 
         public IEnumerable<Property> GetAllProperties()
         {
-            var userEntityProperties = _dbContext.Users.EntityType.GetProperties();
-            var passwordEntityProperties = _dbContext.Passwords.EntityType.GetProperties();
-
             var properties = new List<Property>
             {
                 new Property(_dbProperties.UserProperties.FirstNamePropertyName, string.Empty),
@@ -45,7 +42,6 @@ namespace Task.Connector.Repositories
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
         {
             var userProperties = new List<UserProperty>();
-            var userEntityProperties = _dbContext.Users.EntityType.GetProperties();
 
             var user = _dbContext.Users.Where(user => user.Login == userLogin).FirstOrDefault();
 
@@ -69,7 +65,6 @@ namespace Task.Connector.Repositories
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
         {
             var propertyDict = properties.ConvertToDict();
-            var userEntityProperties = _dbContext.Users.EntityType.GetProperties();
             var user = _dbContext.Users
                 .Where(user => user.Login == userLogin)
                 .FirstOrDefault();

@@ -43,7 +43,7 @@ namespace Task.Connector
                     userProperties.GetPropertyColumnNameOrDefault(nameof(User.IsLead), IsLeadPropertyName)
                     ),
                 new PasswordProperties(
-                    passwordProperties.GetPropertyColumnNameOrDefault(nameof(Password.Password1), PasswordPropertyName)
+                    passwordProperties.GetPropertyColumnNameOrDefault(nameof(Password.PasswordProperty), PasswordPropertyName)
                     )
                 );
 

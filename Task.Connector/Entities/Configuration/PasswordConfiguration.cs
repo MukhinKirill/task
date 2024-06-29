@@ -10,7 +10,7 @@ namespace Task.Connector.Entities.Configuration
             builder.ToTable("Passwords", "TestTaskSchema");
 
             builder.Property(e => e.Id).HasColumnName("id");
-            builder.Property(e => e.Password1)
+            builder.Property(e => e.PasswordProperty)
                 .HasMaxLength(20)
                 .HasColumnName("password");
             builder.Property(e => e.UserId)

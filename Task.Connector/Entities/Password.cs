@@ -6,5 +6,5 @@ public class Password
 
     public string UserId { get; set; } = null!;
 
-    public string Password1 { get; set; } = null!;
+    public string PasswordProperty { get; set; } = null!;
 }
