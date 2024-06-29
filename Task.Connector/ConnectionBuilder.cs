@@ -1,9 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Task.Connector.Parsers.Records;
 
 namespace Task.Connector
@@ -22,6 +17,7 @@ namespace Task.Connector
                 case Postgres:
                     builder.UseNpgsql(connectionConfiguration.ConnectionString);
                     break;
+
                 case MySql:
                     builder.UseSqlServer(connectionConfiguration.ConnectionString);
                     break;

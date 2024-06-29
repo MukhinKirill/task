@@ -8,18 +8,16 @@ namespace Task.Connector.Mappers
     {
         public User Map(UserToCreate userToCreate)
         {
-            var properties = new Dictionary<string, string>();
-            var result = new User();
-            result.Login = userToCreate.Login;
-
-            foreach(var property in userToCreate.Properties)
-                properties.Add(property.Name, property.Value);
-
-            result.FirstName = properties.GetValueOrEmpty("firstName");
-            result.MiddleName = properties.GetValueOrEmpty("middleName");
-            result.LastName = properties.GetValueOrEmpty("lastName");
-            result.TelephoneNumber = properties.GetValueOrEmpty("telephoneNumber");
-            result.IsLead = properties.GetValueOrEmpty("isLead").ToLower() == "true" ? true : false;
+            var properties = userToCreate.Properties.ConvertToDict();
+            var result = new User()
+            {
+                Login = userToCreate.Login,
+                FirstName = properties.GetValueOrEmpty(Constants.FirstNamePropertyName),
+                MiddleName = properties.GetValueOrEmpty(Constants.MiddleNamePropertyName),
+                LastName = properties.GetValueOrEmpty(Constants.LastNamePropertyName),
+                TelephoneNumber = properties.GetValueOrEmpty(Constants.TelephoneNumberPropertyName),
+                IsLead = properties.GetValueOrEmpty(Constants.IsLeadPropertyName).EqualsIgnoreCase(true.ToString()) ? true : false
+            };
 
             return result;
         }

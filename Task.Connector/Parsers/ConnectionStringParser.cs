@@ -1,5 +1,5 @@
-﻿using System.Text;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
+using Task.Connector.Extensions;
 using Task.Connector.Parsers.Records;
 
 namespace Task.Connector.Parsers
@@ -14,26 +14,14 @@ namespace Task.Connector.Parsers
             var regexp = new Regex(@"(\w+)\W+([^']+)");
             var matches = regexp.Matches(input);
 
-            var connectionString = string.Empty;
-            var provider = string.Empty;
+            var matchesDict = new Dictionary<string, string>();
 
             foreach (Match match in matches)
-            {
-                if (match.Groups[1].Value.ToLower() == ConnectionString.ToLower())
-                {
-                    connectionString = match.Groups[2].Value;
-                }
-                else if(match.Groups[1].Value.ToLower() == Provider.ToLower())
-                {
-                    provider = match.Groups[2].Value;
-                }
+                matchesDict.Add(match.Groups[1].Value, match.Groups[2].Value);
 
-                if(connectionString != string.Empty && provider != string.Empty)
-                {
-                    break;
-                }
-            }
-            
+            var connectionString = matchesDict.GetValueOrEmpty(ConnectionString);
+            var provider = matchesDict.GetValueOrEmpty(Provider);
+
             return new ConnectionConfiguration(connectionString, provider);
         }
     }

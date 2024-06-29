@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Task.Connector.Extensions;
 using Task.Connector.Parsers;
 using Task.Connector.Repositories;
 using Task.Integration.Data.Models;
@@ -140,18 +141,11 @@ namespace Task.Connector
                 {
                     Logger.Debug($"Update {userLogin} properties");
 
-                    var _properties = _userRepository.GetUserProperties(userLogin);
-                    var oldPropertiesDict = new Dictionary<string, string>();
-
-                    foreach (var property in _properties)
-                        oldPropertiesDict.Add(property.Name, property.Value);
-
+                    var oldPropertiesDict = _userRepository.GetUserProperties(userLogin).ConvertToDict();
 
                     _userRepository.UpdateUserProperties(properties, userLogin);
 
-                    _properties = _userRepository.GetUserProperties(userLogin);
-
-                    foreach (var property in _properties)
+                    foreach (var property in _userRepository.GetUserProperties(userLogin))
                     {
                         if (oldPropertiesDict[property.Name] != property.Value)
                         {

@@ -2,22 +2,24 @@
 using Task.Connector.Entities;
 using Task.Connector.Parsers;
 using Task.Connector.Parsers.Enums;
+using Task.Connector.Parsers.Records;
 using Task.Integration.Data.Models.Models;
 
 namespace Task.Connector.Repositories
 {
     public class PermissionRepository : IPermissionRepository
     {
-        public const string RequestRightGroupName = "Request";
-        public const string ItRoleRightGroupName = "Role";
-        public const string Delimeter = ":";
-
+        private const string RequestRightGroupName = "Request";
+        private const string ItRoleRightGroupName = "Role";
+        private const string Delimeter = ":";
+       
         private readonly TaskDbContext _dbContext;
-        private readonly PermissionIdParser _permissionIdParser = new PermissionIdParser(RequestRightGroupName, ItRoleRightGroupName);
+        private readonly PermissionIdParser _permissionIdParser;
 
         public PermissionRepository(TaskDbContext dbContext) 
         {
             _dbContext = dbContext;
+            _permissionIdParser = new PermissionIdParser(new PermissionParserConfiguration(RequestRightGroupName, ItRoleRightGroupName, Delimeter));
         }
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> permissionIds)

@@ -6,15 +6,11 @@ namespace Task.Connector.Parsers
 {
     public class PermissionIdParser : IStringParser<PermissionId>
     {
-        private readonly string _requestRightGroupName;
-        private readonly string _itRoleRightGroupName;
-        //private readonly string _delimeter;
+        private readonly PermissionParserConfiguration _configuration;
 
-        public PermissionIdParser(string requestRightGroupName, string itRoleRightGroupName)
+        public PermissionIdParser(PermissionParserConfiguration configuration)
         {
-            _requestRightGroupName = requestRightGroupName;
-            _itRoleRightGroupName = itRoleRightGroupName;
-            //_delimeter = delimeter;
+            _configuration = configuration;
         }
 
         public PermissionId Parse(string input)
@@ -26,11 +22,11 @@ namespace Task.Connector.Parsers
 
         private PermissionTypes GetPermissionType(string input)
         {
-            if(input == _requestRightGroupName)
+            if(input == _configuration.RequestRightGroupName)
             {
                 return PermissionTypes.RequestRight;
             }
-            else if(input == _itRoleRightGroupName)
+            else if(input == _configuration.ItRoleRightGroupName)
             {
                 return PermissionTypes.ItRole;
             }
