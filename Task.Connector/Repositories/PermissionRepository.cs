@@ -9,17 +9,15 @@ namespace Task.Connector.Repositories
 {
     public class PermissionRepository : IPermissionRepository
     {
-        private const string RequestRightGroupName = "Request";
-        private const string ItRoleRightGroupName = "Role";
-        private const string Delimeter = ":";
-       
         private readonly TaskDbContext _dbContext;
         private readonly PermissionIdParser _permissionIdParser;
+        private readonly PermissionParserConfiguration _permissionParserConfiguration;
 
-        public PermissionRepository(TaskDbContext dbContext) 
+        public PermissionRepository(TaskDbContext dbContext, PermissionIdParser permissionIdParser, ConfigureManager configureManager) 
         {
             _dbContext = dbContext;
-            _permissionIdParser = new PermissionIdParser(new PermissionParserConfiguration(RequestRightGroupName, ItRoleRightGroupName, Delimeter));
+            _permissionIdParser = permissionIdParser;
+            _permissionParserConfiguration = configureManager.PermissionParserConfiguration;
         }
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> permissionIds)
@@ -62,13 +60,13 @@ namespace Task.Connector.Repositories
 
             _dbContext.ItRoles.ToList().ForEach(itRole =>
             {
-                var id = $"{ItRoleRightGroupName}{Delimeter}{itRole.Id}";
+                var id = $"{_permissionParserConfiguration.ItRoleRightGroupName}{_permissionParserConfiguration.Delimeter}{itRole.Id}";
                 result.Add(new Permission(id, itRole.Id.ToString(), itRole.Name));
             });
 
             _dbContext.RequestRights.ToList().ForEach(right =>
             {
-                var id = $"{RequestRightGroupName}{Delimeter}{right.Id}";
+                var id = $"{_permissionParserConfiguration.RequestRightGroupName}{_permissionParserConfiguration.Delimeter}{right.Id}";
                 result.Add(new Permission(id, right.Id.ToString(), right.Name));
             });
 
@@ -95,12 +93,12 @@ namespace Task.Connector.Repositories
 
             userRights.ForEach(right =>
             {
-                result.Add($"{RequestRightGroupName}{Delimeter}{right.RightId} - {right.RightDescription}");
+                result.Add($"{_permissionParserConfiguration.RequestRightGroupName}{_permissionParserConfiguration.Delimeter}{right.RightId} - {right.RightDescription}");
             });
 
             userRoles.ForEach(role =>
             {
-                result.Add($"{RequestRightGroupName}{Delimeter}{role.ItRoleId} - {role.ItRoleName}");
+                result.Add($"{_permissionParserConfiguration.RequestRightGroupName}{_permissionParserConfiguration.Delimeter}{role.ItRoleId} - {role.ItRoleName}");
             });
 
             return result;

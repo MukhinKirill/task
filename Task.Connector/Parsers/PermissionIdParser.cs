@@ -8,9 +8,9 @@ namespace Task.Connector.Parsers
     {
         private readonly PermissionParserConfiguration _configuration;
 
-        public PermissionIdParser(PermissionParserConfiguration configuration)
+        public PermissionIdParser(ConfigureManager configureManager)
         {
-            _configuration = configuration;
+            _configuration = configureManager.PermissionParserConfiguration;
         }
 
         public PermissionId Parse(string input)

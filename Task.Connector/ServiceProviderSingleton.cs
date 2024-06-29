@@ -1,6 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Task.Connector.Mappers;
+using Task.Connector.Parsers;
 using Task.Connector.Parsers.Records;
 using Task.Connector.Repositories;
 
@@ -27,6 +27,8 @@ namespace Task.Connector
                 }
 
                 _services.AddSingleton(new TaskDbContext(options));
+                _services.AddSingleton<ConfigureManager>();
+                _services.AddSingleton<PermissionIdParser>();
                 _services.AddSingleton<UserMapper>();
                 _services.AddSingleton<IUserRepository, UserRepository>();
                 _services.AddSingleton<IPermissionRepository, PermissionRepository>();

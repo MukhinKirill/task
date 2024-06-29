@@ -1,19 +1,21 @@
-﻿using Task.Connector.Entities;
-using Task.Connector.Extensions;
+﻿using Task.Connector.Extensions;
 using Task.Connector.Mappers;
+using Task.Connector.Records;
 using Task.Integration.Data.Models.Models;
 
 namespace Task.Connector.Repositories
 {
     internal class UserRepository : IUserRepository
     {
-        private TaskDbContext _dbContext;
-        private UserMapper _mapper;
+        private readonly TaskDbContext _dbContext;
+        private readonly UserMapper _mapper;
+        private readonly DbProperties _dbProperties;
 
-        public UserRepository(TaskDbContext dbContext, UserMapper mapper)
+        public UserRepository(TaskDbContext dbContext, UserMapper mapper, ConfigureManager configureManager)
         {
             _dbContext = dbContext;
             _mapper = mapper;
+            _dbProperties = configureManager.DbProperties;
         }
 
         public void CreateUser(UserToCreate user)
@@ -29,12 +31,12 @@ namespace Task.Connector.Repositories
 
             var properties = new List<Property>
             {
-                new Property(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(User.LastName), Constants.LastNamePropertyName), string.Empty),
-                new Property(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(User.MiddleName), Constants.MiddleNamePropertyName), string.Empty),
-                new Property(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(User.FirstName), Constants.FirstNamePropertyName), string.Empty),
-                new Property(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(User.TelephoneNumber), Constants.TelephoneNumberPropertyName), string.Empty),
-                new Property(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(User.IsLead), Constants.IsLeadPropertyName), string.Empty),
-                new Property(passwordEntityProperties.GetPropertyColumnNameOrDefault(nameof(Password.Password1), Constants.PasswordPropertyName), string.Empty)
+                new Property(_dbProperties.UserProperties.FirstNamePropertyName, string.Empty),
+                new Property(_dbProperties.UserProperties.MiddleNamePropertyName, string.Empty),
+                new Property(_dbProperties.UserProperties.LastNamePropertyName, string.Empty),
+                new Property(_dbProperties.UserProperties.TelephoneNumberPropertyName, string.Empty),
+                new Property(_dbProperties.UserProperties.IsLeadPropertyName, string.Empty),
+                new Property(_dbProperties.PasswordProperties.PasswordPropertyName, string.Empty)
             };
 
             return properties;
@@ -49,11 +51,11 @@ namespace Task.Connector.Repositories
 
             if(user != null)
             {
-                userProperties.Add(new UserProperty(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(user.LastName), Constants.LastNamePropertyName), user.LastName));
-                userProperties.Add(new UserProperty(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(user.FirstName), Constants.FirstNamePropertyName), user.FirstName));
-                userProperties.Add(new UserProperty(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(user.MiddleName), Constants.MiddleNamePropertyName), user.MiddleName));
-                userProperties.Add(new UserProperty(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(user.TelephoneNumber), Constants.TelephoneNumberPropertyName), user.TelephoneNumber));
-                userProperties.Add(new UserProperty(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(user.IsLead), Constants.IsLeadPropertyName), user.IsLead.ToString()));
+                userProperties.Add(new UserProperty(_dbProperties.UserProperties.FirstNamePropertyName, user.FirstName));
+                userProperties.Add(new UserProperty(_dbProperties.UserProperties.MiddleNamePropertyName, user.MiddleName));
+                userProperties.Add(new UserProperty(_dbProperties.UserProperties.LastNamePropertyName, user.LastName));
+                userProperties.Add(new UserProperty(_dbProperties.UserProperties.TelephoneNumberPropertyName, user.TelephoneNumber));
+                userProperties.Add(new UserProperty(_dbProperties.UserProperties.IsLeadPropertyName, user.IsLead.ToString()));
             }
 
             return userProperties;
@@ -74,12 +76,11 @@ namespace Task.Connector.Repositories
 
             if(user != null)
             {
-                user.FirstName = propertyDict.GetValueOrDefault(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(user.LastName), Constants.LastNamePropertyName), user.FirstName);
-                user.MiddleName = propertyDict.GetValueOrDefault(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(user.FirstName), Constants.FirstNamePropertyName), user.MiddleName);
-                user.LastName = propertyDict.GetValueOrDefault(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(user.MiddleName), Constants.MiddleNamePropertyName), user.LastName);
-                user.TelephoneNumber = propertyDict.GetValueOrDefault(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(user.TelephoneNumber), Constants.TelephoneNumberPropertyName), user.TelephoneNumber);
-                user.IsLead = propertyDict.GetValueOrDefault(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(user.IsLead), Constants.IsLeadPropertyName), user.IsLead.ToString())
-                    .EqualsIgnoreCase(true.ToString()) ? true : false;
+                user.FirstName = propertyDict.GetValueOrDefault(_dbProperties.UserProperties.FirstNamePropertyName, user.FirstName);
+                user.MiddleName = propertyDict.GetValueOrDefault(_dbProperties.UserProperties.MiddleNamePropertyName, user.MiddleName);
+                user.LastName = propertyDict.GetValueOrDefault(_dbProperties.UserProperties.LastNamePropertyName, user.LastName);
+                user.TelephoneNumber = propertyDict.GetValueOrDefault(_dbProperties.UserProperties.TelephoneNumberPropertyName, user.TelephoneNumber);
+                user.IsLead = propertyDict.GetValueOrDefault(_dbProperties.UserProperties.IsLeadPropertyName, user.IsLead.ToString()).EqualsIgnoreCase(true.ToString()) ? true : false;
 
                 _dbContext.SaveChanges();
             }
