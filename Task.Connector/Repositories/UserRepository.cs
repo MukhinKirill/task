@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
+﻿using Task.Connector.Entities;
 using Task.Connector.Extensions;
 using Task.Connector.Mappers;
 using Task.Integration.Data.Models.Models;
@@ -8,6 +7,13 @@ namespace Task.Connector.Repositories
 {
     internal class UserRepository : IUserRepository
     {
+        private const string FirstNamePropertyName = "firstName";
+        private const string MiddleNamePropertyName = "middletName";
+        private const string LastNamePropertyName = "lastName";
+        private const string TelephoneNumberPropertyName = "telephoneNumber";
+        private const string IsLeadPropertyName = "isLead";
+        private const string PasswordPropertyName = "password";
+
         private TaskDbContext _dbContext;
         private UserMapper _mapper;
 
@@ -25,14 +31,17 @@ namespace Task.Connector.Repositories
 
         public IEnumerable<Property> GetAllProperties()
         {
+            var userEntityProperties = _dbContext.Users.EntityType.GetProperties();
+            var passwordEntityProperties = _dbContext.Passwords.EntityType.GetProperties();
+
             var properties = new List<Property>
             {
-                new Property("lastName", string.Empty),
-                new Property("firstName", string.Empty),
-                new Property("middleName", string.Empty),
-                new Property("telephoneNumber", string.Empty),
-                new Property("isLead", string.Empty),
-                new Property("password", string.Empty)
+                new Property(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(User.LastName), LastNamePropertyName), string.Empty),
+                new Property(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(User.MiddleName), MiddleNamePropertyName), string.Empty),
+                new Property(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(User.FirstName), FirstNamePropertyName), string.Empty),
+                new Property(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(User.TelephoneNumber), TelephoneNumberPropertyName), string.Empty),
+                new Property(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(User.IsLead), IsLeadPropertyName), string.Empty),
+                new Property(passwordEntityProperties.GetPropertyColumnNameOrDefault(nameof(Password.Password1), PasswordPropertyName), string.Empty)
             };
 
             return properties;
@@ -41,16 +50,17 @@ namespace Task.Connector.Repositories
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
         {
             var userProperties = new List<UserProperty>();
+            var userEntityProperties = _dbContext.Users.EntityType.GetProperties();
 
             var user = _dbContext.Users.Where(user => user.Login == userLogin).FirstOrDefault();
 
             if(user != null)
             {
-                userProperties.Add(new UserProperty("lastName", user.LastName));
-                userProperties.Add(new UserProperty("firstName", user.FirstName));
-                userProperties.Add(new UserProperty("middleName", user.MiddleName));
-                userProperties.Add(new UserProperty("telephoneNumber", user.TelephoneNumber));
-                userProperties.Add(new UserProperty("isLead", user.IsLead.ToString()));
+                userProperties.Add(new UserProperty(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(user.LastName), LastNamePropertyName), user.LastName));
+                userProperties.Add(new UserProperty(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(user.FirstName), FirstNamePropertyName), user.FirstName));
+                userProperties.Add(new UserProperty(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(user.MiddleName), MiddleNamePropertyName), user.MiddleName));
+                userProperties.Add(new UserProperty(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(user.TelephoneNumber), TelephoneNumberPropertyName), user.TelephoneNumber));
+                userProperties.Add(new UserProperty(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(user.IsLead), IsLeadPropertyName), user.IsLead.ToString()));
             }
 
             return userProperties;
@@ -63,24 +73,20 @@ namespace Task.Connector.Repositories
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
         {
-            var propertyDict = new Dictionary<string, string>();
-
-            foreach (var property in properties)
-            {
-                propertyDict.Add(property.Name, property.Value);
-            }
-
+            var propertyDict = properties.ConvertToDict();
+            var userEntityProperties = _dbContext.Users.EntityType.GetProperties();
             var user = _dbContext.Users
                 .Where(user => user.Login == userLogin)
                 .FirstOrDefault();
 
             if(user != null)
             {
-                user.FirstName = propertyDict.GetValueOrDefault("firstName", user.FirstName);
-                user.MiddleName = propertyDict.GetValueOrDefault("middleName", user.MiddleName);
-                user.LastName = propertyDict.GetValueOrDefault("lastName", user.LastName);
-                user.TelephoneNumber = propertyDict.GetValueOrDefault("telephoneNumber", user.TelephoneNumber);
-                user.IsLead = propertyDict.GetValueOrDefault("isLead", user.IsLead.ToString()).ToLower() == "true" ? true : false;
+                user.FirstName = propertyDict.GetValueOrDefault(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(user.LastName), LastNamePropertyName), user.FirstName);
+                user.MiddleName = propertyDict.GetValueOrDefault(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(user.FirstName), FirstNamePropertyName), user.MiddleName);
+                user.LastName = propertyDict.GetValueOrDefault(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(user.MiddleName), MiddleNamePropertyName), user.LastName);
+                user.TelephoneNumber = propertyDict.GetValueOrDefault(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(user.TelephoneNumber), TelephoneNumberPropertyName), user.TelephoneNumber);
+                user.IsLead = propertyDict.GetValueOrDefault(userEntityProperties.GetPropertyColumnNameOrDefault(nameof(user.IsLead), IsLeadPropertyName), user.IsLead.ToString())
+                    .EqualsIgnoreCase(true.ToString()) ? true : false;
 
                 _dbContext.SaveChanges();
             }

@@ -22,9 +22,6 @@ namespace Task.Connector.Repositories
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> permissionIds)
         {
-            var roleIds = new List<int>();
-            var rightIds = new List<int>();
-
             foreach (var permission in permissionIds)
             {
                 var permissionId = _permissionIdParser.Parse(permission);
@@ -32,16 +29,29 @@ namespace Task.Connector.Repositories
                 switch (permissionId.Type)
                 {
                     case PermissionTypes.ItRole:
-                        roleIds.Add(permissionId.Id);
+                        _dbContext.UserItroles.Add(new UserItRole()
+                        {
+                            UserId = userLogin,
+                            RoleId = permissionId.Id,
+                        });
+
                         break;
+
                     case PermissionTypes.RequestRight:
-                        rightIds.Add(permissionId.Id);
+                        _dbContext.UserRequestRights.Add(new UserRequestRight()
+                        {
+                            UserId = userLogin,
+                            RightId = permissionId.Id,
+                        });
+
                         break;
                 }
             }
-
-            AddUserRoles(userLogin, roleIds);
-            AddUserRights(userLogin, rightIds);
+            
+            if(permissionIds.Count() > 0)
+            {
+                _dbContext.SaveChanges();
+            }
         }
 
         public IEnumerable<Permission> GetAllPermissions()
@@ -66,27 +76,29 @@ namespace Task.Connector.Repositories
         public IEnumerable<string> GetUserPermissions(string userLogin)
         {
             var result = new List<string>();
+
             var userRights = _dbContext.RequestRights.Join(_dbContext.UserRequestRights,
                 right => right.Id,
                 userRight => userRight.RightId,
-                (right, userRight) => new { Login = userRight.UserId, RightDescription = right.Name })
+                (right, userRight) => new { Login = userRight.UserId, RightId = right.Id, RightDescription = right.Name })
                 .Where(@object => @object.Login == userLogin)
                 .ToList();
+
             var userRoles = _dbContext.UserItroles.Join(_dbContext.ItRoles,
                 userRole => userRole.RoleId,
                 itRole => itRole.Id,
-                (userRole, itRole) => new { Login = userRole.UserId, ItRole = itRole.Name })
+                (userRole, itRole) => new { Login = userRole.UserId, ItRoleId = itRole.Id, ItRoleName = itRole.Name })
                 .Where(@object => @object.Login == userLogin)
                 .ToList();
 
             userRights.ForEach(right =>
             {
-                result.Add($"{RequestRightGroupName}{Delimeter}{right.RightDescription}");
+                result.Add($"{RequestRightGroupName}{Delimeter}{right.RightId} - {right.RightDescription}");
             });
 
             userRoles.ForEach(role =>
             {
-                result.Add($"{ItRoleRightGroupName}{Delimeter}{role.ItRole}");
+                result.Add($"{RequestRightGroupName}{Delimeter}{role.ItRoleId} - {role.ItRoleName}");
             });
 
             return result;
@@ -94,76 +106,20 @@ namespace Task.Connector.Repositories
 
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> permissionIds)
         {
-            var roleIds = new List<int>();
-            var rightIds = new List<int>();
+            var dictPermissions = new Dictionary<PermissionTypes, List<int>>
+            {
+                { PermissionTypes.ItRole, new List<int>() },
+                { PermissionTypes.RequestRight, new List<int>() }
+            };
 
-            foreach(var permission in permissionIds)
+            foreach (var permission in permissionIds)
             {
                 var permissionId = _permissionIdParser.Parse(permission);
-
-                switch (permissionId.Type)
-                {
-                    case PermissionTypes.ItRole:
-                        roleIds.Add(permissionId.Id);
-                        break;
-                    case PermissionTypes.RequestRight:
-                        rightIds.Add(permissionId.Id);
-                        break;
-                }
+                dictPermissions[permissionId.Type].Add(permissionId.Id);
             }
 
-            RemoveUserRoles(userLogin, roleIds);
-            RemoveUserRights(userLogin, rightIds);
-        }
-
-        private void AddUserRoles(string userLogin, IEnumerable<int> ids)
-        {
-            var userRoles = new List<UserItRole>();
-
-            foreach (var id in ids)
-            {
-                var userItRole = new UserItRole();
-                userItRole.UserId = userLogin;
-                userItRole.RoleId = id;
-
-                userRoles.Add(userItRole);
-            }
-
-            _dbContext.UserItroles.AddRange(userRoles);
-            _dbContext.SaveChanges();
-        }
-
-        private void AddUserRights(string userLogin, IEnumerable<int> ids)
-        {
-            var userRights = new List<UserRequestRight>();
-
-            foreach (var id in ids)
-            {
-                var userRight = new UserRequestRight();
-                userRight.UserId = userLogin;
-                userRight.RightId = id;
-
-                userRights.Add(userRight);  
-            }
-
-            _dbContext.UserRequestRights.AddRange(userRights);
-            _dbContext.SaveChanges();
-        }
-
-        private void RemoveUserRoles(string userLogin, IEnumerable<int> ids)
-        {
-            _dbContext.UserItroles
-                .Where(user => user.UserId == userLogin)
-                .Where(role => ids.Contains(role.RoleId))
-                .ExecuteDelete();
-        }
-
-        private void RemoveUserRights(string userLogin, IEnumerable<int> ids)
-        {
-            _dbContext.UserRequestRights
-                .Where(user => user.UserId == userLogin)
-                .Where(right => ids.Contains(right.RightId))
-                .ExecuteDelete();
+            _dbContext.UserItroles.Where(user => user.UserId == userLogin).Where(role => dictPermissions[PermissionTypes.ItRole].Contains(role.RoleId)).ExecuteDelete();
+            _dbContext.UserRequestRights.Where(user => user.UserId == userLogin).Where(right => dictPermissions[PermissionTypes.RequestRight].Contains(right.RightId)).ExecuteDelete();
         }
     }
 }
