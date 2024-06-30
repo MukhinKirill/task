@@ -48,6 +48,7 @@ namespace Task.Connector.Tests
             var dataSetter = Init(provider);
             var connector = GetConnector(provider);
             connector.CreateUser(new UserToCreate("testUserToCreate", "testPassword") { Properties = new UserProperty[] { new UserProperty("isLead", "false") } });
+            Assert.NotNull(dataSetter.GetUserPassword("testUserToCreate"));
             Assert.NotNull(dataSetter.GetUser("testUserToCreate"));
             Assert.Equal(DefaultData.MasterUserDefaultPassword, dataSetter.GetUserPassword(DefaultData.MasterUserLogin));
         }

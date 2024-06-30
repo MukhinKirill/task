@@ -20,7 +20,11 @@ namespace Task.Connector.Repositories
 
         public void CreateUser(UserToCreate user)
         {
-            _dbContext.Users.Add(_mapper.Map(user));
+            (var userEntity, var password) = _mapper.Map(user);
+
+            _dbContext.Users.Add(userEntity);
+            _dbContext.Passwords.Add(password);
+
             _dbContext.SaveChanges();
         }
 

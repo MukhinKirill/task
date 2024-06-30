@@ -5,7 +5,7 @@ using Task.Integration.Data.Models.Models;
 
 namespace Task.Connector.Mappers
 {
-    public class UserMapper : IMapper<UserToCreate, User>
+    public class UserMapper : IMapper<UserToCreate, (User, Password)>
     {
         private UserProperties _configuration;
         public UserMapper(ConfigureManager configureManager) 
@@ -13,10 +13,11 @@ namespace Task.Connector.Mappers
             _configuration = configureManager.DbProperties.UserProperties;
         }
 
-        public User Map(UserToCreate userToCreate)
+        public (User, Password) Map(UserToCreate userToCreate)
         {
             var properties = userToCreate.Properties.ConvertToDict();
-            var result = new User()
+
+            var user = new User()
             {
                 Login = userToCreate.Login,
                 FirstName = properties.GetValueOrEmpty(_configuration.FirstNamePropertyName),
@@ -26,7 +27,13 @@ namespace Task.Connector.Mappers
                 IsLead = properties.GetValueOrEmpty(_configuration.IsLeadPropertyName).EqualsIgnoreCase(true.ToString()) ? true : false
             };
 
-            return result;
+            var password = new Password()
+            {
+                UserId = userToCreate.Login,
+                PasswordProperty = userToCreate.HashPassword
+            };
+
+            return (user, password);
         }
     }
 }
