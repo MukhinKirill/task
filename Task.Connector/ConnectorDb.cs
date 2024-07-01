@@ -46,50 +46,67 @@ namespace Task.Connector
                 context.SaveChanges();
             }
             catch (FormatException e) {
-                Logger.Error($"Ошибка при создании пользователя - неверный формат свойства: {e.Message}");
+                Logger.Error($"Ошибка при создании пользователя - неверный формат свойства:\n {e.Message}");
             }
             catch (Exception e) {
-                Logger.Error($"Ошибка при создании пользователя: {e.Message}");
+                Logger.Error($"Ошибка при создании пользователя:\n {e.Message}");
             }
         }
 
         public IEnumerable<Property> GetAllProperties() { //this looks hella ugly
-            using var context = new ConnectorDbContext(optionsBuilder.Options); 
+            try {
+                using var context = new ConnectorDbContext(optionsBuilder.Options);
 
-            var UserType = context.GetService<IDesignTimeModel>().Model.GetEntityTypes()
-                .Where(type => type.ClrType.Name == nameof(User)).First();
+                var UserType = context.GetService<IDesignTimeModel>().Model.GetEntityTypes()
+                    .Where(type => type.ClrType.Name == nameof(User)).First();
 
-            var UserProperties = UserType!.GetProperties()
-                .Where(prop => prop.Name != nameof(User.Login))
-                .Select(prop => new Property(prop.Name, prop.GetComment() ?? prop.Name));
+                var UserProperties = UserType!.GetProperties()
+                    .Where(prop => prop.Name != nameof(User.Login))
+                    .Select(prop => new Property(prop.Name, prop.GetComment() ?? prop.Name));
 
-            var PwdType = context.GetService<IDesignTimeModel>().Model.GetEntityTypes()
-                .Where(type => type.ClrType.Name == nameof(Password)).First();
+                var PwdType = context.GetService<IDesignTimeModel>().Model.GetEntityTypes()
+                    .Where(type => type.ClrType.Name == nameof(Password)).First();
 
-            var PwdProp = PwdType!.GetProperty(nameof(Password.Password1));
+                var PwdProp = PwdType!.GetProperty(nameof(Password.Password1));
 
-            return UserProperties.Append(new(PwdProp.Name, PwdProp.GetComment() ?? PwdProp.Name));                     
+                return UserProperties.Append(new(PwdProp.Name, PwdProp.GetComment() ?? PwdProp.Name));
+            }
+            catch (Exception e) {
+                Logger.Error($"Ошибка при возврате всех свойств пользователей: \n {e.Message}");
+                return Enumerable.Empty<Property>();
+            }
         }
 
         public IEnumerable<UserProperty> GetUserProperties(string userLogin) {
-            using var context = new ConnectorDbContext(optionsBuilder.Options);
+            try {
+                using var context = new ConnectorDbContext(optionsBuilder.Options);
 
-            var query = from user in context.Users
-                        where user.Login == userLogin
-                        select new UserProperty[] {
+                var query = from user in context.Users
+                            where user.Login == userLogin
+                            select new UserProperty[] {
                             new (nameof(user.FirstName),         user.FirstName),
                             new (nameof(user.MiddleName),        user.MiddleName),
                             new (nameof(user.LastName),          user.LastName),
                             new (nameof(user.TelephoneNumber),   user.TelephoneNumber),
                             new (nameof(user.IsLead),            user.IsLead.ToString()),
                         };
-            return query.First();
+                return query.First();
+            }
+            catch (Exception e) {
+                Logger.Error($"Ошибка при возврате свойств пользователя:\n {e.Message}");
+                return Enumerable.Empty<UserProperty>();
+            }
         }
 
         public bool IsUserExists(string userLogin) {
-            using var context = new ConnectorDbContext(optionsBuilder.Options);
+            try {
+                using var context = new ConnectorDbContext(optionsBuilder.Options);
 
-            return context.Users.Any(u => u.Login == userLogin);
+                return context.Users.Any(u => u.Login == userLogin);
+            } catch (Exception e) {
+                Logger.Error($"Ошибка при проверке существования пользователя:\n {e.Message}");
+                return false;
+            }
         }
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin) { //invalid operation - user not found
@@ -110,112 +127,134 @@ namespace Task.Connector
                 context.SaveChanges();
             }
             catch (Exception e) {
-                Logger.Error($"Ошибка при обновлении данных пользователя: {e.Message}");
+                Logger.Error($"Ошибка при обновлении данных пользователя:\n {e.Message}");
             }
         }
 
         public IEnumerable<Permission> GetAllPermissions() {
-            using var context = new ConnectorDbContext(optionsBuilder.Options);
+            try {
 
-            var roleQuery = from roles in context.ItRoles
-                        select new Permission(roles.Id.ToString(), roles.Name, roles.Name);
+                using var context = new ConnectorDbContext(optionsBuilder.Options);
 
-            var rightsQuery = from rights in context.RequestRights
-                            select new Permission(rights.Id.ToString(), rights.Name, rights.Name);
+                var roleQuery = from roles in context.ItRoles
+                                select new Permission(roles.Id.ToString(), roles.Name, roles.Name);
 
-            return roleQuery.ToList().Concat(rightsQuery.ToList());
+                var rightsQuery = from rights in context.RequestRights
+                                  select new Permission(rights.Id.ToString(), rights.Name, rights.Name);
+
+                return roleQuery.ToList().Concat(rightsQuery.ToList());
+            }
+            catch (Exception e) {
+                Logger.Error($"Ошибка при возврате всех типов прав:\n {e.Message}");
+                return Enumerable.Empty<Permission>();
+            }
 
         }
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds) {
-            using var context = new ConnectorDbContext(optionsBuilder.Options);
+            try {
+                using var context = new ConnectorDbContext(optionsBuilder.Options);
 
-            var userQuery = from usr in context.Users where usr.Login == userLogin select usr;
-            var user = userQuery.FirstOrDefault() ?? null;
+                var userQuery = from usr in context.Users where usr.Login == userLogin select usr;
+                var user = userQuery.FirstOrDefault() ?? null;
 
-            if (user == null) {
-                Logger.Error($"Пользователем с именем {userLogin} не найден в методе AddUserPermissions!");
-                return;
-            }            
-
-            List<UserItrole> newRoles = new();
-            List<UserRequestRight> newRequests = new();
-
-            foreach (string right in rightIds) {
-                var permission = right.Split(':');
-                switch (permission[0]) {
-                    case "Role":
-                        newRoles.Add(new UserItrole() {
-                            UserId = user.Login,
-                            RoleId = int.Parse(permission[1])
-                        });
-                        break;
-                    case "Request":
-                        newRequests.Add(new UserRequestRight() {
-                            UserId = user.Login,
-                            RightId = int.Parse(permission[1])
-                        });
-                        break;
-                    default:
-                        Logger.Error($"Неверный формат RightId на AddUserPermissions: {permission[0]} встречено, ожидалось 'Role' или 'Request'!");
-                        break;
+                if (user == null) {
+                    Logger.Error($"Пользователем с именем {userLogin} не найден в методе AddUserPermissions!");
+                    return;
                 }
-            }
 
-            context.UserItroles.AddRange(newRoles);
-            context.UserRequestRights.AddRange(newRequests);
-            context.SaveChanges();
+                List<UserItrole> newRoles = new();
+                List<UserRequestRight> newRequests = new();
+
+                foreach (string right in rightIds) {
+                    var permission = right.Split(':');
+                    switch (permission[0]) {
+                        case "Role":
+                            newRoles.Add(new UserItrole() {
+                                UserId = user.Login,
+                                RoleId = int.Parse(permission[1])
+                            });
+                            break;
+                        case "Request":
+                            newRequests.Add(new UserRequestRight() {
+                                UserId = user.Login,
+                                RightId = int.Parse(permission[1])
+                            });
+                            break;
+                        default:
+                            Logger.Error($"Неверный формат RightId в методе AddUserPermissions: {permission[0]} встречено, ожидалось 'Role' или 'Request'!");
+                            break;
+                    }
+                }
+
+                context.UserItroles.AddRange(newRoles);
+                context.UserRequestRights.AddRange(newRequests);
+                context.SaveChanges();
+            }
+            catch (Exception e) {
+                Logger.Error($"Ошибка при добавлении прав пользователю:\n {e.Message}");
+            }
         }
 
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds) {
-            using var context = new ConnectorDbContext(optionsBuilder.Options);
+            try {
+                using var context = new ConnectorDbContext(optionsBuilder.Options);
 
-            var userQuery = from usr in context.Users where usr.Login == userLogin select usr;
-            var user = userQuery.FirstOrDefault() ?? null;
+                var userQuery = from usr in context.Users where usr.Login == userLogin select usr;
+                var user = userQuery.FirstOrDefault() ?? null;
 
-            if (user == null) {
-                Logger.Error($"Пользователем с именем {userLogin} не найден в методе AddUserPermissions!");
-                return;
-            }
-
-            List<UserItrole> RolesToRemove = new();
-            List<UserRequestRight> RequestsToRemove = new();
-
-            foreach (string right in rightIds) {
-                var permission = right.Split(':');
-                switch (permission[0]) {
-                    case "Role":
-                        RolesToRemove.Add(new UserItrole() {
-                            UserId = user.Login,
-                            RoleId = int.Parse(permission[1])
-                        });
-                        break;
-                    case "Request":
-                        RequestsToRemove.Add(new UserRequestRight() {
-                            UserId = user.Login,
-                            RightId = int.Parse(permission[1])
-                        });
-                        break;
-                    default:
-                        Logger.Error($"Неверный формат RightId на AddUserPermissions: {permission[0]} встречено, ожидалось 'Role' или 'Request'!");
-                        break;
+                if (user == null) {
+                    Logger.Error($"Пользователем с именем {userLogin} не найден в методе RemoveUserPermissions!");
+                    return;
                 }
-            }
 
-            context.UserItroles.RemoveRange(RolesToRemove);
-            context.UserRequestRights.RemoveRange(RequestsToRemove);
-            context.SaveChanges();
+                List<UserItrole> RolesToRemove = new();
+                List<UserRequestRight> RequestsToRemove = new();
+
+                foreach (string right in rightIds) {
+                    var permission = right.Split(':');
+                    switch (permission[0]) {
+                        case "Role":
+                            RolesToRemove.Add(new UserItrole() {
+                                UserId = user.Login,
+                                RoleId = int.Parse(permission[1])
+                            });
+                            break;
+                        case "Request":
+                            RequestsToRemove.Add(new UserRequestRight() {
+                                UserId = user.Login,
+                                RightId = int.Parse(permission[1])
+                            });
+                            break;
+                        default:
+                            Logger.Error($"Неверный формат RightId в методе RemoveUserPermissions: {permission[0]} встречено, ожидалось 'Role' или 'Request'!");
+                            break;
+                    }
+                }
+
+                context.UserItroles.RemoveRange(RolesToRemove);
+                context.UserRequestRights.RemoveRange(RequestsToRemove);
+                context.SaveChanges();
+            } catch (Exception e) {
+                Logger.Error($"Ошибка при удалении прав пользователя:\n {e.Message}");
+            }
         }
 
         public IEnumerable<string> GetUserPermissions(string userLogin) {
-            using var context = new ConnectorDbContext(optionsBuilder.Options);
+            try {
+                using var context = new ConnectorDbContext(optionsBuilder.Options);
 
-            var query = from user in context.UserRequestRights
-                        where user.UserId == userLogin
-                        join right in context.RequestRights
-                            on user.RightId equals right.Id
-                        select right.Name;
-            return query.ToList(); 
+                var query = from user in context.UserRequestRights
+                            where user.UserId == userLogin
+                            join right in context.RequestRights
+                                on user.RightId equals right.Id
+                            select right.Name;
+                return query.ToList();
+            }
+            catch (Exception e) {
+                Logger.Error($"Ошибка при возврате прав пользователя:\n {e.Message}");
+                return Enumerable.Empty<string>();
+            }
         }
 
         public ILogger Logger { get; set; } = null!;
