@@ -131,10 +131,15 @@ namespace Task.Connector
             using var context = new ConnectorDbContext(optionsBuilder.Options);
 
             var userQuery = from usr in context.Users where usr.Login == userLogin select usr;
-            var user = userQuery.First();
+            var user = userQuery.FirstOrDefault() ?? null;
 
-            List<UserItrole> newRoles = new List<UserItrole>();
-            List<UserRequestRight> newRequests = new List<UserRequestRight>();
+            if (user == null) {
+                Logger.Error($"Пользователем с именем {userLogin} не найден в методе AddUserPermissions!");
+                return;
+            }            
+
+            List<UserItrole> newRoles = new();
+            List<UserRequestRight> newRequests = new();
 
             foreach (string right in rightIds) {
                 var permission = right.Split(':');
@@ -152,7 +157,7 @@ namespace Task.Connector
                         });
                         break;
                     default:
-                        Logger.Error($"Invalid rightId format on AddUserPermissions: {permission[0]} met but 'Role' or 'Request' expected");
+                        Logger.Error($"Неверный формат RightId на AddUserPermissions: {permission[0]} встречено, ожидалось 'Role' или 'Request'!");
                         break;
                 }
             }
@@ -163,7 +168,43 @@ namespace Task.Connector
         }
 
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds) {
-            throw new NotImplementedException();
+            using var context = new ConnectorDbContext(optionsBuilder.Options);
+
+            var userQuery = from usr in context.Users where usr.Login == userLogin select usr;
+            var user = userQuery.FirstOrDefault() ?? null;
+
+            if (user == null) {
+                Logger.Error($"Пользователем с именем {userLogin} не найден в методе AddUserPermissions!");
+                return;
+            }
+
+            List<UserItrole> RolesToRemove = new();
+            List<UserRequestRight> RequestsToRemove = new();
+
+            foreach (string right in rightIds) {
+                var permission = right.Split(':');
+                switch (permission[0]) {
+                    case "Role":
+                        RolesToRemove.Add(new UserItrole() {
+                            UserId = user.Login,
+                            RoleId = int.Parse(permission[1])
+                        });
+                        break;
+                    case "Request":
+                        RequestsToRemove.Add(new UserRequestRight() {
+                            UserId = user.Login,
+                            RightId = int.Parse(permission[1])
+                        });
+                        break;
+                    default:
+                        Logger.Error($"Неверный формат RightId на AddUserPermissions: {permission[0]} встречено, ожидалось 'Role' или 'Request'!");
+                        break;
+                }
+            }
+
+            context.UserItroles.RemoveRange(RolesToRemove);
+            context.UserRequestRights.RemoveRange(RequestsToRemove);
+            context.SaveChanges();
         }
 
         public IEnumerable<string> GetUserPermissions(string userLogin) {
