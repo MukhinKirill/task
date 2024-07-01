@@ -58,13 +58,13 @@ namespace Task.Connector.Repositories
         {
             var result = new List<Permission>();
 
-            _dbContext.ItRoles.ToList().ForEach(itRole =>
+            _dbContext.ItRoles.AsNoTracking().ToList().ForEach(itRole =>
             {
                 var id = $"{_permissionParserConfiguration.ItRoleRightGroupName}{_permissionParserConfiguration.Delimeter}{itRole.Id}";
                 result.Add(new Permission(id, itRole.Id.ToString(), itRole.Name));
             });
 
-            _dbContext.RequestRights.ToList().ForEach(right =>
+            _dbContext.RequestRights.AsNoTracking().ToList().ForEach(right =>
             {
                 var id = $"{_permissionParserConfiguration.RequestRightGroupName}{_permissionParserConfiguration.Delimeter}{right.Id}";
                 result.Add(new Permission(id, right.Id.ToString(), right.Name));
@@ -77,14 +77,14 @@ namespace Task.Connector.Repositories
         {
             var result = new List<string>();
 
-            var userRights = _dbContext.RequestRights.Join(_dbContext.UserRequestRights,
+            var userRights = _dbContext.RequestRights.AsNoTracking().Join(_dbContext.UserRequestRights,
                 right => right.Id,
                 userRight => userRight.RightId,
                 (right, userRight) => new { Login = userRight.UserId, RightId = right.Id, RightDescription = right.Name })
                 .Where(@object => @object.Login == userLogin)
                 .ToList();
 
-            var userRoles = _dbContext.UserItroles.Join(_dbContext.ItRoles,
+            var userRoles = _dbContext.UserItroles.AsNoTracking().Join(_dbContext.ItRoles,
                 userRole => userRole.RoleId,
                 itRole => itRole.Id,
                 (userRole, itRole) => new { Login = userRole.UserId, ItRoleId = itRole.Id, ItRoleName = itRole.Name })

@@ -7,7 +7,7 @@ namespace Task.Connector.Mappers
 {
     public class UserMapper : IMapper<UserToCreate, (User, Password)>
     {
-        private UserProperties _configuration;
+        private readonly UserProperties _configuration;
         public UserMapper(ConfigureManager configureManager) 
         {
             _configuration = configureManager.DbProperties.UserProperties;
@@ -24,7 +24,7 @@ namespace Task.Connector.Mappers
                 MiddleName = properties.GetValueOrEmpty(_configuration.MiddleNamePropertyName),
                 LastName = properties.GetValueOrEmpty(_configuration.LastNamePropertyName),
                 TelephoneNumber = properties.GetValueOrEmpty(_configuration.TelephoneNumberPropertyName),
-                IsLead = properties.GetValueOrEmpty(_configuration.IsLeadPropertyName).EqualsIgnoreCase(true.ToString()) ? true : false
+                IsLead = properties.GetValueOrEmpty(_configuration.IsLeadPropertyName).EqualsIgnoreCase(true.ToString())
             };
 
             var password = new Password()

@@ -1,4 +1,5 @@
-﻿using Task.Connector.Extensions;
+﻿using Microsoft.EntityFrameworkCore;
+using Task.Connector.Extensions;
 using Task.Connector.Mappers;
 using Task.Connector.Records;
 using Task.Integration.Data.Models.Models;
@@ -20,7 +21,7 @@ namespace Task.Connector.Repositories
 
         public void CreateUser(UserToCreate user)
         {
-            (var userEntity, var password) = _mapper.Map(user);
+            var (userEntity, password) = _mapper.Map(user);
 
             _dbContext.Users.Add(userEntity);
             _dbContext.Passwords.Add(password);
@@ -47,7 +48,7 @@ namespace Task.Connector.Repositories
         {
             var userProperties = new List<UserProperty>();
 
-            var user = _dbContext.Users.Where(user => user.Login == userLogin).FirstOrDefault();
+            var user = _dbContext.Users.AsNoTracking().Where(user => user.Login == userLogin).FirstOrDefault();
 
             if(user != null)
             {
@@ -63,7 +64,7 @@ namespace Task.Connector.Repositories
 
         public bool IsUserExists(string userLogin)
         {
-            return _dbContext.Users.Where(user => user.Login == userLogin).FirstOrDefault() != null;
+            return _dbContext.Users.AsNoTracking().Where(user => user.Login == userLogin).FirstOrDefault() != null;
         }
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
@@ -79,7 +80,7 @@ namespace Task.Connector.Repositories
                 user.MiddleName = propertyDict.GetValueOrDefault(_dbProperties.UserProperties.MiddleNamePropertyName, user.MiddleName);
                 user.LastName = propertyDict.GetValueOrDefault(_dbProperties.UserProperties.LastNamePropertyName, user.LastName);
                 user.TelephoneNumber = propertyDict.GetValueOrDefault(_dbProperties.UserProperties.TelephoneNumberPropertyName, user.TelephoneNumber);
-                user.IsLead = propertyDict.GetValueOrDefault(_dbProperties.UserProperties.IsLeadPropertyName, user.IsLead.ToString()).EqualsIgnoreCase(true.ToString()) ? true : false;
+                user.IsLead = propertyDict.GetValueOrDefault(_dbProperties.UserProperties.IsLeadPropertyName, user.IsLead.ToString()).EqualsIgnoreCase(true.ToString());
 
                 _dbContext.SaveChanges();
             }

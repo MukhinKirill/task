@@ -34,7 +34,7 @@ namespace Task.Connector.Tests
         public IConnector GetConnector(string provider)
         {
             IConnector connector = new ConnectorDb();
-            var DataFileName = new Regex(@"\s+|[:]+").Replace(DateTime.Now.ToString(), "_");
+            var DataFileName = new Regex(@"[\s:]+").Replace(DateTime.Now.ToString(), "_");
             connector.Logger = new FileLogger($"{DataFileName}connector{provider}.Log", $"{DateTime.Now}connector{provider}");
             connector.StartUp(connectorsCS[provider]);
             return connector;
@@ -72,11 +72,9 @@ namespace Task.Connector.Tests
             var dataSetter = Init(provider);
             var connector = GetConnector(provider);
             var userInfo = connector.GetUserProperties(DefaultData.MasterUserLogin);
-            var isTelephoneNumberOldOrNew = (string property) => 
-                property.Equals(DefaultData.MasterUser.TelephoneNumber) || property.Equals(TestData.NewPhoneValueForMasterUser);
             Assert.NotNull(userInfo);
             Assert.Equal(5, userInfo.Count());
-            Assert.True(userInfo.FirstOrDefault(_ => isTelephoneNumberOldOrNew.Invoke(_.Value)) != null);
+            Assert.NotNull(userInfo.FirstOrDefault(_ => _.Value == DefaultData.MasterUser.TelephoneNumber));
         }
 
         [Theory]
@@ -105,6 +103,7 @@ namespace Task.Connector.Tests
             };
             connector.UpdateUserProperties(propsToUpdate, DefaultData.MasterUserLogin);
             Assert.Equal(TestData.NewPhoneValueForMasterUser, dataSetter.GetUser(DefaultData.MasterUserLogin).TelephoneNumber);
+            Init(provider);
         }
 
         [Theory]
