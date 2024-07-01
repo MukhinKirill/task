@@ -103,7 +103,6 @@ namespace Task.Connector.Tests
             };
             connector.UpdateUserProperties(propsToUpdate, DefaultData.MasterUserLogin);
             Assert.Equal(TestData.NewPhoneValueForMasterUser, dataSetter.GetUser(DefaultData.MasterUserLogin).TelephoneNumber);
-            Init(provider);
         }
 
         [Theory]
