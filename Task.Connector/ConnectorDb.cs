@@ -53,15 +53,19 @@ namespace Task.Connector
             }
         }
 
-        public IEnumerable<Property> GetAllProperties() {
+        public IEnumerable<Property> GetAllProperties() { //this looks hella ugly
             using var context = new ConnectorDbContext(optionsBuilder.Options); 
 
-            var UserType = context.GetService<IDesignTimeModel>().Model.GetEntityTypes().Where(type => type.ClrType.Name == nameof(User)).First();
+            var UserType = context.GetService<IDesignTimeModel>().Model.GetEntityTypes()
+                .Where(type => type.ClrType.Name == nameof(User)).First();
+
             var UserProperties = UserType!.GetProperties()
                 .Where(prop => prop.Name != nameof(User.Login))
                 .Select(prop => new Property(prop.Name, prop.GetComment() ?? prop.Name));
 
-            var PwdType = context.GetService<IDesignTimeModel>().Model.GetEntityTypes().Where(type => type.ClrType.Name == nameof(Password)).First();
+            var PwdType = context.GetService<IDesignTimeModel>().Model.GetEntityTypes()
+                .Where(type => type.ClrType.Name == nameof(Password)).First();
+
             var PwdProp = PwdType!.GetProperty(nameof(Password.Password1));
 
             return UserProperties.Append(new(PwdProp.Name, PwdProp.GetComment() ?? PwdProp.Name));                     
@@ -111,7 +115,16 @@ namespace Task.Connector
         }
 
         public IEnumerable<Permission> GetAllPermissions() {
-            throw new NotImplementedException();
+            using var context = new ConnectorDbContext(optionsBuilder.Options);
+
+            var roleQuery = from roles in context.ItRoles
+                        select new Permission(roles.Id.ToString(), roles.Name, roles.Name);
+
+            var rightsQuery = from rights in context.RequestRights
+                            select new Permission(rights.Id.ToString(), rights.Name, rights.Name);
+
+            return roleQuery.ToList().Concat(rightsQuery.ToList());
+
         }
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds) {
