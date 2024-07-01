@@ -128,7 +128,38 @@ namespace Task.Connector
         }
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds) {
-            throw new NotImplementedException();
+            using var context = new ConnectorDbContext(optionsBuilder.Options);
+
+            var userQuery = from usr in context.Users where usr.Login == userLogin select usr;
+            var user = userQuery.First();
+
+            List<UserItrole> newRoles = new List<UserItrole>();
+            List<UserRequestRight> newRequests = new List<UserRequestRight>();
+
+            foreach (string right in rightIds) {
+                var permission = right.Split(':');
+                switch (permission[0]) {
+                    case "Role":
+                        newRoles.Add(new UserItrole() {
+                            UserId = user.Login,
+                            RoleId = int.Parse(permission[1])
+                        });
+                        break;
+                    case "Request":
+                        newRequests.Add(new UserRequestRight() {
+                            UserId = user.Login,
+                            RightId = int.Parse(permission[1])
+                        });
+                        break;
+                    default:
+                        Logger.Error($"Invalid rightId format on AddUserPermissions: {permission[0]} met but 'Role' or 'Request' expected");
+                        break;
+                }
+            }
+
+            context.UserItroles.AddRange(newRoles);
+            context.UserRequestRights.AddRange(newRequests);
+            context.SaveChanges();
         }
 
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds) {
