@@ -5,15 +5,15 @@ namespace Task.Connector.Tests
 {
     public class FileLogger : ILogger
     {
-        string _fileName;
-        string _connectorName;
+        private string _fileName;
+        private string _connectorName;
 
         public FileLogger(string fileName, string connectorName)
         {
             _fileName = fileName;
             _connectorName = connectorName;
         }
-        void Append(string text)
+        private void Append(string text)
         {
             using (var sw = File.AppendText(_fileName))
                 sw.WriteLine(text);
