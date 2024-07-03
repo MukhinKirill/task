@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Data.Common;
 using System.Reflection.Metadata;
 using System.Text.RegularExpressions;
 using Task.Integration.Data.Models;
@@ -16,11 +17,21 @@ namespace Task.Connector
         private readonly DbContextOptionsBuilder<ConnectorDbContext> optionsBuilder = new();
 
         public void StartUp(string connectionString) {
-            var reg = new Regex("(?=(?:(?:[^']*'){2})*[^']*$)\\;"); //TODO: Parse the connection string in a better way and switch optionsbuilder to include MSSQL db
-            var args = reg.Split(connectionString);
-            var argreg = new Regex("(?<=\').*?(?=\')");
-            var cs = argreg.Match(args[0]);
-            optionsBuilder.UseNpgsql(cs.ToString());
+            DbConnectionStringBuilder csbuilder = new() {
+                ConnectionString = connectionString
+            };
+            var cs = (string)csbuilder["ConnectionString"];
+
+            var provider = (string)csbuilder["Provider"];
+            switch (provider) {
+                case "PostgreSQL.9.5":
+                    optionsBuilder.UseNpgsql(cs.ToString());
+                    break;
+                case "SqlServer.2019":
+                    optionsBuilder.UseSqlServer(cs.ToString());
+                    break;
+                default: throw new Exception($"Указан неизвестный провайдер БД: {provider}; Известные провайдеры: PostgreSQL.9.5, SqlServer.2019");
+            }            
         }
 
         public void CreateUser(UserToCreate user) {
@@ -92,6 +103,10 @@ namespace Task.Connector
                         };
                 return query.First();
             }
+            catch (InvalidOperationException e) {
+                Logger.Error($"Ошибка при возврате свойств пользователя: пользователь не найден \n {e.Message}");
+                return Enumerable.Empty<UserProperty>();
+            }
             catch (Exception e) {
                 Logger.Error($"Ошибка при возврате свойств пользователя:\n {e.Message}");
                 return Enumerable.Empty<UserProperty>();
@@ -109,7 +124,7 @@ namespace Task.Connector
             }
         }
 
-        public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin) { //invalid operation - user not found
+        public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin) {
             try {
                 using var context = new ConnectorDbContext(optionsBuilder.Options);
 
@@ -125,6 +140,9 @@ namespace Task.Connector
 
                 context.Users.Update(UserToUpdate);
                 context.SaveChanges();
+            }
+            catch (InvalidOperationException e) {
+                Logger.Error($"Ошибка при обновлении данных пользователя: пользователь не найден \n {e.Message}");
             }
             catch (Exception e) {
                 Logger.Error($"Ошибка при обновлении данных пользователя:\n {e.Message}");
@@ -156,12 +174,7 @@ namespace Task.Connector
                 using var context = new ConnectorDbContext(optionsBuilder.Options);
 
                 var userQuery = from usr in context.Users where usr.Login == userLogin select usr;
-                var user = userQuery.FirstOrDefault() ?? null;
-
-                if (user == null) {
-                    Logger.Error($"Пользователем с именем {userLogin} не найден в методе AddUserPermissions!");
-                    return;
-                }
+                var user = userQuery.First();
 
                 List<UserItrole> newRoles = new();
                 List<UserRequestRight> newRequests = new();
@@ -191,6 +204,9 @@ namespace Task.Connector
                 context.UserRequestRights.AddRange(newRequests);
                 context.SaveChanges();
             }
+            catch (InvalidOperationException e) {
+                Logger.Error($"Ошибка при добавлении прав пользователю: пользователь не найден \n {e.Message}");
+            }
             catch (Exception e) {
                 Logger.Error($"Ошибка при добавлении прав пользователю:\n {e.Message}");
             }
@@ -201,12 +217,7 @@ namespace Task.Connector
                 using var context = new ConnectorDbContext(optionsBuilder.Options);
 
                 var userQuery = from usr in context.Users where usr.Login == userLogin select usr;
-                var user = userQuery.FirstOrDefault() ?? null;
-
-                if (user == null) {
-                    Logger.Error($"Пользователем с именем {userLogin} не найден в методе RemoveUserPermissions!");
-                    return;
-                }
+                var user = userQuery.First();
 
                 List<UserItrole> RolesToRemove = new();
                 List<UserRequestRight> RequestsToRemove = new();
@@ -235,7 +246,11 @@ namespace Task.Connector
                 context.UserItroles.RemoveRange(RolesToRemove);
                 context.UserRequestRights.RemoveRange(RequestsToRemove);
                 context.SaveChanges();
-            } catch (Exception e) {
+            }
+            catch (InvalidOperationException e) {
+                Logger.Error($"Ошибка при удалении прав пользователя: пользователь не найден \n {e.Message}");
+            }
+            catch (Exception e) {
                 Logger.Error($"Ошибка при удалении прав пользователя:\n {e.Message}");
             }
         }
