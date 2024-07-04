@@ -1,5 +1,4 @@
 ﻿using System.Data;
-using Microsoft.Data.SqlClient;
 using Npgsql;
 using Task.Connector.Domain;
 using Task.Connector.Extensions;
@@ -22,7 +21,7 @@ namespace Task.Connector
 
             _schema = connectionArgs[5];
 
-            _connection = connectionArgs[3].Contains("Postgre") ? new NpgsqlConnection(connectionArgs[1]) : new SqlConnection(connectionArgs[1]);
+            _connection = new NpgsqlConnection(connectionArgs[1]);
         }
 
         private string ToTable(string name) => @"""" + _defaultSchema + @"""" + "." + @"""" + name + @"""";
