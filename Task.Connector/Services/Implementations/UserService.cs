@@ -3,6 +3,8 @@ using Task.Connector.DAL;
 using Task.Integration.Data.Models.Models;
 using Task.Integration.Data.DbCommon.DbModels;
 using Task.Connector.Services.Interfaces;
+using System.Reflection;
+using Microsoft.EntityFrameworkCore;
 
 namespace Task.Connector.Services.Implementations
 {
@@ -16,36 +18,69 @@ namespace Task.Connector.Services.Implementations
             _logger = logger;
         }
 
-        public void CreateUser(UserToCreate user)
+        public void CreateUser(UserToCreate userToCreate)
         {
-            var userToCreateProperties = user.GetType().GetProperties();
-
-            var userToAdd = new User();
-
-            var userToAddProperties = userToAdd.GetType().GetProperties();
-
-            var b = userToAdd.GetType();
-
-            foreach (var property in userToCreateProperties)
+            if (userToCreate == null)
             {
-                if (userToAddProperties.Any(p => p.Name == property.Name))
+                _logger.Error("userToCreate must be not null");
+                return;
+            }
+            var user = new User
+            {
+                Login = userToCreate.Login,
+                FirstName = "",
+                LastName = "",
+                MiddleName = "",
+                TelephoneNumber = ""
+            };
+
+
+            var userType = typeof(User);
+            var properties = userType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+            foreach (var property in userToCreate.Properties)
+            {
+                var targetProperty = properties.FirstOrDefault(p => p.Name.Equals(property.Name, StringComparison.OrdinalIgnoreCase));
+                if (targetProperty.CanWrite)
                 {
-                    var changeProperty = userToAddProperties.First(p => p.Name == property.Name);
-                    changeProperty.SetValue(changeProperty, property.GetValue(property) );
+                    if (targetProperty.PropertyType == typeof(bool))
+                    {
+                        targetProperty.SetValue(user, bool.Parse(property.Value));
+                    }
+                    else if (targetProperty.PropertyType == typeof(string))
+                    {
+                        targetProperty.SetValue(user, property.Value);
+                    }
                 }
-                //TODO
-                else { /*_logger.Error($"invalid entity property {property.Name}");*/ }
             }
 
-            var a = userToAdd.GetType().GetProperties();
-
-            _dbContext.Securities.Add(new Sequrity() { UserId = user.Login, Password = user.HashPassword });
-
+            using var transaction = _dbContext.Database.BeginTransaction();
+            try
+            {
+                _dbContext.Users.Add(user);
+                _dbContext.Securities.Add(new Sequrity() { UserId = userToCreate.Login, Password = userToCreate.HashPassword });
+                _dbContext.SaveChanges();
+                transaction.Commit();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"DB error: {ex.Message}");
+                throw new Exception($"DB error: {ex.Message}");
+            }
 
         }
 
-        public bool IsUserExists(string userLogin) => _dbContext.Users.Any(user => user.Login == userLogin);
-
-
+        public bool IsUserExists(string userLogin)
+        {
+            try
+            {
+                return _dbContext.Users.Any(user => user.Login == userLogin);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"DB error: {ex.Message}");
+                throw new Exception($"DB error: {ex.Message}");
+            }
+        }
     }
 }
