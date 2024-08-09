@@ -104,11 +104,22 @@ namespace Task.Connector
       using var transaction = connection.BeginTransaction();
       try
       {
-        Logger?.Debug($"Блокировка таблиц для PostgreSQL");
-        var lockSql = $@"
+        if (_dbParams.Provider.ToUpper().Contains("POSTGRES"))
+        {
+          Logger?.Debug($"Блокировка таблиц для PostgreSQL");
+          var lockSql = $@"
                 LOCK TABLE ""{_dbParams.SchemaName}"".""{_dbParams.UsersTableName}"" IN EXCLUSIVE MODE;
                 LOCK TABLE ""{_dbParams.SchemaName}"".""{_dbParams.PasswordsTableName}"" IN EXCLUSIVE MODE;";
-        connection.Execute(lockSql, transaction: transaction);
+          connection.Execute(lockSql, transaction: transaction);
+        }
+        else if (_dbParams.Provider.ToUpper().Contains("SQLSERVER"))
+        {
+          Logger?.Debug($"Блокировка таблиц для SQL Server");
+          var lockSql = $@"
+                SELECT TOP 1 * FROM [{_dbParams.SchemaName}].[{_dbParams.UsersTableName}] WITH (TABLOCKX);
+                SELECT TOP 1 * FROM [{_dbParams.SchemaName}].[{_dbParams.PasswordsTableName}] WITH (TABLOCKX);";
+          connection.Execute(lockSql, transaction: transaction);
+        }
 
         var userSql = $"INSERT INTO \"{_dbParams.SchemaName}\".\"{_dbParams.UsersTableName}\" (\"{_dbParams.UsersPkPropName}\"";
 
@@ -124,14 +135,10 @@ namespace Task.Connector
             object parsedValue = ParseValue(propValue, propInfo.Type);
             parameters.Add(propInfo.Name, parsedValue);
           }
-          else if (propInfo.IsNotNull && propInfo.DefaultValue == null)
+          else
           {
             object defaultValue = GetDefaultValueForType(propInfo.Type);
             parameters.Add(propInfo.Name, defaultValue);
-          }
-          else
-          {
-            parameters.Add(propInfo.Name, null);
           }
         }
 
@@ -166,15 +173,12 @@ namespace Task.Connector
       {
         case "integer":
         case "int":
-          return 0;
         case "bigint":
-          return 0L;
         case "numeric":
         case "decimal":
-          return 0m;
         case "double precision":
         case "float":
-          return 0.0;
+          return 0;
         case "boolean":
         case "bool":
           return false;
@@ -185,9 +189,8 @@ namespace Task.Connector
         case "character varying":
         case "varchar":
         case "text":
-          return string.Empty;
         default:
-          return DBNull.Value;
+          return string.Empty;
       }
     }
 
@@ -202,22 +205,22 @@ namespace Task.Connector
       {
         case "integer":
         case "int":
-          return int.TryParse(value, out int intResult) ? intResult : GetDefaultValueForType(dbType);
+          return int.TryParse(value, out int intResult) ? intResult : 0;
         case "bigint":
-          return long.TryParse(value, out long longResult) ? longResult : GetDefaultValueForType(dbType);
+          return long.TryParse(value, out long longResult) ? longResult : 0L;
         case "numeric":
         case "decimal":
-          return decimal.TryParse(value, out decimal decimalResult) ? decimalResult : GetDefaultValueForType(dbType);
+          return decimal.TryParse(value, out decimal decimalResult) ? decimalResult : 0m;
         case "double precision":
         case "float":
-          return double.TryParse(value, out double doubleResult) ? doubleResult : GetDefaultValueForType(dbType);
+          return double.TryParse(value, out double doubleResult) ? doubleResult : 0.0;
         case "boolean":
         case "bool":
-          return bool.TryParse(value, out bool boolResult) ? boolResult : GetDefaultValueForType(dbType);
+          return bool.TryParse(value, out bool boolResult) ? boolResult : false;
         case "date":
         case "timestamp":
         case "datetime":
-          return DateTime.TryParse(value, out DateTime dateResult) ? dateResult : GetDefaultValueForType(dbType);
+          return DateTime.TryParse(value, out DateTime dateResult) ? dateResult : DateTime.MinValue;
         default:
           return value;
       }
@@ -389,7 +392,7 @@ namespace Task.Connector
         updateSql += string.Join(", ", setClauses);
         updateSql += $" WHERE \"{_dbParams.UsersPkPropName}\" = @Login";
 
-        Logger?.Debug($"Выполнение запроса: {updateSql}");
+        Logger?.Debug($"Выполнение запроса: {updateSql}\n с параметрами: {string.Join(", ", parameters.ParameterNames.Select(name => $"{name} = {parameters.Get<object>(name)}"))}");
         var affectedRows = connection.Execute(updateSql, parameters, transaction);
 
         if (affectedRows == 0)
