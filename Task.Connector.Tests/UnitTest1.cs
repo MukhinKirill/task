@@ -9,10 +9,10 @@ namespace Task.Connector.Tests
         static string requestRightGroupName = "Request";
         static string itRoleRightGroupName = "Role";
         static string delimeter = ":";
-        static string mssqlConnectionString = "Server=localhost,1433;Database=avanpost;User Id=sa;Password=YourPassword123;Encrypt=False;";
-        static string postgreConnectionString = "Server=127.0.0.1;Port=5432;Database=avanpost;Username=postgres;Password=mysecretpassword;";
+        static string mssqlConnectionString = "Server=Your_Host,1433;Database=Your_Db_Name;User Id=Your_User_Name;Password=Your_Password;Encrypt=False;";
+        static string postgreConnectionString = "Server=Your_Host;Port=5432;Database=Your_Db_Name;Username=Your_User_Name;Password=Your_Password;";
         static Dictionary<string, string> dataBasesCS = new Dictionary<string, string>
-            {
+        {
             { "MSSQL",mssqlConnectionString},
             { "POSTGRE", postgreConnectionString}
         };
@@ -47,7 +47,8 @@ namespace Task.Connector.Tests
                 UsersRolesTableName = "UserITRole",
                 UsersRequestRightsTableName = "UserRequestRight",
                 PasswordPropName = "password",
-                UsersPkPropName = "login"
+                UsersPkPropName = "login",
+                PermissionDelimiter = delimeter
             };
             return dbParams.ToConnectionString();
         }
