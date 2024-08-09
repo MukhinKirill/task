@@ -3,7 +3,8 @@ using static System.String;
 
 namespace Task.Connector;
 
-public class DbParams {
+public class DbParams
+{
     public string ConnectionString { get; set; }
     public string Provider { get; set; }
     public string SchemaName { get; set; }
@@ -28,50 +29,54 @@ public class DbParams {
 
     public string? PermissionDelimiter { get; set; }
 
-    public DbParams(string connectionString, string provider, string schemaName) {
+    public DbParams(string connectionString, string provider, string schemaName)
+    {
         ConnectionString = connectionString;
         Provider = provider;
         SchemaName = schemaName;
     }
 
-    public string ToConnectionString() {
+    public string ToConnectionString()
+    {
         var connectionString = $"{nameof(ConnectionString)}='{ConnectionString}';{nameof(Provider)}='{Provider}';{nameof(SchemaName)}='{SchemaName}'";
 
-        if (UsersTableName != null)
+        if ( UsersTableName != null )
             connectionString += $";{nameof(UsersTableName)}='{UsersTableName}'";
-        if (PasswordsTableName != null)
+        if ( PasswordsTableName != null )
             connectionString += $";{nameof(PasswordsTableName)}='{PasswordsTableName}'";
-        if (RolesTableName != null)
+        if ( RolesTableName != null )
             connectionString += $";{nameof(RolesTableName)}='{RolesTableName}'";
-        if (RequestRightsTableName != null)
+        if ( RequestRightsTableName != null )
             connectionString += $";{nameof(RequestRightsTableName)}='{RequestRightsTableName}'";
-        if (UsersRolesTableName != null)
+        if ( UsersRolesTableName != null )
             connectionString += $";{nameof(UsersRolesTableName)}='{UsersRolesTableName}'";
-        if (UsersRequestRightsTableName != null)
+        if ( UsersRequestRightsTableName != null )
             connectionString += $";{nameof(UsersRequestRightsTableName)}='{UsersRequestRightsTableName}'";
-        if (PasswordsFkUser != null)
+        if ( PasswordsFkUser != null )
             connectionString += $";{nameof(PasswordsFkUser)}='{PasswordsFkUser}'";
-        if (UsersRolesFkUser != null)
+        if ( UsersRolesFkUser != null )
             connectionString += $";{nameof(UsersRolesFkUser)}='{UsersRolesFkUser}'";
-        if (UsersRolesFkRole != null)
+        if ( UsersRolesFkRole != null )
             connectionString += $";{nameof(UsersRolesFkRole)}='{UsersRolesFkRole}'";
-        if (UsersRequestRightsFkUser != null)
+        if ( UsersRequestRightsFkUser != null )
             connectionString += $";{nameof(UsersRequestRightsFkUser)}='{UsersRequestRightsFkUser}'";
-        if (UsersRequestRightsFkRight != null)
+        if ( UsersRequestRightsFkRight != null )
             connectionString += $";{nameof(UsersRequestRightsFkRight)}='{UsersRequestRightsFkRight}'";
-        if (UsersPkPropName != null)
+        if ( UsersPkPropName != null )
             connectionString += $";{nameof(UsersPkPropName)}='{UsersPkPropName}'";
-        if (PasswordPropName != null)
+        if ( PasswordPropName != null )
             connectionString += $";{nameof(PasswordPropName)}='{PasswordPropName}'";
-        if (PermissionDelimiter != null)
+        if ( PermissionDelimiter != null )
             connectionString += $";{nameof(PermissionDelimiter)}='{PermissionDelimiter}'";
 
         return connectionString;
     }
 
-    public static DbParams FromConnectionString(string inputString) {
+    public static DbParams FromConnectionString(string inputString)
+    {
         var match = CreateConnectionStringRegex().Match(inputString);
-        if (!match.Success) {
+        if ( !match.Success )
+        {
             throw new ArgumentException("Неверный формат строки подключения");
         }
 
@@ -155,7 +160,8 @@ public class DbParams {
         return connectionStringParams;
     }
 
-    private static Regex CreateConnectionStringRegex() {
+    private static Regex CreateConnectionStringRegex()
+    {
         return new Regex($"ConnectionString='(?<{nameof(ConnectionString)}>[^']+)';Provider='(?<{nameof(Provider)}>[^']+)';SchemaName='(?<{nameof(SchemaName)}>[^']+)';(?:{nameof(UsersTableName)}='(?<{nameof(UsersTableName)}>[^']+)';)?(?:{nameof(PasswordsTableName)}='(?<{nameof(PasswordsTableName)}>[^']+)';)?(?:{nameof(RolesTableName)}='(?<{nameof(RolesTableName)}>[^']+)';)?(?:{nameof(RequestRightsTableName)}='(?<{nameof(RequestRightsTableName)}>[^']+)';)?(?:{nameof(UsersRolesTableName)}='(?<{nameof(UsersRolesTableName)}>[^']+)';)?(?:{nameof(UsersRequestRightsTableName)}='(?<{nameof(UsersRequestRightsTableName)}>[^']+)';)?(?:{nameof(PasswordsFkUser)}='(?<{nameof(PasswordsFkUser)}>[^']+)';)?(?:{nameof(UsersRolesFkUser)}='(?<{nameof(UsersRolesFkUser)}>[^']+)';)?(?:{nameof(UsersRolesFkRole)}='(?<{nameof(UsersRolesFkRole)}>[^']+)';)?(?:{nameof(UsersRequestRightsFkUser)}='(?<{nameof(UsersRequestRightsFkUser)}>[^']+)';)?(?:{nameof(UsersRequestRightsFkRight)}='(?<{nameof(UsersRequestRightsFkRight)}>[^']+)';)?(?:{nameof(UsersPkPropName)}='(?<{nameof(UsersPkPropName)}>[^']+)';)?(?:{nameof(PasswordPropName)}='(?<{nameof(PasswordPropName)}>[^']+)';)?(?:{nameof(PermissionDelimiter)}='(?<{nameof(PermissionDelimiter)}>[^']+)';)?");
     }
 

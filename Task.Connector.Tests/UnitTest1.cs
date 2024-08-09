@@ -2,8 +2,10 @@ using Task.Integration.Data.DbCommon;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
 
-namespace Task.Connector.Tests {
-    public class UnitTest1 {
+namespace Task.Connector.Tests
+{
+    public class UnitTest1
+    {
         static string requestRightGroupName = "Request";
         static string itRoleRightGroupName = "Role";
         static string delimeter = ":";
@@ -15,25 +17,29 @@ namespace Task.Connector.Tests {
             { "POSTGRE", postgreConnectionString}
         };
 
-        public DataManager Init(string providerName) {
+        public DataManager Init(string providerName)
+        {
             var factory = new DbContextFactory(dataBasesCS[providerName]);
             var dataSetter = new DataManager(factory, providerName);
             dataSetter.PrepareDbForTest();
             return dataSetter;
         }
 
-        public IConnector GetConnector(string provider) {
+        public IConnector GetConnector(string provider)
+        {
             IConnector connector = new ConnectorDb();
             connector.StartUp(CreateConnectionString(provider));
             connector.Logger = new FileLogger($"1.Log", $"{DateTime.Now}connector{provider}");
             return connector;
         }
 
-        private string CreateConnectionString(string provider) {
+        private string CreateConnectionString(string provider)
+        {
             string connectionString = provider == "MSSQL" ? mssqlConnectionString : postgreConnectionString;
             string dbProvider = provider == "MSSQL" ? "SqlServer.2019" : "PostgreSQL.9.5";
 
-            var dbParams = new DbParams(connectionString, dbProvider, "TestTaskSchema") {
+            var dbParams = new DbParams(connectionString, dbProvider, "TestTaskSchema")
+            {
                 RolesTableName = "ItRole",
                 PasswordsTableName = "Passwords",
                 RequestRightsTableName = "RequestRight",
@@ -50,7 +56,8 @@ namespace Task.Connector.Tests {
         [Theory]
         [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
-        public void CreateUser(string provider) {
+        public void CreateUser(string provider)
+        {
             var dataSetter = Init(provider);
             var connector = GetConnector(provider);
             connector.CreateUser(new UserToCreate("testUserToCreate", "testPassword") { Properties = new UserProperty[] { new UserProperty("isLead", "false") } });
@@ -61,7 +68,8 @@ namespace Task.Connector.Tests {
         [Theory]
         [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
-        public void GetAllProperties(string provider) {
+        public void GetAllProperties(string provider)
+        {
             var dataSetter = Init(provider);
             var connector = GetConnector(provider);
             var propInfos = connector.GetAllProperties();
@@ -71,7 +79,8 @@ namespace Task.Connector.Tests {
         [Theory]
         [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
-        public void GetUserProperties(string provider) {
+        public void GetUserProperties(string provider)
+        {
             var dataSetter = Init(provider);
             var connector = GetConnector(provider);
             var userInfo = connector.GetUserProperties(DefaultData.MasterUserLogin);
@@ -83,7 +92,8 @@ namespace Task.Connector.Tests {
         [Theory]
         [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
-        public void IsUserExists(string provider) {
+        public void IsUserExists(string provider)
+        {
             var dataSetter = Init(provider);
             var connector = GetConnector(provider);
             Assert.True(connector.IsUserExists(DefaultData.MasterUserLogin));
@@ -93,7 +103,8 @@ namespace Task.Connector.Tests {
         [Theory]
         [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
-        public void UpdateUserProperties(string provider) {
+        public void UpdateUserProperties(string provider)
+        {
             var dataSetter = Init(provider);
             var connector = GetConnector(provider);
             var userInfo = connector.GetUserProperties(DefaultData.MasterUserLogin);
@@ -109,7 +120,8 @@ namespace Task.Connector.Tests {
         [Theory]
         [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
-        public void GetAllPermissions(string provider) {
+        public void GetAllPermissions(string provider)
+        {
             var dataSetter = Init(provider);
             var connector = GetConnector(provider);
             var permissions = connector.GetAllPermissions();
@@ -120,7 +132,8 @@ namespace Task.Connector.Tests {
         [Theory]
         [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
-        public void AddUserPermissions(string provider) {
+        public void AddUserPermissions(string provider)
+        {
             var dataSetter = Init(provider);
             var connector = GetConnector(provider);
             var RoleId = $"{itRoleRightGroupName}{delimeter}{dataSetter.GetITRoleId()}";
@@ -134,7 +147,8 @@ namespace Task.Connector.Tests {
         [Theory]
         [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
-        public void RemoveUserPermissions(string provider) {
+        public void RemoveUserPermissions(string provider)
+        {
             var dataSetter = Init(provider);
             var connector = GetConnector(provider);
             var requestRightIdToDrop = $"{requestRightGroupName}{delimeter}{dataSetter.GetRequestRightId(DefaultData.RequestRights[DefaultData.MasterUserRequestRights.First()].Name)}";
@@ -147,7 +161,8 @@ namespace Task.Connector.Tests {
         [Theory]
         [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
-        public void GetUserPermissions(string provider) {
+        public void GetUserPermissions(string provider)
+        {
             Init(provider);
             var connector = GetConnector(provider);
             var permissions = connector.GetUserPermissions(DefaultData.MasterUserLogin);
