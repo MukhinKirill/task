@@ -9,13 +9,8 @@ namespace Task.Connector.Tests
         static string requestRightGroupName = "Request";
         static string itRoleRightGroupName = "Role";
         static string delimeter = ":";
-        static string mssqlConnectionString = "";
-        static string postgreConnectionString = "";
-        static Dictionary<string, string> connectorsCS = new Dictionary<string, string>
-        {
-            { "MSSQL",$"ConnectionString='{mssqlConnectionString}';Provider='SqlServer.2019';SchemaName='AvanpostIntegrationTestTaskSchema';"},
-            { "POSTGRE", $"ConnectionString='{postgreConnectionString}';Provider='PostgreSQL.9.5';SchemaName='AvanpostIntegrationTestTaskSchema';"}
-        };
+        static string mssqlConnectionString = "Server=Your_Host,1433;Database=Your_Db_Name;User Id=Your_User_Name;Password=Your_Password;Encrypt=False;";
+        static string postgreConnectionString = "Server=Your_Host;Port=5432;Database=Your_Db_Name;Username=Your_User_Name;Password=Your_Password;";
         static Dictionary<string, string> dataBasesCS = new Dictionary<string, string>
         {
             { "MSSQL",mssqlConnectionString},
@@ -33,9 +28,29 @@ namespace Task.Connector.Tests
         public IConnector GetConnector(string provider)
         {
             IConnector connector = new ConnectorDb();
-            connector.StartUp(connectorsCS[provider]);
-            connector.Logger = new FileLogger($"{DateTime.Now}connector{provider}.Log", $"{DateTime.Now}connector{provider}");
+            connector.StartUp(CreateConnectionString(provider));
+            connector.Logger = new FileLogger($"1.Log", $"{DateTime.Now}connector{provider}");
             return connector;
+        }
+
+        private string CreateConnectionString(string provider)
+        {
+            string connectionString = provider == "MSSQL" ? mssqlConnectionString : postgreConnectionString;
+            string dbProvider = provider == "MSSQL" ? "SqlServer.2019" : "PostgreSQL.9.5";
+
+            var dbParams = new DbParams(connectionString, dbProvider, "TestTaskSchema")
+            {
+                RolesTableName = "ItRole",
+                PasswordsTableName = "Passwords",
+                RequestRightsTableName = "RequestRight",
+                UsersTableName = "User",
+                UsersRolesTableName = "UserITRole",
+                UsersRequestRightsTableName = "UserRequestRight",
+                PasswordPropName = "password",
+                UsersPkPropName = "login",
+                PermissionDelimiter = delimeter
+            };
+            return dbParams.ToConnectionString();
         }
 
 
@@ -59,7 +74,7 @@ namespace Task.Connector.Tests
             var dataSetter = Init(provider);
             var connector = GetConnector(provider);
             var propInfos = connector.GetAllProperties();
-            Assert.Equal(DefaultData.PropsCount+1/*password too*/, propInfos.Count());
+            Assert.Equal(DefaultData.PropsCount + 1/*password too*/, propInfos.Count());
         }
 
         [Theory]
@@ -125,7 +140,7 @@ namespace Task.Connector.Tests
             var RoleId = $"{itRoleRightGroupName}{delimeter}{dataSetter.GetITRoleId()}";
             connector.AddUserPermissions(
                 DefaultData.MasterUserLogin,
-                new [] { RoleId });
+                new[] { RoleId });
             Assert.True(dataSetter.MasterUserHasITRole(dataSetter.GetITRoleId().ToString()));
             Assert.True(dataSetter.MasterUserHasRequestRight(dataSetter.GetRequestRightId(DefaultData.RequestRights[DefaultData.MasterUserRequestRights.First()].Name).ToString()));
         }
@@ -140,7 +155,7 @@ namespace Task.Connector.Tests
             var requestRightIdToDrop = $"{requestRightGroupName}{delimeter}{dataSetter.GetRequestRightId(DefaultData.RequestRights[DefaultData.MasterUserRequestRights.First()].Name)}";
             connector.RemoveUserPermissions(
                 DefaultData.MasterUserLogin,
-                new [] { requestRightIdToDrop });
+                new[] { requestRightIdToDrop });
             Assert.False(dataSetter.MasterUserHasITRole(dataSetter.GetITRoleId().ToString()));
             Assert.False(dataSetter.MasterUserHasRequestRight(dataSetter.GetRequestRightId(DefaultData.RequestRights[DefaultData.MasterUserRequestRights.First()].Name).ToString()));
         }

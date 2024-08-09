@@ -15,7 +15,7 @@ namespace Task.Connector.Tests
         }
         void Append(string text)
         {
-            using (var sw = File.AppendText(_fileName))
+            using ( var sw = File.AppendText(_fileName) )
                 sw.WriteLine(text);
         }
         public void Debug(string message) => Append($"{DateTime.Now}:{_connectorName}:DEBUG:{message}");
