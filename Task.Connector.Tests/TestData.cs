@@ -1,7 +1,5 @@
-﻿namespace Task.Connector.Tests
-{
-    public static class TestData
-    {
+﻿namespace Task.Connector.Tests {
+    public static class TestData {
 
         public const string NotExistingUserLogin = "EldaraDO";
 
