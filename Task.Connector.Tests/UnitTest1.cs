@@ -18,7 +18,7 @@ namespace Task.Connector.Tests
         };
         static Dictionary<string, string> dataBasesCS = new Dictionary<string, string>
         {
-            { "MSSQL",mssqlConnectionString},
+            { "MSSQL", mssqlConnectionString},
             { "POSTGRE", postgreConnectionString}
         };
 

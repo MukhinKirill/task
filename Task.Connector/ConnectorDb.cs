@@ -1,4 +1,7 @@
 ﻿using System.Text.RegularExpressions;
+using Task.Connector.Intefraces;
+using Task.Connector.Services;
+using Task.Integration.Data.DbCommon;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
 
@@ -6,59 +9,81 @@ namespace Task.Connector;
 
 public class ConnectorDb : IConnector
 {
+	private IPermissionService _permissionService;
+	private IUserPermissionService _userPermissionService;
+	private IUserPropertyService _userPropertyService;
+	private IUserService _userService;
+
+	private string _provider = "POSTGRE";
+
 	public ILogger Logger { get; set; }
 
 	public void StartUp(string connectionString)
-    {
-        var settings = ParseConnectionString(connectionString);
+	{
+		var settings = ParseConnectionString(connectionString);
 
-        var connectionStr = settings["ConnectionString"];
-    }
+		var contextFactory = new DbContextFactory(settings["ConnectionString"]);
 
-    public void CreateUser(UserToCreate user)
-    {
-        throw new NotImplementedException();
-    }
+		_permissionService = new PermissionService(contextFactory, _provider);
+		_userPermissionService = new UserPermissionService(contextFactory, _provider);
+		_userPropertyService = new UserPropertyService(contextFactory, _provider);
+		_userService = new UserService(contextFactory, _provider);
+	}
 
-    public IEnumerable<Property> GetAllProperties()
-    {
-        throw new NotImplementedException();
-    }
+	public void CreateUser(UserToCreate user)
+	{
+		_userService.CreateUser(user);
+	}
 
-    public IEnumerable<UserProperty> GetUserProperties(string userLogin)
-    {
-        throw new NotImplementedException();
-    }
+	public IEnumerable<Property> GetAllProperties()
+	{
+		Property[] properties =
+		{
+			new("lastName", "Фамилия"),
+			new("firstName", "Имя"),
+			new("middleName", "Отчество"),
+			new("telephoneNumber", "Номер телефона"),
+			new("isLead", "Руководитель"),
+			new("password", "Пароль")
+		};
 
-    public bool IsUserExists(string userLogin)
-    {
-        throw new NotImplementedException();
-    }
+		return properties;
+	}
 
-    public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
-    {
-        throw new NotImplementedException();
-    }
+	public IEnumerable<UserProperty> GetUserProperties(string userLogin)
+	{
+		return _userPropertyService.GetUserProperties(userLogin);
+	}
 
-    public IEnumerable<Permission> GetAllPermissions()
-    {
-        throw new NotImplementedException();
-    }
+	public bool IsUserExists(string userLogin)
+	{
+		return _userService.IsUserExists(userLogin);
+	}
 
-    public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
-    {
-        throw new NotImplementedException();
-    }
+	public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
+	{
+		_userPropertyService.UpdateUserProperties(properties, userLogin);
+	}
 
-    public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
-    {
-        throw new NotImplementedException();
-    }
+	public IEnumerable<Permission> GetAllPermissions()
+	{
+		return _permissionService.GetAllPermissions();
+	}
 
-    public IEnumerable<string> GetUserPermissions(string userLogin)
-    {
-        throw new NotImplementedException();
-    }
+	public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
+	{
+		_userPermissionService.AddUserPermissions(userLogin, rightIds);
+	}
+
+	public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
+	{
+		_userPermissionService.RemoveUserPermissions(userLogin, rightIds);
+	}
+
+	public IEnumerable<string> GetUserPermissions(string userLogin)
+	{
+		return _userPermissionService.GetUserPermissions(userLogin);
+	}
 
 
 
