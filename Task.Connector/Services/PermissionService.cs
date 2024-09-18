@@ -19,6 +19,14 @@ internal class PermissionService : IPermissionService
 	{
 		using var context = _contextFactory.GetContext(_provider);
 
-		throw new NotImplementedException();
+		var requestRights = context.RequestRights
+			.Select(rr => new Permission(rr.Id.ToString()!, rr.Name, ""))
+			.ToArray();
+
+		var itRoles = context.ITRoles
+			.Select(itr => new Permission(itr.Id.ToString()!, itr.Name, ""))
+			.ToArray();
+
+		return requestRights.Union(itRoles);
 	}
 }

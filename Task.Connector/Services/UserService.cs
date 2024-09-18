@@ -18,12 +18,56 @@ internal class UserService : IUserService
 	public bool IsUserExists(string userLogin)
 	{
 		using var context = _contextFactory.GetContext(_provider);
-		throw new NotImplementedException();
+
+		var user = context.Users.FirstOrDefault(u => u.Login == userLogin);
+
+		return user != null;
 	}
 
 	public void CreateUser(UserToCreate user)
 	{
 		using var context = _contextFactory.GetContext(_provider);
-		throw new NotImplementedException();
+
+		context.Users.Add(new()
+		{
+			Login = user.Login,
+			LastName = GetStringProperyOrDefault("lastName"),
+			FirstName = GetStringProperyOrDefault("firstName"),
+			MiddleName = GetStringProperyOrDefault("middleName"),
+			TelephoneNumber = GetStringProperyOrDefault("telephoneNumber"),
+			IsLead = GetBoolPropertyOrDefault("isLead")
+		});
+
+		context.Passwords.Add(new()
+		{
+			UserId = user.Login,
+			Password = user.HashPassword
+		});
+
+		context.SaveChanges();
+
+
+		UserProperty? GetProperty(string title)
+		{
+			return user.Properties.FirstOrDefault(up => up.Name == title);
+		}
+
+		string GetStringProperyOrDefault(string title)
+		{
+			var property = GetProperty(title);
+			return (property is null || property.Value is null) ? "" : property.Value;
+		}
+
+		bool GetBoolPropertyOrDefault(string title)
+		{
+			var property = GetProperty(title);
+
+			if (bool.TryParse(property?.Value, out var res))
+			{
+				return res;
+			}
+
+			return false;
+		}
 	}
 }
