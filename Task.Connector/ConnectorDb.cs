@@ -1,6 +1,7 @@
-﻿using System.Text.RegularExpressions;
-using Task.Connector.Intefraces;
-using Task.Connector.Services;
+﻿using Task.Connector.Services.PermissionService;
+using Task.Connector.Services.UserPermissionService;
+using Task.Connector.Services.UserPropertyService;
+using Task.Connector.Services.UserService;
 using Task.Integration.Data.DbCommon;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
@@ -20,7 +21,7 @@ public class ConnectorDb : IConnector
 
 	public void StartUp(string connectionString)
 	{
-		var settings = ParseConnectionString(connectionString);
+		var settings = connectionString.ParseConnectionString();
 
 		var contextFactory = new DbContextFactory(settings["ConnectionString"]);
 
@@ -83,28 +84,5 @@ public class ConnectorDb : IConnector
 	public IEnumerable<string> GetUserPermissions(string userLogin)
 	{
 		return _userPermissionService.GetUserPermissions(userLogin);
-	}
-
-
-
-	private static Dictionary<string, string> ParseConnectionString(string connectionString)
-	{
-		var result = new Dictionary<string, string>();
-
-		// (\w+) - >= 1 буквенно-цифровых символов (ключ)
-		// '([^']+)' - >= 1 символов в одинарных кавычках кроме самих кавычек (значение)
-		var pattern = @"(\w+)='([^']+)'";
-
-		var matches = Regex.Matches(connectionString, pattern);
-
-		foreach (Match match in matches)
-		{
-			var key = match.Groups[1].Value;
-			var value = match.Groups[2].Value;
-
-			result[key] = value;
-		}
-
-		return result;
 	}
 }
