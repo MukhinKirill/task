@@ -50,7 +50,7 @@ namespace Task.Connector
                         addUserPasswordQuery.ExecuteNonQuery();
 
                         transaction.Commit();
-                        Console.WriteLine("New user added."); //Изменить
+                        Console.WriteLine("New user added.");
                     }
                     catch (Exception ex)
                     {
@@ -74,11 +74,12 @@ namespace Task.Connector
                 {
                     var selectPropertiesQuery = new SqlCommand("SELECT COLUMN_NAME " +
                                                                "FROM INFORMATION_SCHEMA.COLUMNS " +
-                                                               "WHERE TABLE_NAME = N'User' " +
-                                                               "AND COLUMN_NAME NOT IN (" +
+                                                               "WHERE TABLE_NAME = 'User' " +
+                                                               "AND COLUMN_NAME NOT IN " +
+                                                               "(" +
                                                                "    SELECT COLUMN_NAME  " +
                                                                "    FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE " +
-                                                               "    WHERE TABLE_NAME = N'User' " +
+                                                               "    WHERE TABLE_NAME = 'User' " +
                                                                ") " +
                                                                "UNION ALL " +
                                                                "SELECT 'password' AS COLUMN_NAME;", sqlConnection);
@@ -102,12 +103,72 @@ namespace Task.Connector
 
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
         {
-            throw new NotImplementedException();
+            var userProperties = new List<UserProperty>();
+
+            using (var sqlConnection = new SqlConnection(_connectionString))
+            {
+                sqlConnection.Open();
+                Console.WriteLine("Connection established.");
+
+                try
+                {
+                    var selectUserPropertiesQuery = new SqlCommand(
+                        "SELECT lastName, firstName, middleName, telephoneNumber, isLead " +
+                        "FROM [TestTaskSchema].[User] " +
+                        "WHERE login = @login", sqlConnection);
+
+                    selectUserPropertiesQuery.Parameters.AddWithValue("@login", userLogin);
+
+                    using (var reader = selectUserPropertiesQuery.ExecuteReader())
+                    {
+                        var columnNames = Enumerable.Range(0, reader.FieldCount)
+                            .Select(i => reader.GetName(i))
+                            .ToArray();
+
+                        if (reader.Read())
+                        {
+                            foreach (var columnName in columnNames)
+                            {
+                                userProperties.Add(new UserProperty(columnName,
+                                    reader[columnName].ToString() ?? string.Empty));
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("An error occurred while selecting data: " + ex.Message);
+                }
+            }
+
+            return userProperties;
         }
 
         public bool IsUserExists(string userLogin)
         {
-            throw new NotImplementedException();
+            using (var sqlConnection = new SqlConnection(_connectionString))
+            {
+                sqlConnection.Open();
+                Console.WriteLine("Connection established.");
+
+                try
+                {
+                    var checkUserExistsQuery = new SqlCommand("SELECT COUNT(*)" +
+                                                              "FROM [TestTaskSchema].[User]" +
+                                                              "WHERE login = @login", sqlConnection);
+
+                    checkUserExistsQuery.Parameters.AddWithValue("@login", userLogin);
+
+                    var isUserExists = (int)checkUserExistsQuery.ExecuteScalar();
+
+                    return isUserExists > 0;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("An error occurred while selecting data: " + ex.Message);
+                    return false;
+                }
+            }
         }
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
