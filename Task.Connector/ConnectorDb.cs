@@ -18,7 +18,7 @@ namespace Task.Connector
             using (var sqlConnection = new SqlConnection(_connectionString))
             {
                 sqlConnection.Open();
-                Console.WriteLine("Подключение установлено");
+                Console.WriteLine("Connection established");
                 using (var transaction = sqlConnection.BeginTransaction())
                 {
                     try
@@ -63,7 +63,41 @@ namespace Task.Connector
 
         public IEnumerable<Property> GetAllProperties()
         {
-            throw new NotImplementedException();
+            var propertiesNames = new List<Property>();
+
+            using (var sqlConnection = new SqlConnection(_connectionString))
+            {
+                sqlConnection.Open();
+                Console.WriteLine("Connection established.");
+
+                try
+                {
+                    var selectPropertiesQuery = new SqlCommand("SELECT COLUMN_NAME " +
+                                                               "FROM INFORMATION_SCHEMA.COLUMNS " +
+                                                               "WHERE TABLE_NAME = N'User' " +
+                                                               "AND COLUMN_NAME NOT IN (" +
+                                                               "    SELECT COLUMN_NAME  " +
+                                                               "    FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE " +
+                                                               "    WHERE TABLE_NAME = N'User' " +
+                                                               ") " +
+                                                               "UNION ALL " +
+                                                               "SELECT 'password' AS COLUMN_NAME;", sqlConnection);
+
+                    using (var reader = selectPropertiesQuery.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            propertiesNames.Add(new Property(reader.GetString(0), "empty"));
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("An error occurred while selecting data: " + ex.Message);
+                }
+            }
+
+            return propertiesNames;
         }
 
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
