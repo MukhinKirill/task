@@ -22,7 +22,6 @@ public class ConnectorDb : IConnector
 	public void StartUp(string connectionString)
 	{
 		var settings = connectionString.ParseConnectionString();
-
 		var contextFactory = new DbContextFactory(settings["ConnectionString"]);
 
 		_permissionService = new PermissionService(contextFactory, _provider);
@@ -33,7 +32,19 @@ public class ConnectorDb : IConnector
 
 	public void CreateUser(UserToCreate user)
 	{
-		_userService.CreateUser(user);
+		try
+		{
+			Logger.Debug($"Добавление пользователя. Логин: {user.Login}.");
+
+			_userService.CreateUser(user);
+
+			Logger.Debug($"Пользователь {user.Login} успешно создан.");
+		}
+		catch (Exception ex)
+		{
+			Logger.Error($"Ошибка при создании пользователя {user.Login}: " + ex.Message);
+			throw;
+		}
 	}
 
 	public IEnumerable<Property> GetAllProperties()
@@ -53,36 +64,134 @@ public class ConnectorDb : IConnector
 
 	public IEnumerable<UserProperty> GetUserProperties(string userLogin)
 	{
-		return _userPropertyService.GetUserProperties(userLogin);
+		try
+		{
+			Logger.Debug($"Получение свойств пользователя. Логин: {userLogin}");
+
+			var properties = _userPropertyService.GetUserProperties(userLogin);
+
+			Logger.Debug($"Свойства пользователя {userLogin} успешно получены." +
+				$" Количество свойств: {properties.Count()}");
+
+			return properties;
+		}
+		catch (Exception ex)
+		{
+			Logger.Error($"Ошибка при получении свойств пользователя {userLogin}: " + ex.Message);
+			throw;
+		}
 	}
 
 	public bool IsUserExists(string userLogin)
 	{
-		return _userService.IsUserExists(userLogin);
+		try
+		{
+			Logger.Debug($"Проверка существования пользователя. Логин: {userLogin}");
+
+			var exists = _userService.IsUserExists(userLogin);
+
+			Logger.Debug($"Проверка существования пользователя {userLogin} завершена." +
+				$" Результат: {exists}");
+
+			return exists;
+		}
+		catch (Exception ex)
+		{
+			Logger.Error($"Ошибка при проверке существования пользователя {userLogin}: " + ex.Message);
+			throw;
+		}
 	}
 
 	public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
 	{
-		_userPropertyService.UpdateUserProperties(properties, userLogin);
+		try
+		{
+			Logger.Debug($"Обновление свойств пользователя. Логин: {userLogin}." +
+				$" Количество свойств: {properties.Count()}");
+
+			_userPropertyService.UpdateUserProperties(properties, userLogin);
+
+			Logger.Debug($"Свойства пользователя {userLogin} успешно обновлены.");
+		}
+		catch (Exception ex)
+		{
+			Logger.Error($"Ошибка при обновлении свойств пользователя {userLogin}: " + ex.Message);
+			throw;
+		}
 	}
 
 	public IEnumerable<Permission> GetAllPermissions()
 	{
-		return _permissionService.GetAllPermissions();
+		try
+		{
+			Logger.Debug("Получение всех прав доступа.");
+
+			var permissions = _permissionService.GetAllPermissions();
+
+			Logger.Debug($"Права доступа успешно получены. Количество прав: {permissions.Count()}");
+
+			return permissions;
+		}
+		catch (Exception ex)
+		{
+			Logger.Error("Ошибка при получении всех прав доступа: " + ex.Message);
+			throw;
+		}
 	}
 
 	public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
 	{
-		_userPermissionService.AddUserPermissions(userLogin, rightIds);
+		try
+		{
+			Logger.Debug($"Добавление прав пользователю. Логин: {userLogin}." +
+				$" Количество прав: {rightIds.Count()}");
+
+			_userPermissionService.AddUserPermissions(userLogin, rightIds);
+
+			Logger.Debug($"Права пользователя {userLogin} успешно добавлены.");
+		}
+		catch (Exception ex)
+		{
+			Logger.Error($"Ошибка при добавлении прав пользователю {userLogin}: " + ex.Message);
+			throw;
+		}
 	}
 
 	public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
 	{
-		_userPermissionService.RemoveUserPermissions(userLogin, rightIds);
+		try
+		{
+			Logger.Debug($"Удаление прав пользователя. Логин: {userLogin}." +
+				$" Количество удаляемых прав: {rightIds.Count()}");
+
+			_userPermissionService.RemoveUserPermissions(userLogin, rightIds);
+
+			Logger.Debug($"Права пользователя {userLogin} успешно удалены.");
+		}
+		catch (Exception ex)
+		{
+			Logger.Error($"Ошибка при удалении прав пользователя {userLogin}: " + ex.Message);
+			throw;
+		}
 	}
 
 	public IEnumerable<string> GetUserPermissions(string userLogin)
 	{
-		return _userPermissionService.GetUserPermissions(userLogin);
+		try
+		{
+			Logger.Debug($"Получение прав пользователя. Логин: {userLogin}");
+
+			var permissions = _userPermissionService.GetUserPermissions(userLogin);
+
+			Logger.Debug($"Права пользователя {userLogin} успешно получены." +
+				$" Количество прав: {permissions.Count()}");
+
+			return permissions;
+		}
+		catch (Exception ex)
+		{
+			Logger.Error($"Ошибка при получении прав пользователя {userLogin}: " + ex.Message);
+			throw;
+		}
 	}
 }
