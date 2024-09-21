@@ -141,7 +141,7 @@ namespace Task.Connector.Tests
             connector.RemoveUserPermissions(
                 DefaultData.MasterUserLogin,
                 new [] { requestRightIdToDrop });
-            Assert.False(dataSetter.MasterUserHasITRole(dataSetter.GetITRoleId().ToString()));
+            Assert.False(dataSetter.MasterUserHasITRole(dataSetter.GetITRoleId().ToString()));  
             Assert.False(dataSetter.MasterUserHasRequestRight(dataSetter.GetRequestRightId(DefaultData.RequestRights[DefaultData.MasterUserRequestRights.First()].Name).ToString()));
         }
         [Theory]

@@ -254,12 +254,63 @@ namespace Task.Connector
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            throw new NotImplementedException();
+            using (var sqlConnection = new SqlConnection(_connectionString))
+            {
+                sqlConnection.Open();
+                Console.WriteLine("Connection established.");
+
+                try
+                {
+                    var addUserPermissions = new SqlCommand(
+                        "IF NOT EXISTS (SELECT * FROM [TestTaskSchema].[UserITRole]) " +
+                        "BEGIN " +
+                        "   INSERT INTO [TestTaskSchema].[UserITRole] (userId, roleId) " +
+                        "   VALUES (@userId, @roleId) " +
+                        "END", sqlConnection);
+
+                    foreach (var id in rightIds)
+                    {
+                        addUserPermissions.Parameters.Clear();
+                        var splittedId = id.Split(':');
+                        addUserPermissions.Parameters.AddWithValue("@userId", userLogin);
+                        addUserPermissions.Parameters.AddWithValue("@roleId", splittedId[1]);
+
+                        addUserPermissions.ExecuteNonQuery();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("An error occurred while updating properties: " + ex.Message);
+                }
+            }
         }
 
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            throw new NotImplementedException();
+            var splittedRights = rightIds.Select(i => i.Split(':')).ToList();
+            
+            using (var sqlConnection = new SqlConnection(_connectionString))
+            {
+                sqlConnection.Open();
+                Console.WriteLine("Connection established.");
+
+                try
+                {
+                    var removeUserPermissionsQuery = new
+                        SqlCommand("DELETE FROM [TestTaskSchema].[UserRequestRight] " +
+                                   "WHERE rightId in (@permissions) " +
+                                   "AND userId = @login", sqlConnection);
+
+                    removeUserPermissionsQuery.Parameters.AddWithValue("@permissions", splittedRights[1]);
+                    removeUserPermissionsQuery.Parameters.AddWithValue("@login", userLogin);
+
+                    removeUserPermissionsQuery.ExecuteNonQuery();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("An error occured while removing user permissions: " + ex.Message);
+                }
+            }
         }
 
         public IEnumerable<string> GetUserPermissions(string userLogin)
