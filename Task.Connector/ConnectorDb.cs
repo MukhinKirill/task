@@ -24,7 +24,8 @@ namespace Task.Connector
                     try
                     {
                         var addUserQuery = new SqlCommand(
-                            "INSERT INTO [TestTaskSchema].[User] (login, lastName, firstName, middleName, telephoneNumber, isLead) " +
+                            "INSERT INTO [TestTaskSchema].[User] " +
+                            "(login, lastName, firstName, middleName, telephoneNumber, isLead) " +
                             "VALUES (@login, @lastName, @firstName, @middleName, @telephoneNumber, @isLead)",
                             sqlConnection, transaction);
 
@@ -218,7 +219,37 @@ namespace Task.Connector
 
         public IEnumerable<Permission> GetAllPermissions()
         {
-            throw new NotImplementedException();
+            var permissionsList = new List<Permission>();
+            using (var sqlConnection = new SqlConnection(_connectionString))
+            {
+                sqlConnection.Open();
+                Console.WriteLine("Connection established.");
+                try
+                {
+                    var selectPermissionsQuery = new SqlCommand(
+                        "SELECT * " +
+                        "FROM [TestTaskSchema].[RequestRight]" +
+                        "UNION ALL " +
+                        "SELECT id, name " +
+                        "FROM [TestTaskSchema].[ItRole] AS name", sqlConnection);
+
+                    using (var reader = selectPermissionsQuery.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            permissionsList.Add(new Permission(reader.GetInt32(0).ToString(),
+                                reader.GetString(1),
+                                "empty"));
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("An error occurred while updating properties: " + ex.Message);
+                }
+            }
+
+            return permissionsList;
         }
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
