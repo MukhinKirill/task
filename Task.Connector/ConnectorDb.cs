@@ -94,7 +94,7 @@ namespace Task.Connector
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("An error occurred while selecting data: " + ex.Message);
+                    Console.WriteLine("An error occurred while selecting properties: " + ex.Message);
                 }
             }
 
@@ -137,7 +137,7 @@ namespace Task.Connector
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("An error occurred while selecting data: " + ex.Message);
+                    Console.WriteLine("An error occurred while selecting user properties: " + ex.Message);
                 }
             }
 
@@ -165,7 +165,7 @@ namespace Task.Connector
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("An error occurred while selecting data: " + ex.Message);
+                    Console.WriteLine("An error occurred while checking user existance: " + ex.Message);
                     return false;
                 }
             }
@@ -173,7 +173,47 @@ namespace Task.Connector
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
         {
-            throw new NotImplementedException();
+            using (var sqlConnection = new SqlConnection(_connectionString))
+            {
+                sqlConnection.Open();
+                Console.WriteLine("Connection established.");
+
+                try
+                {
+                    var updateUserPropertiesQuery = new SqlCommand("UPDATE [TestTaskSchema].[User] " +
+                                                                   "SET lastName = COALESCE(@lastName, lastName), " +
+                                                                   "firstName = COALESCE(@firstName, firstName), " +
+                                                                   "middleName = COALESCE(@middleName, middleName), " +
+                                                                   "telephoneNumber = COALESCE(@telephoneNumber, telephoneNumber), " +
+                                                                   "isLead = COALESCE(@isLead, isLead) " +
+                                                                   "WHERE login = @login", sqlConnection);
+
+                    var lastName = properties.FirstOrDefault(p => p.Name == "lastName")?.Value;
+                    var firstName = properties.FirstOrDefault(p => p.Name == "firstName")?.Value;
+                    var middleName = properties.FirstOrDefault(p => p.Name == "middleName")?.Value;
+                    var telephoneNumber = properties.FirstOrDefault(p => p.Name == "telephoneNumber")?.Value;
+                    var isLead = properties.FirstOrDefault(p => p.Name == "isLead")?.Value;
+
+                    updateUserPropertiesQuery.Parameters.AddWithValue("@lastName",
+                        string.IsNullOrEmpty(lastName) ? DBNull.Value : lastName);
+                    updateUserPropertiesQuery.Parameters.AddWithValue("@firstName",
+                        string.IsNullOrEmpty(firstName) ? DBNull.Value : firstName);
+                    updateUserPropertiesQuery.Parameters.AddWithValue("@middleName",
+                        string.IsNullOrEmpty(middleName) ? DBNull.Value : middleName);
+                    updateUserPropertiesQuery.Parameters.AddWithValue("@telephoneNumber",
+                        string.IsNullOrEmpty(telephoneNumber) ? DBNull.Value : telephoneNumber);
+                    updateUserPropertiesQuery.Parameters.AddWithValue("@isLead",
+                        string.IsNullOrEmpty(isLead) ? 0 : isLead);
+                    updateUserPropertiesQuery.Parameters.AddWithValue("@login", userLogin);
+
+                    updateUserPropertiesQuery.ExecuteNonQuery();
+                    Console.WriteLine("User properties updated.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("An error occurred while updating properties: " + ex.Message);
+                }
+            }
         }
 
         public IEnumerable<Permission> GetAllPermissions()
