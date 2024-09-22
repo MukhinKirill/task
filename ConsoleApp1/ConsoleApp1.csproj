@@ -1,17 +1,16 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <AssemblyName>Task.Connector</AssemblyName>
-    <RootNamespace>Task.Connector</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
+    <ProjectReference Include="..\Task.Connector\Task.Connector.csproj" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <Reference Include="Task.Integration.Data.Models">
       <HintPath>..\libs\Models\Task.Integration.Data.Models.dll</HintPath>
