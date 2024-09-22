@@ -2,22 +2,55 @@
 using Task.Integration.Data.Models.Models;
 using System.Data.SqlClient;
 using System.Data;
-using System.Collections.Generic;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Text;
+using System.Reflection;
 
 namespace Task.Connector
 {
     public class ConnectorDb : IConnector
     {
+        public ConnectorDb() 
+        {
+
+        }
+
+        public ConnectorDb(ILogger logger)
+        {
+            Logger = logger;
+        }
+
+        private string DataBaseName = string.Empty;
         private SqlConnection? connect;
         private void CheckConnection()
         {
-            if (connect is null)
+            try
             {
-                throw new Exception("Не установлено соединение с базой данных!");
+                if (connect is null)
+                {
+                    throw new Exception("Не установлено соединение с базой данных!");
+                }
             }
+            catch 
+            {
+                Logger?.Error("Не установлено соединение с базой данных!");
+            }
+            
         }
+
+        //private void CheckUserNoExists(string userLogin)
+        //{
+        //    try
+        //    {
+        //        if (!IsUserExists(userLogin))
+        //        {
+        //            throw new Exception($"Пользователя с логином {userLogin} не существует");
+        //        }
+        //    }
+        //    catch
+        //    {
+        //        Logger?.Error($"Пользователя с логином {userLogin} не существует");
+        //    }
+        //}
 
         private DataTable ReadDataFromDB(string command)
         {
@@ -30,6 +63,11 @@ namespace Task.Connector
             {
                 SqlDataReader reader = cmd.ExecuteReader();
                 dt.Load(reader);
+            }
+            catch (Exception ex)
+            {
+                Logger?.Error(ex.Message);
+                Logger?.Debug($"Ошибка вызвана при выполнении запроса {command}");
             }
             finally
             {
@@ -47,6 +85,11 @@ namespace Task.Connector
             try
             {
                 cmd.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                Logger?.Error(ex.Message);
+                Logger?.Debug($"Ошибка вызвана при выполнении запроса {command}");
             }
             finally
             {
@@ -67,7 +110,7 @@ namespace Task.Connector
                 componentsToConnectionDB[i] = componentsToConnectionDB[i].Split('=')[1];
             }
             cb.DataSource = componentsToConnectionDB[0];
-            cb.InitialCatalog = componentsToConnectionDB[1];
+            cb.InitialCatalog = DataBaseName = componentsToConnectionDB[1];
             cb.UserID = componentsToConnectionDB[2];
             cb.Password = componentsToConnectionDB[3];
             cb.TrustServerCertificate = Convert.ToBoolean(componentsToConnectionDB[4]);
@@ -79,28 +122,40 @@ namespace Task.Connector
         public void CreateUser(UserToCreate user)
         {
             CheckConnection();
-
             if (IsUserExists(user.Login))
             {
-                throw new Exception("Пользователь с таким логином уже существует");
+                Logger?.Warn($"Пользователь с логином {user.Login} уже существует");
+                //throw new Exception($"Пользователь с логином {user.Login} уже существует");
             }
-
-            StringBuilder query_sb = new();
-            query_sb.Append($"INSERT INTO [AvanpostService].[TestTaskSchema].[User] VALUES ({user.Login}, ");
-            
-            foreach (var property in GetAllProperties())
+            else
             {
-                if (!user.Properties.Select(prop => prop.Name).Contains(property.Name))
+                StringBuilder query_sb = new();
+                query_sb.Append($"INSERT INTO [{DataBaseName}].[TestTaskSchema].[User] VALUES ('{user.Login}',");
+
+                for (int i = 0; i < GetAllProperties().Count() - 1; i++)
                 {
-                    throw new Exception($"Отсутствует свойство {property.Name}");
+                    if (!user.Properties.Select(prop => prop.Name).Contains(GetAllProperties().ElementAt(i).Name))
+                    {
+                        throw new Exception($"Отсутствует свойство {GetAllProperties().ElementAt(i).Name}");
+                    }
+
+                    var value = user.Properties.Where(prop => prop.Name == GetAllProperties().ElementAt(i).Name).Select(prop => prop.Value).First();
+
+                    if (GetAllProperties().ElementAt(i).Name == "isLead")
+                    {
+                        if (value.ToLower() != "false" && value.ToLower() != "true" && value != "0" && value != "1")
+                        {
+                            throw new Exception("Значение свойства isLead должно быть либо false, либо true");
+                        }
+                    }
+
+                    query_sb.Append($"'{value}',");
                 }
+                query_sb.Replace(',', ')', query_sb.Length - 1, 1);
 
-                query_sb.Append($"{user.Properties.Where(prop => prop.Name == property.Name).Select(prop => prop.Value).First()},");
+                ChangeDataInDB(query_sb.ToString());
+                ChangeDataInDB($"INSERT INTO [{DataBaseName}].[TestTaskSchema].[Passwords] VALUES('{user.Login}', '{user.HashPassword}')");
             }
-            query_sb.Replace(',', ')', query_sb.Length - 1, 1);
-
-            ChangeDataInDB(query_sb.ToString());
-            ChangeDataInDB($"INSERT INTO [AvanpostService].[TestTaskSchema].[Passwords] VALUES({user.Login}, {user.HashPassword})");
         }
 
         // Метод позволяет получить все свойства пользователя(смотри Описание системы), пароль тоже считать свойством
@@ -110,13 +165,13 @@ namespace Task.Connector
 
             var allProperties = new List<Property>();
 
-            var namesOfProperties = ReadDataFromDB("SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('[AvanpostService].[TestTaskSchema].[User]')").AsEnumerable();
+            var namesOfProperties = ReadDataFromDB($"SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('[{DataBaseName}].[TestTaskSchema].[User]')").AsEnumerable();
             for (int i = 1; i < namesOfProperties.Count(); i++)
             {
                 allProperties.Add( new(namesOfProperties.ElementAt(i).ItemArray[0].ToString(), "") );
             }
 
-            namesOfProperties = ReadDataFromDB("SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('[AvanpostService].[TestTaskSchema].[Passwords]')").AsEnumerable();
+            namesOfProperties = ReadDataFromDB($"SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('[{DataBaseName}].[TestTaskSchema].[Passwords]')").AsEnumerable();
             for (int i = 2; i < namesOfProperties.Count(); i++)
             {
                 allProperties.Add( new(namesOfProperties.ElementAt(i).ItemArray[0].ToString(), "") );
@@ -130,31 +185,35 @@ namespace Task.Connector
         {
             CheckConnection();
 
-            if (!IsUserExists(userLogin))
-            {
-                throw new Exception("Указанного пользователя не существует");
-            }
-
-            StringBuilder query_sb = new();
-            query_sb.Append("SELECT ");
-            foreach (var propertyName in GetAllProperties())
-            {
-                query_sb.Append($"{propertyName},");
-            }
-            query_sb.Replace(',', ' ', query_sb.Length - 1, 1);
-
-            query_sb.Append("FROM [AvanpostService].[TestTaskSchema].[User] ");
-            query_sb.Append("JOIN [AvanpostService].[TestTaskSchema].[Passwords] ");
-            query_sb.Append("ON login = userid ");
-            query_sb.Append($"WHERE login = '{userLogin}'");
-
-            var props = ReadDataFromDB(query_sb.ToString());
-
             var userProps = new List<UserProperty>();
 
-            for (int i = 0; i < props.AsEnumerable().First().ItemArray.Length; i++)
+            if (IsUserExists(userLogin))
             {
-                userProps.Add( new(props.Columns[i].ColumnName, props.AsEnumerable().First().ItemArray[i].ToString()) );
+                StringBuilder query_sb = new();
+                query_sb.Append("SELECT ");
+                foreach (var property in GetAllProperties())
+                {
+                    query_sb.Append($"{property.Name},");
+                }
+                query_sb.Replace(',', ' ', query_sb.Length - 1, 1);
+
+                query_sb.Append($"FROM [{DataBaseName}].[TestTaskSchema].[User] ");
+                query_sb.Append($"INNER JOIN [{DataBaseName}].[TestTaskSchema].[Passwords] ");
+                query_sb.Append("ON login = userid ");
+                query_sb.Append($"WHERE login = '{userLogin}'");
+
+                var props = ReadDataFromDB(query_sb.ToString());
+
+                Logger?.Debug($"Метод {MethodBase.GetCurrentMethod().Name} вызвал запрос {query_sb}");
+
+                for (int i = 0; i < props.AsEnumerable().First().ItemArray.Length; i++)
+                {
+                    userProps.Add(new(props.Columns[i].ColumnName, props.AsEnumerable().First().ItemArray[i].ToString()));
+                }
+            }
+            else
+            {
+                Logger?.Warn($"Пользователя с логином {userLogin} не существует");
             }
 
             return userProps;
@@ -165,14 +224,19 @@ namespace Task.Connector
         {
             CheckConnection();
 
-            SqlCommand cmd = new($"SELECT COUNT(*) FROM [AvanpostService].[TestTaskSchema].[User] WHERE login = '{userLogin}'", connect);
+            SqlCommand cmd = new($"SELECT COUNT(*) FROM [{DataBaseName}].[TestTaskSchema].[User] WHERE login = '{userLogin}'", connect);
             connect!.Open();
 
             try
             {
                 int countUsers = Convert.ToInt32(cmd.ExecuteScalar());
 
-                return countUsers > 0 ? true : false;
+                return countUsers > 0;
+            }
+            catch
+            {
+                Logger?.Error($"Не удалось получить информацию о пользователе {userLogin}");
+                throw new Exception($"Не удалось получить информацию о пользователе {userLogin}");
             }
             finally
             {
@@ -185,37 +249,43 @@ namespace Task.Connector
         {
             CheckConnection();
 
-            if (!IsUserExists(userLogin))
+            if (IsUserExists(userLogin))
             {
-                throw new Exception("Указанного пользователя не существует");
-            }
-
-            IEnumerable<UserProperty> propertiesUnique = properties.Distinct();
-
-            if (propertiesUnique.Any())
-            {
-                bool isChanged = false;
-                StringBuilder query_sb = new();
-                query_sb.Append("UPDATE [AvanpostService].[TestTaskSchema].[User] SET ");
-
-                foreach (var property in GetAllProperties())
+                if (properties.Any())
                 {
-                    if (propertiesUnique.Select(prop => prop.Name).Contains(property.Name))
+                    bool isChanged = false;
+                    StringBuilder query_sb = new();
+                    query_sb.Append($"UPDATE [{DataBaseName}].[TestTaskSchema].[User] SET ");
+
+                    foreach (var property in GetAllProperties())
                     {
-                        query_sb.Append($"{propertiesUnique.Where(prop => prop.Name == property.Name).Select(prop => prop.Value).First()},");
-                        if (!isChanged)
+                        if (properties.Select(prop => prop.Name).Contains(property.Name))
                         {
-                            isChanged = true;
-                        } 
+                            query_sb.Append($"{property.Name} = '{properties.Where(prop => prop.Name == property.Name).Select(prop => prop.Value).First()}',");
+                            if (!isChanged)
+                            {
+                                isChanged = true;
+                            }
+                        }
+                    }
+                    if (isChanged)
+                    {
+                        query_sb.Remove(query_sb.Length - 1, 1);
+                        query_sb.Append($" WHERE login = '{userLogin}'");
+
+                        ChangeDataInDB(query_sb.ToString());
+
+                        Logger?.Debug($"Метод {MethodBase.GetCurrentMethod().Name} вызвал запрос {query_sb}");
+                    }
+                    else
+                    {
+                        Logger?.Debug($"Метод {MethodBase.GetCurrentMethod().Name} завершился без обращения к базе данных");
                     }
                 }
-                if (isChanged)
-                {
-                    query_sb.Remove(query_sb.Length - 1, 1);
-                    query_sb.Append($" WHERE login = '{userLogin}'");
-
-                    ChangeDataInDB(query_sb.ToString());
-                }
+            }
+            else
+            {
+                Logger?.Warn($"Пользователя с логином {userLogin} не существует");
             }
         }
 
@@ -228,7 +298,7 @@ namespace Task.Connector
 
             foreach (var typeOfPermission in new string[] { "RequestRight", "ItRole" })
             {
-                var perms = ReadDataFromDB($"SELECT * FROM [AvanpostService].[TestTaskSchema].[{typeOfPermission}]");
+                var perms = ReadDataFromDB($"SELECT * FROM [{DataBaseName}].[TestTaskSchema].[{typeOfPermission}]");
                 for (int i = 0; i < perms.AsEnumerable().Count(); i++)
                 {
                     permissions.Add( new(perms.AsEnumerable().ElementAt(i).ItemArray[0].ToString(), perms.AsEnumerable().ElementAt(i).ItemArray[1].ToString(), typeOfPermission) );
@@ -241,13 +311,6 @@ namespace Task.Connector
         // Добавить права пользователю в системе
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            CheckConnection();
-
-            if (!IsUserExists(userLogin))
-            {
-                throw new Exception("Указанного пользователя не существует");
-            }
-
             if (rightIds.Any())
             {
                 var allRights = GetAllPermissions().Where(perm => perm.Description == "RequestRight").Select(perm => perm.Id);
@@ -255,7 +318,7 @@ namespace Task.Connector
                 bool isChanged = false;
 
                 StringBuilder query_sb = new();
-                query_sb.Append("INSERT INTO [AvanpostService].[TestTaskSchema].[UserRequestRight] VALUES");
+                query_sb.Append($"INSERT INTO [{DataBaseName}].[TestTaskSchema].[UserRequestRight] VALUES");
 
                 foreach (var newRight in rightIds)
                 {
@@ -282,10 +345,21 @@ namespace Task.Connector
                     query_sb.Remove(query_sb.Length - 1, 1);
 
                     ChangeDataInDB(query_sb.ToString());
+
+                    Logger?.Debug($"Метод {MethodBase.GetCurrentMethod().Name} вызвал запрос {query_sb}");
                 }
                 else
                 {
-                    // указать, что такие права уже есть
+                    Logger?.Debug($"Метод {MethodBase.GetCurrentMethod().Name} завершился без обращения к базе данных");
+                }
+            }
+            else
+            {
+                CheckConnection();
+
+                if (IsUserExists(userLogin))
+                {
+                    Logger?.Warn($"Пользователя с логином {userLogin} не существует");
                 }
             }
         }
@@ -293,15 +367,13 @@ namespace Task.Connector
         // Удалить права пользователю в системе
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            CheckConnection();
-
             if (rightIds.Any())
             {
                 var existsRights = GetUserPermissions(userLogin);
                 bool isChanged = false;
 
                 StringBuilder query_sb = new();
-                query_sb.Append($"DELETE FROM [AvanpostService].[TestTaskSchema].[UserRequestRight] WHERE userId = '{userLogin}' AND rightId IN (");
+                query_sb.Append($"DELETE FROM [{DataBaseName}].[TestTaskSchema].[UserRequestRight] WHERE userId = '{userLogin}' AND rightId IN (");
                 
                 foreach (var delRight in rightIds)
                 {
@@ -321,7 +393,22 @@ namespace Task.Connector
                     query_sb.Replace(',', ')', query_sb.Length - 1, 1);
 
                     ChangeDataInDB(query_sb.ToString());
+
+                    Logger?.Debug($"Метод {MethodBase.GetCurrentMethod().Name} вызвал запрос {query_sb}");
                 }
+                else
+                {
+                    Logger?.Debug($"Метод {MethodBase.GetCurrentMethod().Name} завершился без обращения к базе данных");
+                }
+            }
+            else
+            {
+                CheckConnection();
+
+                if (IsUserExists(userLogin))
+                {
+                    Logger?.Warn($"Пользователя с логином {userLogin} не существует");
+                }  
             }
         }
 
@@ -330,17 +417,19 @@ namespace Task.Connector
         {
             CheckConnection();
 
-            if (!IsUserExists(userLogin))
-            {
-                throw new Exception("Указанного пользователя не существует");
-            }
-
             List<string> permissionIDs = new();
 
-            var perms = ReadDataFromDB($"SELECT rightId FROM [AvanpostService].[TestTaskSchema].[UserRequestRight] WHERE userId = '{userLogin}'").AsEnumerable();
-            foreach (var row in perms)
+            if (IsUserExists(userLogin))
             {
-                permissionIDs.Add(row.ItemArray[0].ToString());
+                var perms = ReadDataFromDB($"SELECT rightId FROM [{DataBaseName}].[TestTaskSchema].[UserRequestRight] WHERE userId = '{userLogin}'").AsEnumerable();
+                foreach (var row in perms)
+                {
+                    permissionIDs.Add(row.ItemArray[0].ToString());
+                }  
+            }
+            else
+            {
+                Logger?.Warn($"Пользователя с логином {userLogin} не существует");
             }
 
             return permissionIDs;
