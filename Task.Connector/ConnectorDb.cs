@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using System.Data;
+using Microsoft.Data.SqlClient;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
 
@@ -280,7 +281,7 @@ namespace Task.Connector
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("An error occurred while updating properties: " + ex.Message);
+                    Console.WriteLine("An error occurred while updating permissions: " + ex.Message);
                 }
             }
         }
@@ -315,7 +316,40 @@ namespace Task.Connector
 
         public IEnumerable<string> GetUserPermissions(string userLogin)
         {
-            throw new NotImplementedException();
+            var userPermissions = new List<string>();
+
+            using (var sqlConnection = new SqlConnection(_connectionString))
+            {
+                sqlConnection.Open();
+                Console.WriteLine("Connection established.");
+
+                try
+                {
+                    var getUserPermissionsQuery = new SqlCommand("SELECT rightId " +
+                                                                 "FROM [TestTaskSchema].[UserRequestRight] " +
+                                                                 "WHERE userId = @login " +
+                                                                 "UNION ALL " +
+                                                                 "SELECT roleId " +
+                                                                 "FROM [TestTaskSchema].[UserITRole] " +
+                                                                 "WHERE userId = @login ", sqlConnection);
+
+                    getUserPermissionsQuery.Parameters.AddWithValue("@login", userLogin);
+
+                    using (var reader = getUserPermissionsQuery.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            userPermissions.Add(reader.GetInt32(0).ToString());
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("An error occurred while selecting permissions: " + ex.Message);
+                }
+            }
+
+            return userPermissions;
         }
 
         public ILogger Logger { get; set; }
