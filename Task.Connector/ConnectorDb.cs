@@ -287,8 +287,8 @@ namespace Task.Connector
 
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            var splittedRights = rightIds.Select(i => i.Split(':')).ToList();
-            
+            var rightsToDelete = string.Join(",", rightIds.Select(id => id.Split(':')[1]));
+
             using (var sqlConnection = new SqlConnection(_connectionString))
             {
                 sqlConnection.Open();
@@ -301,7 +301,7 @@ namespace Task.Connector
                                    "WHERE rightId in (@permissions) " +
                                    "AND userId = @login", sqlConnection);
 
-                    removeUserPermissionsQuery.Parameters.AddWithValue("@permissions", splittedRights[1]);
+                    removeUserPermissionsQuery.Parameters.AddWithValue("@permissions", rightsToDelete);
                     removeUserPermissionsQuery.Parameters.AddWithValue("@login", userLogin);
 
                     removeUserPermissionsQuery.ExecuteNonQuery();
