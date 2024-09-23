@@ -8,6 +8,7 @@ namespace Task.Connector
     public class ConnectorDb : IConnector
     {
         private string _connectionString;
+        public ILogger Logger { get; set; }
 
         public void StartUp(string connectionString)
         {
@@ -19,11 +20,11 @@ namespace Task.Connector
             using (var sqlConnection = new SqlConnection(_connectionString))
             {
                 sqlConnection.Open();
-                Console.WriteLine("Connection established");
                 using (var transaction = sqlConnection.BeginTransaction())
                 {
                     try
                     {
+                        Logger.Debug("Connection established");
                         var addUserQuery = new SqlCommand(
                             "INSERT INTO [TestTaskSchema].[User] " +
                             "(login, lastName, firstName, middleName, telephoneNumber, isLead) " +
@@ -52,12 +53,12 @@ namespace Task.Connector
                         addUserPasswordQuery.ExecuteNonQuery();
 
                         transaction.Commit();
-                        Console.WriteLine("New user added.");
+                        Logger.Debug("New user added.");
                     }
                     catch (Exception ex)
                     {
                         transaction.Rollback();
-                        Console.WriteLine("An error occurred while adding a user: " + ex.Message);
+                        Logger.Warn($"An error occurred while adding a user: " + ex.Message);
                     }
                 }
             }
@@ -70,21 +71,22 @@ namespace Task.Connector
             using (var sqlConnection = new SqlConnection(_connectionString))
             {
                 sqlConnection.Open();
-                Console.WriteLine("Connection established.");
+                Logger.Debug("Connection established");
 
                 try
                 {
-                    var selectPropertiesQuery = new SqlCommand("SELECT COLUMN_NAME " +
-                                                               "FROM INFORMATION_SCHEMA.COLUMNS " +
-                                                               "WHERE TABLE_NAME = 'User' " +
-                                                               "AND COLUMN_NAME NOT IN " +
-                                                               "(" +
-                                                               "    SELECT COLUMN_NAME  " +
-                                                               "    FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE " +
-                                                               "    WHERE TABLE_NAME = 'User' " +
-                                                               ") " +
-                                                               "UNION ALL " +
-                                                               "SELECT 'password' AS COLUMN_NAME;", sqlConnection);
+                    var selectPropertiesQuery = new SqlCommand(
+                        "SELECT COLUMN_NAME " +
+                        "FROM INFORMATION_SCHEMA.COLUMNS " +
+                        "WHERE TABLE_NAME = 'User' " +
+                        "AND COLUMN_NAME NOT IN " +
+                        "(" +
+                        "    SELECT COLUMN_NAME  " +
+                        "    FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE " +
+                        "    WHERE TABLE_NAME = 'User' " +
+                        ") " +
+                        "UNION ALL " +
+                        "SELECT 'password' AS COLUMN_NAME;", sqlConnection);
 
                     using (var reader = selectPropertiesQuery.ExecuteReader())
                     {
@@ -96,7 +98,7 @@ namespace Task.Connector
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("An error occurred while selecting properties: " + ex.Message);
+                    Logger.Warn("An error occurred while selecting properties: " + ex.Message);
                 }
             }
 
@@ -110,7 +112,7 @@ namespace Task.Connector
             using (var sqlConnection = new SqlConnection(_connectionString))
             {
                 sqlConnection.Open();
-                Console.WriteLine("Connection established.");
+                Logger.Debug("Connection established");
 
                 try
                 {
@@ -139,7 +141,7 @@ namespace Task.Connector
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("An error occurred while selecting user properties: " + ex.Message);
+                    Logger.Warn("An error occurred while selecting user properties: " + ex.Message);
                 }
             }
 
@@ -151,13 +153,14 @@ namespace Task.Connector
             using (var sqlConnection = new SqlConnection(_connectionString))
             {
                 sqlConnection.Open();
-                Console.WriteLine("Connection established.");
+                Logger.Debug("Connection established");
 
                 try
                 {
-                    var checkUserExistsQuery = new SqlCommand("SELECT COUNT(*)" +
-                                                              "FROM [TestTaskSchema].[User]" +
-                                                              "WHERE login = @login", sqlConnection);
+                    var checkUserExistsQuery = new SqlCommand(
+                        "SELECT COUNT(*)" +
+                        "FROM [TestTaskSchema].[User]" +
+                        "WHERE login = @login", sqlConnection);
 
                     checkUserExistsQuery.Parameters.AddWithValue("@login", userLogin);
 
@@ -167,7 +170,7 @@ namespace Task.Connector
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("An error occurred while checking user existance: " + ex.Message);
+                    Logger.Warn("An error occurred while checking user existance: " + ex.Message);
                     return false;
                 }
             }
@@ -178,17 +181,18 @@ namespace Task.Connector
             using (var sqlConnection = new SqlConnection(_connectionString))
             {
                 sqlConnection.Open();
-                Console.WriteLine("Connection established.");
+                Logger.Debug("Connection established");
 
                 try
                 {
-                    var updateUserPropertiesQuery = new SqlCommand("UPDATE [TestTaskSchema].[User] " +
-                                                                   "SET lastName = COALESCE(@lastName, lastName), " +
-                                                                   "firstName = COALESCE(@firstName, firstName), " +
-                                                                   "middleName = COALESCE(@middleName, middleName), " +
-                                                                   "telephoneNumber = COALESCE(@telephoneNumber, telephoneNumber), " +
-                                                                   "isLead = COALESCE(@isLead, isLead) " +
-                                                                   "WHERE login = @login", sqlConnection);
+                    var updateUserPropertiesQuery = new SqlCommand(
+                        "UPDATE [TestTaskSchema].[User] " +
+                        "SET lastName = COALESCE(@lastName, lastName), " +
+                        "firstName = COALESCE(@firstName, firstName), " +
+                        "middleName = COALESCE(@middleName, middleName), " +
+                        "telephoneNumber = COALESCE(@telephoneNumber, telephoneNumber), " +
+                        "isLead = COALESCE(@isLead, isLead) " +
+                        "WHERE login = @login", sqlConnection);
 
                     var lastName = properties.FirstOrDefault(p => p.Name == "lastName")?.Value;
                     var firstName = properties.FirstOrDefault(p => p.Name == "firstName")?.Value;
@@ -209,11 +213,11 @@ namespace Task.Connector
                     updateUserPropertiesQuery.Parameters.AddWithValue("@login", userLogin);
 
                     updateUserPropertiesQuery.ExecuteNonQuery();
-                    Console.WriteLine("User properties updated.");
+                    Logger.Debug("User properties updated.");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("An error occurred while updating properties: " + ex.Message);
+                    Logger.Warn("An error occurred while updating properties: " + ex.Message);
                 }
             }
         }
@@ -224,7 +228,7 @@ namespace Task.Connector
             using (var sqlConnection = new SqlConnection(_connectionString))
             {
                 sqlConnection.Open();
-                Console.WriteLine("Connection established.");
+                Logger.Debug("Connection established");
                 try
                 {
                     var selectPermissionsQuery = new SqlCommand(
@@ -246,7 +250,7 @@ namespace Task.Connector
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("An error occurred while updating properties: " + ex.Message);
+                    Logger.Warn("An error occurred while updating properties: " + ex.Message);
                 }
             }
 
@@ -258,7 +262,7 @@ namespace Task.Connector
             using (var sqlConnection = new SqlConnection(_connectionString))
             {
                 sqlConnection.Open();
-                Console.WriteLine("Connection established.");
+                Logger.Debug("Connection established");
 
                 try
                 {
@@ -277,11 +281,13 @@ namespace Task.Connector
                         addUserPermissions.Parameters.AddWithValue("@roleId", splittedId[1]);
 
                         addUserPermissions.ExecuteNonQuery();
+
+                        Logger.Debug("Added user permission.");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("An error occurred while updating permissions: " + ex.Message);
+                    Logger.Warn("An error occurred while updating permissions: " + ex.Message);
                 }
             }
         }
@@ -293,23 +299,26 @@ namespace Task.Connector
             using (var sqlConnection = new SqlConnection(_connectionString))
             {
                 sqlConnection.Open();
-                Console.WriteLine("Connection established.");
+                Logger.Debug("Connection established");
 
                 try
                 {
                     var removeUserPermissionsQuery = new
-                        SqlCommand("DELETE FROM [TestTaskSchema].[UserRequestRight] " +
-                                   "WHERE rightId in (@permissions) " +
-                                   "AND userId = @login", sqlConnection);
+                        SqlCommand(
+                            "DELETE FROM [TestTaskSchema].[UserRequestRight] " +
+                            "WHERE rightId in (@permissions) " +
+                            "AND userId = @login", sqlConnection);
 
                     removeUserPermissionsQuery.Parameters.AddWithValue("@permissions", rightsToDelete);
                     removeUserPermissionsQuery.Parameters.AddWithValue("@login", userLogin);
 
                     removeUserPermissionsQuery.ExecuteNonQuery();
+
+                    Logger.Debug("Removed user permissions.");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("An error occured while removing user permissions: " + ex.Message);
+                    Logger.Warn("An error occured while removing user permissions: " + ex.Message);
                 }
             }
         }
@@ -321,17 +330,18 @@ namespace Task.Connector
             using (var sqlConnection = new SqlConnection(_connectionString))
             {
                 sqlConnection.Open();
-                Console.WriteLine("Connection established.");
+                Logger.Debug("Connection established");
 
                 try
                 {
-                    var getUserPermissionsQuery = new SqlCommand("SELECT rightId " +
-                                                                 "FROM [TestTaskSchema].[UserRequestRight] " +
-                                                                 "WHERE userId = @login " +
-                                                                 "UNION ALL " +
-                                                                 "SELECT roleId " +
-                                                                 "FROM [TestTaskSchema].[UserITRole] " +
-                                                                 "WHERE userId = @login ", sqlConnection);
+                    var getUserPermissionsQuery = new SqlCommand(
+                        "SELECT rightId " +
+                        "FROM [TestTaskSchema].[UserRequestRight] " +
+                        "WHERE userId = @login " +
+                        "UNION ALL " +
+                        "SELECT roleId " +
+                        "FROM [TestTaskSchema].[UserITRole] " +
+                        "WHERE userId = @login ", sqlConnection);
 
                     getUserPermissionsQuery.Parameters.AddWithValue("@login", userLogin);
 
@@ -345,13 +355,11 @@ namespace Task.Connector
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("An error occurred while selecting permissions: " + ex.Message);
+                    Logger.Warn("An error occurred while selecting permissions: " + ex.Message);
                 }
             }
 
             return userPermissions;
         }
-
-        public ILogger Logger { get; set; }
     }
 }
