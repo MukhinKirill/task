@@ -1,8 +1,22 @@
-﻿using Task.Connector;
+﻿using ConsoleApp1;
+using Task.Connector;
 using Task.Integration.Data.Models.Models;
 
-var connector = new ConnectorDb();
-connector.StartUp("Data Source=.;Initial Catalog=AvanpostService;User ID=sa;Password=cv4Frwtj98uy_m;Trust Server Certificate=True");
+FileLoggerTest logger = new("LogFile.txt", "connector");
+
+
+var connector = new ConnectorDb(logger);
+//connector.StartUp("Data Source=.;Initial Catalog=AvanpostService;User ID=sa;Password=cv4Frwtj98uy_m;Trust Server Certificate=True");
+string connectionString = "Data Source=.;Initial Catalog=AvanpostService;User ID=sa;Password=cv4Frwtj98uy_m;TrustServerCertificate=True";
+Console.WriteLine($"{DateTime.Now.ToString().Replace(":","")}connectorMSSQL.Log");
+
+//connector.StartUp($"ConnectionString='{connectionString}';Provider='SqlServer.2019';SchemaName='AvanpostIntegrationTestTaskSchema';");
+connector.StartUp($"ConnectionString='{connectionString}';Provider='SqlServer.2019';SchemaName='TestTaskSchema';");
+
+//connector.StartUp("Data Source=HOME-PC\\SQLEXPRESS;Initial Catalog=TestACAD;Integrated Security=True;Encrypt=True;Trust Server Certificate=True");
+//connector.TestMethod();
+
+//connector.TestMethod("ConnectionString='gvbfdbgf'hfggnvbggnngbvgb';Provider='SqlServer.2019';SchemaName='AvanpostIntegrationTestTaskSchema';");
 
 UserToCreate user1 = new("LTest1", "Password1") { Properties = new List<UserProperty>() {  
         new("lastName", "lastNameTest1"),
@@ -13,7 +27,7 @@ UserToCreate user1 = new("LTest1", "Password1") { Properties = new List<UserProp
     } 
 };
 
-UserToCreate user2 = new("LTest10", "Password2")
+UserToCreate user2 = new("LTest12", "Password2")
 {
     Properties = new List<UserProperty>() {
         new("middleName", "middleNameTest2"),
@@ -37,17 +51,17 @@ UserToCreate userAnyTest = new("LTest1", "Password")
     }
 };
 
-//connector.CreateUser(user2);
+connector.CreateUser(user2);
 
 //foreach (var item in connector.GetAllProperties())
 //{
 //    Console.WriteLine($"Свойство {item.Name}, значение/описание {item.Description}");
 //}
 
-foreach (var item in connector.GetUserProperties("LTest1"))
-{
-    Console.WriteLine($"Свойство {item.Name}, значение/описание {item.Value}");
-}
+//foreach (var item in connector.GetUserProperties("LTest1"))
+//{
+//    Console.WriteLine($"Свойство {item.Name}, значение/описание {item.Value}");
+//}
 
 //Console.WriteLine(connector.IsUserExists("LTest0"));
 
@@ -67,13 +81,13 @@ List<UserProperty> userProperties1 = new() {
 //}
 
 //var emptyList = new List<string>();
-//connector.AddUserPermissions("LTest0", emptyList);
+//connector.AddUserPermissions("LTest1", emptyList);
 
 //connector.AddUserPermissions("LTest2", new List<string>() { "1", "2", "3", "3" });
 
 //connector.RemoveUserPermissions("LTest1", new List<string>() { "fgdfgf", "2", "3", "3" });
 
-foreach (var item in connector.GetUserPermissions("Test1"))
+foreach (var item in connector.GetUserPermissions("GlavnyyNN"))
 {
     Console.WriteLine($"Право {item}");
 }

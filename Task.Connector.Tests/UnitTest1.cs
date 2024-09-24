@@ -1,6 +1,9 @@
+using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using Task.Integration.Data.DbCommon;
+using Task.Integration.Data.DbCommon.DbModels;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Task.Connector.Tests
 {
@@ -9,12 +12,12 @@ namespace Task.Connector.Tests
         static string requestRightGroupName = "Request";
         static string itRoleRightGroupName = "Role";
         static string delimeter = ":";
-        static string mssqlConnectionString = "";
+        static string mssqlConnectionString = "Data Source=.;Initial Catalog=AvanpostService;User ID=sa;Password=cv4Frwtj98uy_m;TrustServerCertificate=True";
         static string postgreConnectionString = "";
         static Dictionary<string, string> connectorsCS = new Dictionary<string, string>
         {
-            { "MSSQL",$"ConnectionString='{mssqlConnectionString}';Provider='SqlServer.2019';SchemaName='AvanpostIntegrationTestTaskSchema';"},
-            { "POSTGRE", $"ConnectionString='{postgreConnectionString}';Provider='PostgreSQL.9.5';SchemaName='AvanpostIntegrationTestTaskSchema';"}
+            { "MSSQL",$"ConnectionString='{mssqlConnectionString}';Provider='SqlServer.2019';SchemaName='TestTaskSchema';"},
+            { "POSTGRE", $"ConnectionString='{postgreConnectionString}';Provider='PostgreSQL.9.5';SchemaName='TestTaskSchema';"}
         };
         static Dictionary<string, string> dataBasesCS = new Dictionary<string, string>
         {
@@ -34,7 +37,7 @@ namespace Task.Connector.Tests
         {
             IConnector connector = new ConnectorDb();
             connector.StartUp(connectorsCS[provider]);
-            connector.Logger = new FileLogger($"{DateTime.Now}connector{provider}.Log", $"{DateTime.Now}connector{provider}");
+            connector.Logger = new FileLogger($"{DateTime.Now.ToString().Replace(":", "")}connector{provider}.Log", $"{DateTime.Now}connector{provider}");
             return connector;
         }
 

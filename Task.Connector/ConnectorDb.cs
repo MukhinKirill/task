@@ -4,6 +4,7 @@ using System.Data.SqlClient;
 using System.Data;
 using System.Text;
 using System.Reflection;
+using System.Configuration;
 
 namespace Task.Connector
 {
@@ -19,38 +20,17 @@ namespace Task.Connector
             Logger = logger;
         }
 
-        private string DataBaseName = string.Empty;
+        private string schemaName = "dbo";
+
         private SqlConnection? connect;
         private void CheckConnection()
         {
-            try
-            {
-                if (connect is null)
-                {
-                    throw new Exception("Не установлено соединение с базой данных!");
-                }
-            }
-            catch 
+            if (connect is null)
             {
                 Logger?.Error("Не установлено соединение с базой данных!");
+                throw new Exception("Не установлено соединение с базой данных!");
             }
-            
         }
-
-        //private void CheckUserNoExists(string userLogin)
-        //{
-        //    try
-        //    {
-        //        if (!IsUserExists(userLogin))
-        //        {
-        //            throw new Exception($"Пользователя с логином {userLogin} не существует");
-        //        }
-        //    }
-        //    catch
-        //    {
-        //        Logger?.Error($"Пользователя с логином {userLogin} не существует");
-        //    }
-        //}
 
         private DataTable ReadDataFromDB(string command)
         {
@@ -68,6 +48,7 @@ namespace Task.Connector
             {
                 Logger?.Error(ex.Message);
                 Logger?.Debug($"Ошибка вызвана при выполнении запроса {command}");
+                throw new Exception(ex.Message);
             }
             finally
             {
@@ -90,6 +71,7 @@ namespace Task.Connector
             {
                 Logger?.Error(ex.Message);
                 Logger?.Debug($"Ошибка вызвана при выполнении запроса {command}");
+                throw new Exception(ex.Message);
             }
             finally
             {
@@ -101,21 +83,45 @@ namespace Task.Connector
         // путь к хосту с логином и паролем, дополнительные параметры конфигурации бизнес-логики и тд, формат любой, например: "key1=value1;key2=value2..."
         public void StartUp(string connectionString)
         {
-            SqlConnectionStringBuilder cb = new();
-            string[] connectionStringSplit = connectionString.Split('|');
-
-            string[] componentsToConnectionDB = connectionStringSplit[0].Split(';');
-            for (int i = 0; i < componentsToConnectionDB.Length; i++)
+            if (!connectionString.Contains('\''))
             {
-                componentsToConnectionDB[i] = componentsToConnectionDB[i].Split('=')[1];
+                Logger?.Error("Строка подключения коннектора доджна иметь вид \"key1='value1';key2='value2';...\"");
+                throw new Exception("Строка подключения коннектора доджна иметь вид \"key1='value1';key2='value2';...\"");
             }
-            cb.DataSource = componentsToConnectionDB[0];
-            cb.InitialCatalog = DataBaseName = componentsToConnectionDB[1];
-            cb.UserID = componentsToConnectionDB[2];
-            cb.Password = componentsToConnectionDB[3];
-            cb.TrustServerCertificate = Convert.ToBoolean(componentsToConnectionDB[4]);
 
-            connect = new(cb.ToString());
+            ConnectionStringSettings settings = new();
+
+            if (connectionString[^1] == ';')
+            {
+                connectionString = connectionString.Remove(connectionString.Length - 1);
+            }
+            connectionString = connectionString.Remove(connectionString.Length - 1); // удаляем символ '
+
+            var configComponents = connectionString.Split("';");
+
+            var namesOfComponents = new string[configComponents.Length];
+            for (int i = 0; i < configComponents.Length; i++)
+            {
+                namesOfComponents[i] = configComponents[i].Split("='")[0];
+                configComponents[i] = configComponents[i].Split("='")[1];
+            }
+
+            for (int i = 0; i < namesOfComponents.Length; i++)
+            {
+                if (namesOfComponents[i] == "ConnectionString")
+                {
+                    settings.ConnectionString = configComponents[i];
+                    connect = new(settings.ConnectionString);
+                }
+                else if (namesOfComponents[i] == "Provider")
+                {
+                    settings.ProviderName = configComponents[i];
+                }
+                else if (namesOfComponents[i] == "SchemaName")
+                {
+                    schemaName = configComponents[i];
+                }
+            }
         }
 
         // Создать пользователя с набором свойств по умолчанию
@@ -125,12 +131,11 @@ namespace Task.Connector
             if (IsUserExists(user.Login))
             {
                 Logger?.Warn($"Пользователь с логином {user.Login} уже существует");
-                //throw new Exception($"Пользователь с логином {user.Login} уже существует");
             }
             else
             {
                 StringBuilder query_sb = new();
-                query_sb.Append($"INSERT INTO [{DataBaseName}].[TestTaskSchema].[User] VALUES ('{user.Login}',");
+                query_sb.Append($"INSERT INTO [{connect!.Database}].[{schemaName}].[User] VALUES ('{user.Login}',");
 
                 for (int i = 0; i < GetAllProperties().Count() - 1; i++)
                 {
@@ -154,7 +159,7 @@ namespace Task.Connector
                 query_sb.Replace(',', ')', query_sb.Length - 1, 1);
 
                 ChangeDataInDB(query_sb.ToString());
-                ChangeDataInDB($"INSERT INTO [{DataBaseName}].[TestTaskSchema].[Passwords] VALUES('{user.Login}', '{user.HashPassword}')");
+                ChangeDataInDB($"INSERT INTO [{connect.Database}].[{schemaName}].[Passwords] VALUES('{user.Login}', '{user.HashPassword}')");
             }
         }
 
@@ -163,15 +168,15 @@ namespace Task.Connector
         {
             CheckConnection();
 
-            var allProperties = new List<Property>();
+            List<Property> allProperties = new();
 
-            var namesOfProperties = ReadDataFromDB($"SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('[{DataBaseName}].[TestTaskSchema].[User]')").AsEnumerable();
+            var namesOfProperties = ReadDataFromDB($"SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('[{connect!.Database}].[{schemaName}].[User]')").AsEnumerable();
             for (int i = 1; i < namesOfProperties.Count(); i++)
             {
                 allProperties.Add( new(namesOfProperties.ElementAt(i).ItemArray[0].ToString(), "") );
             }
 
-            namesOfProperties = ReadDataFromDB($"SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('[{DataBaseName}].[TestTaskSchema].[Passwords]')").AsEnumerable();
+            namesOfProperties = ReadDataFromDB($"SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('[{connect.Database}].[{schemaName}].[Passwords]')").AsEnumerable();
             for (int i = 2; i < namesOfProperties.Count(); i++)
             {
                 allProperties.Add( new(namesOfProperties.ElementAt(i).ItemArray[0].ToString(), "") );
@@ -185,7 +190,7 @@ namespace Task.Connector
         {
             CheckConnection();
 
-            var userProps = new List<UserProperty>();
+            List<UserProperty> userProps = new();
 
             if (IsUserExists(userLogin))
             {
@@ -197,14 +202,12 @@ namespace Task.Connector
                 }
                 query_sb.Replace(',', ' ', query_sb.Length - 1, 1);
 
-                query_sb.Append($"FROM [{DataBaseName}].[TestTaskSchema].[User] ");
-                query_sb.Append($"INNER JOIN [{DataBaseName}].[TestTaskSchema].[Passwords] ");
+                query_sb.Append($"FROM [{connect!.Database}].[{schemaName}].[User] ");
+                query_sb.Append($"INNER JOIN [{connect.Database}].[{schemaName}].[Passwords] ");
                 query_sb.Append("ON login = userid ");
                 query_sb.Append($"WHERE login = '{userLogin}'");
 
                 var props = ReadDataFromDB(query_sb.ToString());
-
-                Logger?.Debug($"Метод {MethodBase.GetCurrentMethod().Name} вызвал запрос {query_sb}");
 
                 for (int i = 0; i < props.AsEnumerable().First().ItemArray.Length; i++)
                 {
@@ -224,7 +227,7 @@ namespace Task.Connector
         {
             CheckConnection();
 
-            SqlCommand cmd = new($"SELECT COUNT(*) FROM [{DataBaseName}].[TestTaskSchema].[User] WHERE login = '{userLogin}'", connect);
+            SqlCommand cmd = new($"SELECT COUNT(*) FROM [{connect!.Database}].[{schemaName}].[User] WHERE login = '{userLogin}'", connect);
             connect!.Open();
 
             try
@@ -255,7 +258,7 @@ namespace Task.Connector
                 {
                     bool isChanged = false;
                     StringBuilder query_sb = new();
-                    query_sb.Append($"UPDATE [{DataBaseName}].[TestTaskSchema].[User] SET ");
+                    query_sb.Append($"UPDATE [{connect!.Database}].[{schemaName}].[User] SET ");
 
                     foreach (var property in GetAllProperties())
                     {
@@ -274,12 +277,10 @@ namespace Task.Connector
                         query_sb.Append($" WHERE login = '{userLogin}'");
 
                         ChangeDataInDB(query_sb.ToString());
-
-                        Logger?.Debug($"Метод {MethodBase.GetCurrentMethod().Name} вызвал запрос {query_sb}");
                     }
                     else
                     {
-                        Logger?.Debug($"Метод {MethodBase.GetCurrentMethod().Name} завершился без обращения к базе данных");
+                        Logger?.Warn($"Метод {MethodBase.GetCurrentMethod().Name} завершился без обращения к базе данных");
                     }
                 }
             }
@@ -298,7 +299,7 @@ namespace Task.Connector
 
             foreach (var typeOfPermission in new string[] { "RequestRight", "ItRole" })
             {
-                var perms = ReadDataFromDB($"SELECT * FROM [{DataBaseName}].[TestTaskSchema].[{typeOfPermission}]");
+                var perms = ReadDataFromDB($"SELECT * FROM [{connect!.Database}].[{schemaName}].[{typeOfPermission}]");
                 for (int i = 0; i < perms.AsEnumerable().Count(); i++)
                 {
                     permissions.Add( new(perms.AsEnumerable().ElementAt(i).ItemArray[0].ToString(), perms.AsEnumerable().ElementAt(i).ItemArray[1].ToString(), typeOfPermission) );
@@ -318,7 +319,7 @@ namespace Task.Connector
                 bool isChanged = false;
 
                 StringBuilder query_sb = new();
-                query_sb.Append($"INSERT INTO [{DataBaseName}].[TestTaskSchema].[UserRequestRight] VALUES");
+                query_sb.Append($"INSERT INTO [{connect!.Database}].[{schemaName}].[UserRequestRight] VALUES");
 
                 foreach (var newRight in rightIds)
                 {
@@ -345,19 +346,17 @@ namespace Task.Connector
                     query_sb.Remove(query_sb.Length - 1, 1);
 
                     ChangeDataInDB(query_sb.ToString());
-
-                    Logger?.Debug($"Метод {MethodBase.GetCurrentMethod().Name} вызвал запрос {query_sb}");
                 }
                 else
                 {
-                    Logger?.Debug($"Метод {MethodBase.GetCurrentMethod().Name} завершился без обращения к базе данных");
+                    Logger?.Warn($"Метод {MethodBase.GetCurrentMethod().Name} завершился без обращения к базе данных");
                 }
             }
             else
             {
                 CheckConnection();
 
-                if (IsUserExists(userLogin))
+                if (!IsUserExists(userLogin))
                 {
                     Logger?.Warn($"Пользователя с логином {userLogin} не существует");
                 }
@@ -373,7 +372,7 @@ namespace Task.Connector
                 bool isChanged = false;
 
                 StringBuilder query_sb = new();
-                query_sb.Append($"DELETE FROM [{DataBaseName}].[TestTaskSchema].[UserRequestRight] WHERE userId = '{userLogin}' AND rightId IN (");
+                query_sb.Append($"DELETE FROM [{connect!.Database}].[{schemaName}].[UserRequestRight] WHERE userId = '{userLogin}' AND rightId IN (");
                 
                 foreach (var delRight in rightIds)
                 {
@@ -393,22 +392,20 @@ namespace Task.Connector
                     query_sb.Replace(',', ')', query_sb.Length - 1, 1);
 
                     ChangeDataInDB(query_sb.ToString());
-
-                    Logger?.Debug($"Метод {MethodBase.GetCurrentMethod().Name} вызвал запрос {query_sb}");
                 }
                 else
                 {
-                    Logger?.Debug($"Метод {MethodBase.GetCurrentMethod().Name} завершился без обращения к базе данных");
+                    Logger?.Warn($"Метод {MethodBase.GetCurrentMethod().Name} завершился без обращения к базе данных");
                 }
             }
             else
             {
                 CheckConnection();
 
-                if (IsUserExists(userLogin))
+                if (!IsUserExists(userLogin))
                 {
                     Logger?.Warn($"Пользователя с логином {userLogin} не существует");
-                }  
+                }
             }
         }
 
@@ -421,7 +418,7 @@ namespace Task.Connector
 
             if (IsUserExists(userLogin))
             {
-                var perms = ReadDataFromDB($"SELECT rightId FROM [{DataBaseName}].[TestTaskSchema].[UserRequestRight] WHERE userId = '{userLogin}'").AsEnumerable();
+                var perms = ReadDataFromDB($"SELECT rightId FROM [{connect!.Database}].[{schemaName}].[UserRequestRight] WHERE userId = '{userLogin}'").AsEnumerable();
                 foreach (var row in perms)
                 {
                     permissionIDs.Add(row.ItemArray[0].ToString());
