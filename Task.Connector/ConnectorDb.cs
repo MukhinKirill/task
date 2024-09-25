@@ -22,6 +22,10 @@ namespace Task.Connector
 
         private string schemaName = "dbo";
 
+        private static readonly string[] tableNames = new[] { "RequestRight", "ItRole" }; // названия таблиц в бд (также нужны при обращении к таблицам User...)
+        private static readonly string[] groupNames = new[] { "Request", "Role" }; // названия прав для коннектора
+        private static readonly string delimeter = ":";
+
         private SqlConnection? connect;
         private void CheckConnection()
         {
@@ -79,10 +83,17 @@ namespace Task.Connector
             }
         }
 
+        private void LogStartMethod(string methodName)
+        {
+            Logger?.Debug($"Запущен метод {methodName}");
+        }
+
         // Конфигурация коннектора через строку подключения (настройки для подключения к ресурсу(строка подключения к бд, 
         // путь к хосту с логином и паролем, дополнительные параметры конфигурации бизнес-логики и тд, формат любой, например: "key1=value1;key2=value2..."
         public void StartUp(string connectionString)
         {
+            LogStartMethod(MethodBase.GetCurrentMethod().Name);
+
             if (!connectionString.Contains('\''))
             {
                 Logger?.Error("Строка подключения коннектора доджна иметь вид \"key1='value1';key2='value2';...\"");
@@ -127,7 +138,10 @@ namespace Task.Connector
         // Создать пользователя с набором свойств по умолчанию
         public void CreateUser(UserToCreate user)
         {
+            LogStartMethod(MethodBase.GetCurrentMethod().Name);
+
             CheckConnection();
+
             if (IsUserExists(user.Login))
             {
                 Logger?.Warn($"Пользователь с логином {user.Login} уже существует");
@@ -135,37 +149,49 @@ namespace Task.Connector
             else
             {
                 StringBuilder query_sb = new();
-                query_sb.Append($"INSERT INTO [{connect!.Database}].[{schemaName}].[User] VALUES ('{user.Login}',");
+                query_sb.Append($"INSERT INTO [{connect!.Database}].[{schemaName}].[User] VALUES (N'{user.Login}',");
 
+                string value;
                 for (int i = 0; i < GetAllProperties().Count() - 1; i++)
                 {
                     if (!user.Properties.Select(prop => prop.Name).Contains(GetAllProperties().ElementAt(i).Name))
                     {
-                        throw new Exception($"Отсутствует свойство {GetAllProperties().ElementAt(i).Name}");
-                    }
-
-                    var value = user.Properties.Where(prop => prop.Name == GetAllProperties().ElementAt(i).Name).Select(prop => prop.Value).First();
-
-                    if (GetAllProperties().ElementAt(i).Name == "isLead")
-                    {
-                        if (value.ToLower() != "false" && value.ToLower() != "true" && value != "0" && value != "1")
+                        if (GetAllProperties().ElementAt(i).Name != "isLead")
                         {
-                            throw new Exception("Значение свойства isLead должно быть либо false, либо true");
+                            value = string.Empty;
+                        }
+                        else
+                        {
+                            value = "false";
+                        }
+                    }
+                    else
+                    {
+                        value = user.Properties.Where(prop => prop.Name == GetAllProperties().ElementAt(i).Name).Select(prop => prop.Value).First();
+
+                        if (GetAllProperties().ElementAt(i).Name == "isLead")
+                        {
+                            if (value.ToLower() != "false" && value.ToLower() != "true" && value != "0" && value != "1")
+                            {
+                                throw new Exception("Значение свойства isLead должно быть либо false, либо true");
+                            }
                         }
                     }
 
-                    query_sb.Append($"'{value}',");
+                    query_sb.Append($"N'{value}',");
                 }
                 query_sb.Replace(',', ')', query_sb.Length - 1, 1);
 
                 ChangeDataInDB(query_sb.ToString());
-                ChangeDataInDB($"INSERT INTO [{connect.Database}].[{schemaName}].[Passwords] VALUES('{user.Login}', '{user.HashPassword}')");
+                ChangeDataInDB($"INSERT INTO [{connect.Database}].[{schemaName}].[Passwords] VALUES(N'{user.Login}', N'{user.HashPassword}')");
             }
         }
 
         // Метод позволяет получить все свойства пользователя(смотри Описание системы), пароль тоже считать свойством
         public IEnumerable<Property> GetAllProperties()
         {
+            LogStartMethod(MethodBase.GetCurrentMethod().Name);
+
             CheckConnection();
 
             List<Property> allProperties = new();
@@ -188,6 +214,8 @@ namespace Task.Connector
         // Получить все значения свойств пользователя
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
         {
+            LogStartMethod(MethodBase.GetCurrentMethod().Name);
+
             CheckConnection();
 
             List<UserProperty> userProps = new();
@@ -196,16 +224,13 @@ namespace Task.Connector
             {
                 StringBuilder query_sb = new();
                 query_sb.Append("SELECT ");
-                foreach (var property in GetAllProperties())
+                foreach (var property in GetAllProperties().Where(prop => prop.Name != "password"))
                 {
                     query_sb.Append($"{property.Name},");
                 }
                 query_sb.Replace(',', ' ', query_sb.Length - 1, 1);
 
-                query_sb.Append($"FROM [{connect!.Database}].[{schemaName}].[User] ");
-                query_sb.Append($"INNER JOIN [{connect.Database}].[{schemaName}].[Passwords] ");
-                query_sb.Append("ON login = userid ");
-                query_sb.Append($"WHERE login = '{userLogin}'");
+                query_sb.Append($"FROM [{connect!.Database}].[{schemaName}].[User] WHERE login = N'{userLogin}'");
 
                 var props = ReadDataFromDB(query_sb.ToString());
 
@@ -225,9 +250,11 @@ namespace Task.Connector
         // Проверка существования пользователя
         public bool IsUserExists(string userLogin)
         {
+            LogStartMethod(MethodBase.GetCurrentMethod().Name);
+
             CheckConnection();
 
-            SqlCommand cmd = new($"SELECT COUNT(*) FROM [{connect!.Database}].[{schemaName}].[User] WHERE login = '{userLogin}'", connect);
+            SqlCommand cmd = new($"SELECT COUNT(*) FROM [{connect!.Database}].[{schemaName}].[User] WHERE login = N'{userLogin}'", connect);
             connect!.Open();
 
             try
@@ -250,6 +277,8 @@ namespace Task.Connector
         // Метод позволяет устанавливать значения свойств пользователя
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
         {
+            LogStartMethod(MethodBase.GetCurrentMethod().Name);
+
             CheckConnection();
 
             if (IsUserExists(userLogin))
@@ -260,11 +289,11 @@ namespace Task.Connector
                     StringBuilder query_sb = new();
                     query_sb.Append($"UPDATE [{connect!.Database}].[{schemaName}].[User] SET ");
 
-                    foreach (var property in GetAllProperties())
+                    foreach (var property in GetAllProperties().Where(prop => prop.Name != "password"))
                     {
                         if (properties.Select(prop => prop.Name).Contains(property.Name))
                         {
-                            query_sb.Append($"{property.Name} = '{properties.Where(prop => prop.Name == property.Name).Select(prop => prop.Value).First()}',");
+                            query_sb.Append($"{property.Name} = N'{properties.Where(prop => prop.Name == property.Name).Select(prop => prop.Value).First()}',");
                             if (!isChanged)
                             {
                                 isChanged = true;
@@ -274,7 +303,7 @@ namespace Task.Connector
                     if (isChanged)
                     {
                         query_sb.Remove(query_sb.Length - 1, 1);
-                        query_sb.Append($" WHERE login = '{userLogin}'");
+                        query_sb.Append($" WHERE login = N'{userLogin}'");
 
                         ChangeDataInDB(query_sb.ToString());
                     }
@@ -293,16 +322,18 @@ namespace Task.Connector
         // Получить все права в системе (смотри Описание системы клиента)
         public IEnumerable<Permission> GetAllPermissions()
         {
+            LogStartMethod(MethodBase.GetCurrentMethod().Name);
+
             CheckConnection();
 
             List<Permission> permissions = new();
-
-            foreach (var typeOfPermission in new string[] { "RequestRight", "ItRole" })
+            
+            for (int i = 0; i < tableNames.Length; i++)
             {
-                var perms = ReadDataFromDB($"SELECT * FROM [{connect!.Database}].[{schemaName}].[{typeOfPermission}]");
-                for (int i = 0; i < perms.AsEnumerable().Count(); i++)
+                var perms = ReadDataFromDB($"SELECT * FROM [{connect!.Database}].[{schemaName}].[{tableNames[i]}]");
+                for (int j = 0; j < perms.AsEnumerable().Count(); j++)
                 {
-                    permissions.Add( new(perms.AsEnumerable().ElementAt(i).ItemArray[0].ToString(), perms.AsEnumerable().ElementAt(i).ItemArray[1].ToString(), typeOfPermission) );
+                    permissions.Add(new($"{groupNames[i]}{delimeter}{perms.AsEnumerable().ElementAt(j).ItemArray[0]}", perms.AsEnumerable().ElementAt(j).ItemArray[1].ToString(), string.Empty));
                 }
             }
 
@@ -312,14 +343,18 @@ namespace Task.Connector
         // Добавить права пользователю в системе
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            if (rightIds.Any())
-            {
-                var allRights = GetAllPermissions().Where(perm => perm.Description == "RequestRight").Select(perm => perm.Id);
-                var existsRights = GetUserPermissions(userLogin);
-                bool isChanged = false;
+            LogStartMethod(MethodBase.GetCurrentMethod().Name);
 
-                StringBuilder query_sb = new();
-                query_sb.Append($"INSERT INTO [{connect!.Database}].[{schemaName}].[UserRequestRight] VALUES");
+            if (rightIds.Any() && IsUserExists(userLogin))
+            {
+                var allRights = GetAllPermissions().Select(perm => perm.Id);
+                var existsRights = GetUserPermissions(userLogin);
+                bool isChangedRequest = false, isChangedRole = false;
+
+                StringBuilder queryToRequest_sb = new();
+                StringBuilder queryToRole_sb = new();
+                queryToRequest_sb.Append($"INSERT INTO [{connect!.Database}].[{schemaName}].[User{tableNames[0]}] VALUES");
+                queryToRole_sb.Append($"INSERT INTO [{connect!.Database}].[{schemaName}].[User{tableNames[1]}] VALUES");
 
                 foreach (var newRight in rightIds)
                 {
@@ -327,27 +362,51 @@ namespace Task.Connector
                     {
                         if (!existsRights.Contains(newRight))
                         {
-                            query_sb.Append($"('{userLogin}', {newRight}),");
-                            existsRights = existsRights.Append(newRight);
-                            if (!isChanged)
+                            if (newRight.Contains(groupNames[0]))
                             {
-                                isChanged = true;
+                                queryToRequest_sb.Append($"(N'{userLogin}', {newRight.Replace($"{groupNames[0]}{delimeter}","")}),");
+
+                                if (!isChangedRequest)
+                                {
+                                    isChangedRequest = true;
+                                }
                             }
+                            else if (newRight.Contains(groupNames[1]))
+                            {
+                                queryToRole_sb.Append($"(N'{userLogin}', {newRight.Replace($"{groupNames[1]}{delimeter}", "")}),");
+
+                                if (!isChangedRole)
+                                {
+                                    isChangedRole = true;
+                                }
+                            }
+                            else
+                            {
+                                continue;
+                            }
+
+                            existsRights = existsRights.Append(newRight);
                         }
                     }
                     else
                     {
-                        throw new Exception($"Не удалось обнаружить право с id {newRight}");
+                        Logger?.Warn($"Не удалось идентифицировать право с id {newRight}");
                     }
                 }
 
-                if (isChanged) 
+                if (isChangedRequest) 
                 {
-                    query_sb.Remove(query_sb.Length - 1, 1);
+                    queryToRequest_sb.Remove(queryToRequest_sb.Length - 1, 1);
 
-                    ChangeDataInDB(query_sb.ToString());
+                    ChangeDataInDB(queryToRequest_sb.ToString());
                 }
-                else
+                if (isChangedRole)
+                {
+                    queryToRole_sb.Remove(queryToRole_sb.Length - 1, 1);
+
+                    ChangeDataInDB(queryToRole_sb.ToString());
+                }
+                if (!isChangedRequest && !isChangedRole)
                 {
                     Logger?.Warn($"Метод {MethodBase.GetCurrentMethod().Name} завершился без обращения к базе данных");
                 }
@@ -366,34 +425,62 @@ namespace Task.Connector
         // Удалить права пользователю в системе
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            if (rightIds.Any())
+            LogStartMethod(MethodBase.GetCurrentMethod().Name);
+
+            if (rightIds.Any() && IsUserExists(userLogin))
             {
                 var existsRights = GetUserPermissions(userLogin);
-                bool isChanged = false;
+                bool isChangedRequest = false, isChangedRole = false;
 
-                StringBuilder query_sb = new();
-                query_sb.Append($"DELETE FROM [{connect!.Database}].[{schemaName}].[UserRequestRight] WHERE userId = '{userLogin}' AND rightId IN (");
-                
+                StringBuilder queryToRequest_sb = new();
+                StringBuilder queryToRole_sb = new();
+                queryToRequest_sb.Append($"DELETE FROM [{connect!.Database}].[{schemaName}].[User{tableNames[0]}] WHERE userId = N'{userLogin}' AND rightId IN (");
+                queryToRole_sb.Append($"DELETE FROM [{connect!.Database}].[{schemaName}].[User{tableNames[1]}] WHERE userId = N'{userLogin}' AND roleId IN (");
+
                 foreach (var delRight in rightIds)
                 {
                     if (existsRights.Contains(delRight))
                     {
-                        query_sb.Append($"{delRight},");
-                        existsRights = existsRights.Where(right => right != delRight);
-                        if (!isChanged)
+                        if (delRight.Contains(groupNames[0]))
                         {
-                            isChanged = true;
+                            queryToRequest_sb.Append($"{delRight.Replace($"{groupNames[0]}{delimeter}", "")},");
+
+                            if (!isChangedRequest)
+                            {
+                                isChangedRequest = true;
+                            }
                         }
+                        else if (delRight.Contains(groupNames[1]))
+                        {
+                            queryToRole_sb.Append($"{delRight.Replace($"{groupNames[1]}{delimeter}", "")},");
+
+                            if (!isChangedRole)
+                            {
+                                isChangedRole = true;
+                            }
+                        }
+                        else
+                        {
+                            continue;
+                        }
+
+                        existsRights = existsRights.Where(right => right != delRight);
                     }
                 }
 
-                if (isChanged)
+                if (isChangedRequest)
                 {
-                    query_sb.Replace(',', ')', query_sb.Length - 1, 1);
+                    queryToRequest_sb.Replace(',', ')', queryToRequest_sb.Length - 1, 1);
 
-                    ChangeDataInDB(query_sb.ToString());
+                    ChangeDataInDB(queryToRequest_sb.ToString());
                 }
-                else
+                if (isChangedRole)
+                {
+                    queryToRole_sb.Replace(',', ')', queryToRole_sb.Length - 1, 1);
+
+                    ChangeDataInDB(queryToRole_sb.ToString());
+                }
+                if (!isChangedRequest && !isChangedRole)
                 {
                     Logger?.Warn($"Метод {MethodBase.GetCurrentMethod().Name} завершился без обращения к базе данных");
                 }
@@ -412,17 +499,23 @@ namespace Task.Connector
         // Получить права пользователя в системе
         public IEnumerable<string> GetUserPermissions(string userLogin)
         {
+            LogStartMethod(MethodBase.GetCurrentMethod().Name);
+
             CheckConnection();
 
             List<string> permissionIDs = new();
 
             if (IsUserExists(userLogin))
             {
-                var perms = ReadDataFromDB($"SELECT rightId FROM [{connect!.Database}].[{schemaName}].[UserRequestRight] WHERE userId = '{userLogin}'").AsEnumerable();
-                foreach (var row in perms)
+                string[] columnNames = new[] { "rightId", "roleId" };
+                for (int i = 0; i < tableNames.Length; i++)
                 {
-                    permissionIDs.Add(row.ItemArray[0].ToString());
-                }  
+                    var perms = ReadDataFromDB($"SELECT {columnNames[i]} FROM [{connect!.Database}].[{schemaName}].[User{tableNames[i]}] WHERE userId = N'{userLogin}'").AsEnumerable();
+                    foreach (var row in perms)
+                    {
+                        permissionIDs.Add($"{groupNames[i]}{delimeter}{row.ItemArray[0]}");
+                    }
+                }
             }
             else
             {

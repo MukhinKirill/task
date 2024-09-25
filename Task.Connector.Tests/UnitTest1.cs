@@ -1,9 +1,6 @@
-using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using Task.Integration.Data.DbCommon;
-using Task.Integration.Data.DbCommon.DbModels;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Task.Connector.Tests
 {
@@ -37,7 +34,7 @@ namespace Task.Connector.Tests
         {
             IConnector connector = new ConnectorDb();
             connector.StartUp(connectorsCS[provider]);
-            connector.Logger = new FileLogger($"{DateTime.Now.ToString().Replace(":", "")}connector{provider}.Log", $"{DateTime.Now}connector{provider}");
+            connector.Logger = new FileLogger($"{DateTime.Now.ToString().Replace(":", "-")}connector{provider}.Log", $"{DateTime.Now}connector{provider}");
             return connector;
         }
 

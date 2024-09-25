@@ -4,11 +4,9 @@ using Task.Integration.Data.Models.Models;
 
 FileLoggerTest logger = new("LogFile.txt", "connector");
 
-
 var connector = new ConnectorDb(logger);
 //connector.StartUp("Data Source=.;Initial Catalog=AvanpostService;User ID=sa;Password=cv4Frwtj98uy_m;Trust Server Certificate=True");
 string connectionString = "Data Source=.;Initial Catalog=AvanpostService;User ID=sa;Password=cv4Frwtj98uy_m;TrustServerCertificate=True";
-Console.WriteLine($"{DateTime.Now.ToString().Replace(":","")}connectorMSSQL.Log");
 
 //connector.StartUp($"ConnectionString='{connectionString}';Provider='SqlServer.2019';SchemaName='AvanpostIntegrationTestTaskSchema';");
 connector.StartUp($"ConnectionString='{connectionString}';Provider='SqlServer.2019';SchemaName='TestTaskSchema';");
@@ -27,12 +25,12 @@ UserToCreate user1 = new("LTest1", "Password1") { Properties = new List<UserProp
     } 
 };
 
-UserToCreate user2 = new("LTest12", "Password2")
+UserToCreate user2 = new("Test2", "Password2")
 {
     Properties = new List<UserProperty>() {
         new("middleName", "middleNameTest2"),
         new("middleName", "middleNameTest20"),
-        new("lastName", "lastNameTest2"),
+        //new("lastName", "lastNameTest2"),
         new("isLead", "TrUe"),
         new("dgdrsgf", "dgdrsgf2"),
         new("firstName", "firstNameTest2"),
@@ -52,16 +50,17 @@ UserToCreate userAnyTest = new("LTest1", "Password")
 };
 
 connector.CreateUser(user2);
+//connector.TestMethod();
 
 //foreach (var item in connector.GetAllProperties())
 //{
 //    Console.WriteLine($"Свойство {item.Name}, значение/описание {item.Description}");
 //}
 
-//foreach (var item in connector.GetUserProperties("LTest1"))
-//{
-//    Console.WriteLine($"Свойство {item.Name}, значение/описание {item.Value}");
-//}
+foreach (var item in connector.GetUserProperties("Test1"))
+{
+    Console.WriteLine($"Свойство {item.Name}, значение/описание {item.Value}");
+}
 
 //Console.WriteLine(connector.IsUserExists("LTest0"));
 
@@ -77,17 +76,17 @@ List<UserProperty> userProperties1 = new() {
 
 //foreach (var item in connector.GetAllPermissions())
 //{
-//    Console.WriteLine($"Право {item.Name}, {item.Id}, значение/описание {item.Description}");
+//    Console.WriteLine($"Право {item.Name}, id: {item.Id}, описание: {item.Description}");
 //}
 
 //var emptyList = new List<string>();
 //connector.AddUserPermissions("LTest1", emptyList);
 
-//connector.AddUserPermissions("LTest2", new List<string>() { "1", "2", "3", "3" });
+connector.AddUserPermissions("Test1", new List<string>() { "Request:1", "Request:2", "Request:3", "Request:4", "Role:1", "Role:2", "5" });
 
-//connector.RemoveUserPermissions("LTest1", new List<string>() { "fgdfgf", "2", "3", "3" });
+connector.RemoveUserPermissions("Test1", new List<string>() { "fgdfgf", "Request:", "Role:7", "6" });
 
-foreach (var item in connector.GetUserPermissions("GlavnyyNN"))
+foreach (var item in connector.GetUserPermissions("Test1"))
 {
     Console.WriteLine($"Право {item}");
 }
