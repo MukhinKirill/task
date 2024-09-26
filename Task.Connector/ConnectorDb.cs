@@ -152,11 +152,12 @@ namespace Task.Connector
                 query_sb.Append($"INSERT INTO [{connect!.Database}].[{schemaName}].[User] VALUES (N'{user.Login}',");
 
                 string value;
-                for (int i = 0; i < GetAllProperties().Count() - 1; i++)
+                var allProperties = GetAllProperties();
+                for (int i = 0; i < allProperties.Count() - 1; i++)
                 {
-                    if (!user.Properties.Select(prop => prop.Name).Contains(GetAllProperties().ElementAt(i).Name))
+                    if (!user.Properties.Select(prop => prop.Name).Contains(allProperties.ElementAt(i).Name))
                     {
-                        if (GetAllProperties().ElementAt(i).Name != "isLead")
+                        if (allProperties.ElementAt(i).Name != "isLead")
                         {
                             value = string.Empty;
                         }
@@ -167,12 +168,13 @@ namespace Task.Connector
                     }
                     else
                     {
-                        value = user.Properties.Where(prop => prop.Name == GetAllProperties().ElementAt(i).Name).Select(prop => prop.Value).First();
+                        value = user.Properties.Where(prop => prop.Name == allProperties.ElementAt(i).Name).Select(prop => prop.Value).First();
 
-                        if (GetAllProperties().ElementAt(i).Name == "isLead")
+                        if (allProperties.ElementAt(i).Name == "isLead")
                         {
                             if (value.ToLower() != "false" && value.ToLower() != "true" && value != "0" && value != "1")
                             {
+                                Logger?.Error("Значение свойства isLead должно быть либо false, либо true");
                                 throw new Exception("Значение свойства isLead должно быть либо false, либо true");
                             }
                         }
@@ -199,13 +201,13 @@ namespace Task.Connector
             var namesOfProperties = ReadDataFromDB($"SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('[{connect!.Database}].[{schemaName}].[User]')").AsEnumerable();
             for (int i = 1; i < namesOfProperties.Count(); i++)
             {
-                allProperties.Add( new(namesOfProperties.ElementAt(i).ItemArray[0].ToString(), "") );
+                allProperties.Add( new(namesOfProperties.ElementAt(i).ItemArray[0].ToString(), string.Empty) );
             }
 
             namesOfProperties = ReadDataFromDB($"SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('[{connect.Database}].[{schemaName}].[Passwords]')").AsEnumerable();
             for (int i = 2; i < namesOfProperties.Count(); i++)
             {
-                allProperties.Add( new(namesOfProperties.ElementAt(i).ItemArray[0].ToString(), "") );
+                allProperties.Add( new(namesOfProperties.ElementAt(i).ItemArray[0].ToString(), string.Empty) );
             }
 
             return allProperties;
@@ -224,7 +226,9 @@ namespace Task.Connector
             {
                 StringBuilder query_sb = new();
                 query_sb.Append("SELECT ");
-                foreach (var property in GetAllProperties().Where(prop => prop.Name != "password"))
+
+                var allProperties = GetAllProperties();
+                foreach (var property in allProperties.Where(prop => prop.Name != "password"))
                 {
                     query_sb.Append($"{property.Name},");
                 }
@@ -289,7 +293,8 @@ namespace Task.Connector
                     StringBuilder query_sb = new();
                     query_sb.Append($"UPDATE [{connect!.Database}].[{schemaName}].[User] SET ");
 
-                    foreach (var property in GetAllProperties().Where(prop => prop.Name != "password"))
+                    var allProperties = GetAllProperties();
+                    foreach (var property in allProperties.Where(prop => prop.Name != "password"))
                     {
                         if (properties.Select(prop => prop.Name).Contains(property.Name))
                         {
@@ -311,6 +316,10 @@ namespace Task.Connector
                     {
                         Logger?.Warn($"Метод {MethodBase.GetCurrentMethod().Name} завершился без обращения к базе данных");
                     }
+                }
+                else
+                {
+                    Logger?.Warn($"Введён пустой перечень для изменения свойств");
                 }
             }
             else
@@ -371,7 +380,7 @@ namespace Task.Connector
                                     isChangedRequest = true;
                                 }
                             }
-                            else if (newRight.Contains(groupNames[1]))
+                            else
                             {
                                 queryToRole_sb.Append($"(N'{userLogin}', {newRight.Replace($"{groupNames[1]}{delimeter}", "")}),");
 
@@ -379,10 +388,6 @@ namespace Task.Connector
                                 {
                                     isChangedRole = true;
                                 }
-                            }
-                            else
-                            {
-                                continue;
                             }
 
                             existsRights = existsRights.Append(newRight);
@@ -419,6 +424,10 @@ namespace Task.Connector
                 {
                     Logger?.Warn($"Пользователя с логином {userLogin} не существует");
                 }
+                else
+                {
+                    Logger?.Warn($"Введён пустой перечень для добавления прав");
+                }
             }
         }
 
@@ -450,7 +459,7 @@ namespace Task.Connector
                                 isChangedRequest = true;
                             }
                         }
-                        else if (delRight.Contains(groupNames[1]))
+                        else
                         {
                             queryToRole_sb.Append($"{delRight.Replace($"{groupNames[1]}{delimeter}", "")},");
 
@@ -459,12 +468,12 @@ namespace Task.Connector
                                 isChangedRole = true;
                             }
                         }
-                        else
-                        {
-                            continue;
-                        }
 
                         existsRights = existsRights.Where(right => right != delRight);
+                    }
+                    else
+                    {
+                        Logger?.Warn($"Не удалось найти право с id {delRight}");
                     }
                 }
 
@@ -492,6 +501,10 @@ namespace Task.Connector
                 if (!IsUserExists(userLogin))
                 {
                     Logger?.Warn($"Пользователя с логином {userLogin} не существует");
+                }
+                else
+                {
+                    Logger?.Warn($"Введён пустой перечень для удаления прав");
                 }
             }
         }

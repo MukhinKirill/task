@@ -9,7 +9,7 @@ namespace Task.Connector.Tests
         static string requestRightGroupName = "Request";
         static string itRoleRightGroupName = "Role";
         static string delimeter = ":";
-        static string mssqlConnectionString = "Data Source=.;Initial Catalog=AvanpostService;User ID=sa;Password=cv4Frwtj98uy_m;TrustServerCertificate=True";
+        static string mssqlConnectionString = "Data Source=.;Initial Catalog=AvanpostService;User ID=sa;Password=cv4Frwtj98uy_m;TrustServerCertificate=True;";
         static string postgreConnectionString = "";
         static Dictionary<string, string> connectorsCS = new Dictionary<string, string>
         {
