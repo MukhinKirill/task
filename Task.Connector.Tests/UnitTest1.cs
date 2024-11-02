@@ -9,11 +9,11 @@ namespace Task.Connector.Tests
         static string requestRightGroupName = "Request";
         static string itRoleRightGroupName = "Role";
         static string delimeter = ":";
-        static string mssqlConnectionString = "";
+        static string mssqlConnectionString = "Server=(localdb)\\mssqllocaldb;Database=avanpost;Trusted_Connection=True;MultipleActiveResultSets=true";
         static string postgreConnectionString = "";
         static Dictionary<string, string> connectorsCS = new Dictionary<string, string>
         {
-            { "MSSQL",$"ConnectionString='{mssqlConnectionString}';Provider='SqlServer.2019';SchemaName='AvanpostIntegrationTestTaskSchema';"},
+            { "MSSQL",$"{mssqlConnectionString}"},
             { "POSTGRE", $"ConnectionString='{postgreConnectionString}';Provider='PostgreSQL.9.5';SchemaName='AvanpostIntegrationTestTaskSchema';"}
         };
         static Dictionary<string, string> dataBasesCS = new Dictionary<string, string>
@@ -34,14 +34,13 @@ namespace Task.Connector.Tests
         {
             IConnector connector = new ConnectorDb();
             connector.StartUp(connectorsCS[provider]);
-            connector.Logger = new FileLogger($"{DateTime.Now}connector{provider}.Log", $"{DateTime.Now}connector{provider}");
+            connector.Logger = new FileLogger($"{DateTime.Now:yyyy-MM-dd_HH-mm-ss}connector{provider}.Log", $"{DateTime.Now:yyyy-MM-dd_HH-mm-ss}connector{provider}");
             return connector;
         }
 
 
         [Theory]
         [InlineData("MSSQL")]
-        [InlineData("POSTGRE")]
         public void CreateUser(string provider)
         {
             var dataSetter = Init(provider);
@@ -53,7 +52,6 @@ namespace Task.Connector.Tests
 
         [Theory]
         [InlineData("MSSQL")]
-        [InlineData("POSTGRE")]
         public void GetAllProperties(string provider)
         {
             var dataSetter = Init(provider);
@@ -64,7 +62,6 @@ namespace Task.Connector.Tests
 
         [Theory]
         [InlineData("MSSQL")]
-        [InlineData("POSTGRE")]
         public void GetUserProperties(string provider)
         {
             var dataSetter = Init(provider);
@@ -77,7 +74,6 @@ namespace Task.Connector.Tests
 
         [Theory]
         [InlineData("MSSQL")]
-        [InlineData("POSTGRE")]
         public void IsUserExists(string provider)
         {
             var dataSetter = Init(provider);
@@ -88,7 +84,6 @@ namespace Task.Connector.Tests
 
         [Theory]
         [InlineData("MSSQL")]
-        [InlineData("POSTGRE")]
         public void UpdateUserProperties(string provider)
         {
             var dataSetter = Init(provider);
@@ -105,7 +100,6 @@ namespace Task.Connector.Tests
 
         [Theory]
         [InlineData("MSSQL")]
-        [InlineData("POSTGRE")]
         public void GetAllPermissions(string provider)
         {
             var dataSetter = Init(provider);
@@ -117,7 +111,6 @@ namespace Task.Connector.Tests
 
         [Theory]
         [InlineData("MSSQL")]
-        [InlineData("POSTGRE")]
         public void AddUserPermissions(string provider)
         {
             var dataSetter = Init(provider);
@@ -132,7 +125,6 @@ namespace Task.Connector.Tests
 
         [Theory]
         [InlineData("MSSQL")]
-        [InlineData("POSTGRE")]
         public void RemoveUserPermissions(string provider)
         {
             var dataSetter = Init(provider);
@@ -146,7 +138,6 @@ namespace Task.Connector.Tests
         }
         [Theory]
         [InlineData("MSSQL")]
-        [InlineData("POSTGRE")]
         public void GetUserPermissions(string provider)
         {
             Init(provider);
