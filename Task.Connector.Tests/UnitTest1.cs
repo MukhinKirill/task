@@ -1,3 +1,5 @@
+using Task.Connector.Interfaces;
+using Task.Connector.Services;
 using Task.Integration.Data.DbCommon;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
@@ -32,9 +34,10 @@ namespace Task.Connector.Tests
 
         public IConnector GetConnector(string provider)
         {
-            IConnector connector = new ConnectorDb();
-            connector.StartUp(connectorsCS[provider]);
-            connector.Logger = new FileLogger($"{DateTime.Now:yyyy-MM-dd_HH-mm-ss}connector{provider}.Log", $"{DateTime.Now:yyyy-MM-dd_HH-mm-ss}connector{provider}");
+            var dbconnection = connectorsCS[provider];
+            var logger = new FileLogger($"{DateTime.Now:yyyy-MM-dd_HH-mm-ss}connector{provider}.Log", $"{DateTime.Now:yyyy-MM-dd_HH-mm-ss}connector{provider}");
+            IDatabaseService databaseService = new DatabaseService(dbconnection, logger);
+            IConnector connector = new ConnectorDb(databaseService, logger);
             return connector;
         }
 
