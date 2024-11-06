@@ -1,4 +1,4 @@
-using Task.Integration.Data.DbCommon;
+п»їusing Task.Integration.Data.DbCommon;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
 
@@ -32,7 +32,7 @@ namespace Task.Connector.Tests
 
         public IConnector GetConnector(string provider)
         {
-            // Форматируем дату и время для безопасного использования в имени файла и идентификаторе
+            // Р¤РѕСЂРјР°С‚РёСЂСѓРµРј РґР°С‚Сѓ Рё РІСЂРµРјСЏ РґР»СЏ Р±РµР·РѕРїР°СЃРЅРѕРіРѕ РёСЃРїРѕР»СЊР·РѕРІР°РЅРёСЏ РІ РёРјРµРЅРё С„Р°Р№Р»Р° Рё РёРґРµРЅС‚РёС„РёРєР°С‚РѕСЂРµ
             string timestamp = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
 
             IConnector connector = new ConnectorDb();
