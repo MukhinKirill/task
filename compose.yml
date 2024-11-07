@@ -1,0 +1,80 @@
+services:
+  # crudthing:
+  #   image: crudthing
+  #   build:
+  #     context: .
+  #     dockerfile: crud_thing/Dockerfile
+  #   ports:
+  #     - 5269:5269
+  #     - 7002:7002
+  #     - 38170:38170
+  #   networks:
+  #     network:
+  #       ipv4_address: 10.5.0.6
+  #   depends_on:
+  #     database:
+  #       condition: service_healthy
+  #       restart: true 
+
+  database:
+    image: postgres
+
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: "postgres"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+      PGUSER: "postgres"
+
+    ports:
+      - "5432:5432"
+    
+    volumes:
+      - ./db/db-data:/var/lib/postgresql/data
+      #- ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+    networks:
+      network:
+        ipv4_address: 10.5.0.4
+
+  pgadmin:
+    container_name: pgadmin_container
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "root@toor.com"
+      PGADMIN_DEFAULT_PASSWORD: "root"
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "5050:80"
+    volumes:
+      - ./db/pgadmin-data:/var/lib/pgadmin
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+    networks:
+      network:
+        ipv4_address: 10.5.0.5
+
+volumes:
+  database-data:
+  pgadmin-data:
+  # crudthing-data:
+
+networks:
+  network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.5.0.0/16
+          gateway: 10.5.0.1
