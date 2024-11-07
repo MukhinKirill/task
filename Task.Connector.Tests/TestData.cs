@@ -1,14 +1,8 @@
-﻿namespace Task.Connector.Tests
+﻿namespace Task.Connector.Tests;
+
+public static class TestData
 {
-    public static class TestData
-    {
-
-        public const string NotExistingUserLogin = "EldaraDO";
-
-        public const string MasterUserNewPassword = "0000";
-
-        public const string NewPhoneValueForMasterUser = "88003221337";
-
-
-    }
+    public const string NotExistingUserLogin = "EldaraDO";
+    public const string MasterUserNewPassword = "0000";
+    public const string NewPhoneValueForMasterUser = "88003221337";
 }
