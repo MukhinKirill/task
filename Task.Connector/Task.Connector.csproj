@@ -9,6 +9,36 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Reference Include="Microsoft.Data.SqlClient">
+      <HintPath>..\libs\CommonForTest\Microsoft.Data.SqlClient.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.EntityFrameworkCore">
+      <HintPath>..\libs\CommonForTest\Microsoft.EntityFrameworkCore.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.EntityFrameworkCore.Relational">
+      <HintPath>..\libs\CommonForTest\Microsoft.EntityFrameworkCore.Relational.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.EntityFrameworkCore.SqlServer">
+      <HintPath>..\libs\CommonForTest\Microsoft.EntityFrameworkCore.SqlServer.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Caching.Memory">
+      <HintPath>..\libs\CommonForTest\Microsoft.Extensions.Caching.Memory.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Logging">
+      <HintPath>..\libs\CommonForTest\Microsoft.Extensions.Logging.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions">
+      <HintPath>..\libs\CommonForTest\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Npgsql">
+      <HintPath>..\libs\CommonForTest\Npgsql.dll</HintPath>
+    </Reference>
+    <Reference Include="Npgsql.EntityFrameworkCore.PostgreSQL">
+      <HintPath>..\libs\CommonForTest\Npgsql.EntityFrameworkCore.PostgreSQL.dll</HintPath>
+    </Reference>
+    <Reference Include="Task.Integration.Data.DbCommon">
+      <HintPath>..\libs\CommonForTest\Task.Integration.Data.DbCommon.dll</HintPath>
+    </Reference>
     <Reference Include="Task.Integration.Data.Models">
       <HintPath>..\libs\Models\Task.Integration.Data.Models.dll</HintPath>
     </Reference>

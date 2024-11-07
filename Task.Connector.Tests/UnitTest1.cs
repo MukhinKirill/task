@@ -10,7 +10,7 @@ namespace Task.Connector.Tests
         static string itRoleRightGroupName = "Role";
         static string delimeter = ":";
         static string mssqlConnectionString = "";
-        static string postgreConnectionString = "";
+        static string postgreConnectionString = "Persist Security Info=true;Host=localhost;Port=5432;Username=postgres;Password=root;Database=postgres;";
         static Dictionary<string, string> connectorsCS = new Dictionary<string, string>
         {
             { "MSSQL",$"ConnectionString='{mssqlConnectionString}';Provider='SqlServer.2019';SchemaName='AvanpostIntegrationTestTaskSchema';"},
@@ -33,8 +33,9 @@ namespace Task.Connector.Tests
         public IConnector GetConnector(string provider)
         {
             IConnector connector = new ConnectorDb();
+            // поставил логгер пораньше, чтобы он был доступен в StartUp и изменил формат названия
+            connector.Logger = new FileLogger($"{DateTime.Now.ToShortTimeString()}connector{provider}.Log", $"{DateTime.Now}connector{provider}"); 
             connector.StartUp(connectorsCS[provider]);
-            connector.Logger = new FileLogger($"{DateTime.Now}connector{provider}.Log", $"{DateTime.Now}connector{provider}");
             return connector;
         }
 
