@@ -10,7 +10,7 @@ public class ConnectorDbTest
     private static readonly string _itRoleRightGroupName = "Role";
     private static readonly string _delimeter = ":";
     private static readonly string _mssqlConnectionString = "";
-    private static readonly string _postgreConnectionString = "";
+    private static readonly string _postgreConnectionString = "server=host.docker.internal;port=5432;database=test_db;username=user;password=12345678";
     private static readonly Dictionary<string, string> _connectorsCS = new()
     {
         { "MSSQL", $"ConnectionString='{_mssqlConnectionString}';Provider='SqlServer.2019';SchemaName='AvanpostIntegrationTestTaskSchema';"},

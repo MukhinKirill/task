@@ -1,0 +1,55 @@
+services:
+  task.connector.tests:
+    image: ${DOCKER_REGISTRY-}taskconnectortests
+    build:
+      context: .
+      dockerfile: Task.Connector.Tests/Dockerfile
+
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5433"
+    networks:
+      - postgres
+
+  pgadmin:
+    image: dpage/pgadmin4:8.11
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "kalyazin.nik@yandex.ru"
+      PGADMIN_DEFAULT_PASSWORD: "123456"
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+    restart: unless-stopped
+    networks:
+      - postgres
+
+  # web:
+  #   build:
+  #     context: ./DbCreationUtility
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "5001:5000"
+  #   command: [
+  #     "dotnet",
+  #     "Task.Integration.Data.DbCreationUtility.dll",
+  #     "-s",
+  #     "server=host.docker.internal;port=5432;database=test_db;username=user;password=12345678",
+  #     "-p",
+  #     "POSTGRE"
+  #   ] 
+  
+volumes: 
+  postgres-data:
+  pgadmin-data:
+
+networks:
+  postgres:
+    driver: bridge
