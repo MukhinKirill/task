@@ -21,6 +21,9 @@
     <Reference Include="Microsoft.EntityFrameworkCore.SqlServer">
       <HintPath>..\libs\CommonForTest\Microsoft.EntityFrameworkCore.SqlServer.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.Extensions.Caching.Abstractions">
+      <HintPath>..\libs\CommonForTest\Microsoft.Extensions.Caching.Abstractions.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Extensions.Caching.Memory">
       <HintPath>..\libs\CommonForTest\Microsoft.Extensions.Caching.Memory.dll</HintPath>
     </Reference>
@@ -29,6 +32,12 @@
     </Reference>
     <Reference Include="Microsoft.Extensions.Logging.Abstractions">
       <HintPath>..\libs\CommonForTest\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Options">
+      <HintPath>..\libs\CommonForTest\Microsoft.Extensions.Options.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Primitives">
+      <HintPath>..\libs\CommonForTest\Microsoft.Extensions.Primitives.dll</HintPath>
     </Reference>
     <Reference Include="Npgsql">
       <HintPath>..\libs\CommonForTest\Npgsql.dll</HintPath>

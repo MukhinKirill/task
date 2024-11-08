@@ -6,36 +6,56 @@ using Task.Integration.Data.DbCommon.DbModels;
 using System.Text.RegularExpressions;
 using System.Data.SqlTypes;
 using System.Reflection;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Task.Connector
 {
     public class ConnectorDb : IConnector
     {
         private DataContext _context;
-
         public ILogger Logger { get; set; }
 
+        private IMemoryCache _cache;
+        private TimeSpan? _cacheExpiration;
+
         /// <summary>
-        /// Инициализация с использованием переданной конфигурации, поддерживается PostgreSQL и SqlServer.
+        /// Инициализация с использованием переданной конфигурации, поддерживается PostgreSQL и SqlServer, а также кэширование.
         /// </summary>
-        /// <param name="configuration">Конфигурационная строка типа "Key:'Value';", обязательно должна содержать ConnectionString и Provider.</param>
+        /// <param name="configuration">Конфигурационная строка типа "Key:'Value';" с поддержкой вложенности, обязательно должна содержать ConnectionString и Provider, опционально CacheExpiration.</param>
+        /// <remarks>
+        /// Конфигурационная строка поддерживает следующие ключи:
+        /// - ConnectionString: строка подключения к базе данных.
+        /// - Provider: провайдер базы данных, поддерживаются "SqlServer" и "PostgreSQL".
+        /// - CacheExpiration (необязательно): время истечения кэша в формате TimeSpan. Например, "00:30:00" для 30 минут.
+        /// Если параметр CacheExpiration не указан, кэширование не будет использоваться.
+        /// </remarks>
         public void StartUp(string configuration)
         {
             var configParams = ParseConfiguration(configuration);
 
             if (!configParams.TryGetValue("ConnectionString", out var connectionString))
             {
-                Logger.Error("Отсутствует параметр ConnectionString в конфигурации.");
+                Logger?.Error("Отсутствует параметр ConnectionString в конфигурации.");
                 throw new ArgumentException("Отсутствует параметр ConnectionString в конфигурации.");
             }
             if (!configParams.TryGetValue("Provider", out var provider))
             {
-                Logger.Error("Отсутствует параметр Provider в конфигурации.");
+                Logger?.Error("Отсутствует параметр Provider в конфигурации.");
                 throw new ArgumentException("Отсутствует параметр Provider в конфигурации.");
             }
+            if (configParams.TryGetValue("CacheExpiration", out var cacheExpirationStr) && TimeSpan.TryParse(cacheExpirationStr, out var cacheExpiration))
+            {
+                _cacheExpiration = cacheExpiration;
+                Logger?.Debug("Используется кэширование, срок истечения кэша: " + cacheExpiration.ToString());
+            }
+            else
+            {
+                _cacheExpiration = null;
+            }
+            _cache = new MemoryCache(new MemoryCacheOptions());
 
             _context = GetContext(connectionString, provider);
-            Logger.Debug("Контекст базы данных создан для провайдера: " + provider);
+            Logger?.Debug("Контекст базы данных создан для провайдера: " + provider);
         }
 
         private Dictionary<string, string> ParseConfiguration(string configuration)
@@ -126,27 +146,43 @@ namespace Task.Connector
         }
 
         /// <summary>
-        /// Получение всех свойств пользователя (включая хэш пароля).
+        /// Получение всех свойств пользователя (включая хэш пароля), использует кэширование.
         /// </summary>
         /// <returns>Список свойств пользователя.</returns>
         public IEnumerable<Property> GetAllProperties()
         {
-            var properties = GetModelProperties<User>(includeKeys: false)
+            if (_cache.TryGetValue("AllProperties", out IEnumerable<Property> cachedProperties))
+            {
+                return cachedProperties;
+            }
+
+            var properties = GetModelProperties<User>(includePrimaryKeys: false)
                 .Select(p => new Property(p.Name, $"Свойство пользователя (из EF): {p.Name}"))
                 .ToList();
 
             properties.Add(new Property("Password", "Хэш пароля пользователя, захардкожено"));
             Logger.Debug($"Получено {properties.Count} свойств пользователя.");
+
+            if (_cacheExpiration.HasValue)
+            {
+                _cache.Set("AllProperties", properties, _cacheExpiration.Value);
+            }
+
             return properties;
         }
 
         /// <summary>
-        /// Получение значений свойств конкретного пользователя.
+        /// Получение значений свойств конкретного пользователя, использует кэширование.
         /// </summary>
         /// <param name="userLogin">Логин пользователя, чьи свойства необходимо получить.</param>
         /// <returns>Список значений свойств пользователя.</returns>
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
         {
+            if (_cache.TryGetValue($"UserProperties_{userLogin}", out IEnumerable<UserProperty> cachedProperties))
+            {
+                return cachedProperties;
+            }
+
             var user = _context.Users.FirstOrDefault(u => u.Login == userLogin);
             if (user == null)
             {
@@ -154,11 +190,17 @@ namespace Task.Connector
                 throw new InvalidOperationException("Пользователь не найден.");
             }
 
-            var properties = GetModelProperties<User>(includeKeys: false)
+            var properties = GetModelProperties<User>(includePrimaryKeys: false)
                 .Select(p => new UserProperty(p.Name, p.GetValue(user)?.ToString() ?? string.Empty))
                 .ToList();
 
             Logger.Debug($"Получено {properties.Count} свойств для пользователя с логином {userLogin}.");
+
+            if (_cacheExpiration.HasValue)
+            {
+                _cache.Set($"UserProperties_{userLogin}", properties, _cacheExpiration.Value);
+            }
+
             return properties;
         }
 
@@ -191,11 +233,16 @@ namespace Task.Connector
         }
 
         /// <summary>
-        /// Получение всех доступных прав.
+        /// Получение всех доступных прав, использует кэширование.
         /// </summary>
         /// <returns>Список всех прав.</returns>
         public IEnumerable<Permission> GetAllPermissions()
         {
+            if (_cache.TryGetValue("AllPermissions", out IEnumerable<Permission> cachedPermissions))
+            {
+                return cachedPermissions;
+            }
+
             var permissions = _context.RequestRights
                 .Select(right => new Permission(right.Id.ToString(), right.Name, "Право изменения заявок"))
                 .ToList();
@@ -204,11 +251,17 @@ namespace Task.Connector
                 .Select(role => new Permission(role.Id.ToString(), role.Name, "Право роли исполнителя")));
 
             Logger.Debug($"Получено {permissions.Count} прав.");
+
+            if (_cacheExpiration.HasValue)
+            {
+                _cache.Set("AllPermissions", permissions, _cacheExpiration.Value);
+            }
+
             return permissions;
         }
 
         /// <summary>
-        /// Добавление прав пользователю, при одновременном добавлении более 100 прав проверки производятся локально.
+        /// Добавление прав пользователю, при одновременном добавлении более 20 прав проверки производятся локально.
         /// </summary>
         /// <param name="userLogin">Логин пользователя, которому добавляются права.</param>
         /// <param name="rightIds">Список идентификаторов прав для добавления.</param>
@@ -217,7 +270,7 @@ namespace Task.Connector
             var userRequestRights = new List<UserRequestRight>();
             var userITRoles = new List<UserITRole>();
 
-            bool useCache = rightIds.Count() > 100;
+            bool useCache = rightIds.Count() > 20;
 
             HashSet<int> existingRequestIds = null;
             HashSet<int> existingRoleIds = null;
@@ -334,9 +387,9 @@ namespace Task.Connector
         /// Получение всех свойств модели из метаданных EF контекста.
         /// </summary>
         /// <typeparam name="T">Тип сущности для получения свойств.</typeparam>
-        /// <param name="includeKeys">Включать ли свойства, являющиеся ключами.</param>
+        /// <param name="includePrimaryKeys">Включать ли свойства, являющиеся ключами.</param>
         /// <returns>Перечисление свойств модели.</returns>
-        private IEnumerable<PropertyInfo> GetModelProperties<T>(bool includeKeys = true) where T : class
+        private IEnumerable<PropertyInfo> GetModelProperties<T>(bool includePrimaryKeys = true) where T : class
         {
             var entityType = _context.Model.FindEntityType(typeof(T));
 
@@ -348,7 +401,7 @@ namespace Task.Connector
 
             var properties = entityType
                 .GetProperties()
-                .Where(p => includeKeys || !p.IsPrimaryKey())
+                .Where(p => includePrimaryKeys || !p.IsPrimaryKey())
                 .Select(p => typeof(T).GetProperty(p.Name))
                 .Where(p => p != null)
                 .Cast<PropertyInfo>();

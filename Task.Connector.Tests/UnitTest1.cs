@@ -9,12 +9,12 @@ namespace Task.Connector.Tests
         static string requestRightGroupName = "Request";
         static string itRoleRightGroupName = "Role";
         static string delimeter = ":";
-        static string mssqlConnectionString = "";
+        static string mssqlConnectionString = "Server=SHARPPC;Database=AvanpostIntegrationTestTaskDb;Trusted_Connection=True;Encrypt=True;TrustServerCertificate=True;";
         static string postgreConnectionString = "Persist Security Info=true;Host=localhost;Port=5432;Username=postgres;Password=root;Database=postgres;";
         static Dictionary<string, string> connectorsCS = new Dictionary<string, string>
         {
             { "MSSQL",$"ConnectionString='{mssqlConnectionString}';Provider='SqlServer.2019';SchemaName='AvanpostIntegrationTestTaskSchema';"},
-            { "POSTGRE", $"ConnectionString='{postgreConnectionString}';Provider='PostgreSQL.9.5';SchemaName='AvanpostIntegrationTestTaskSchema';"}
+            { "POSTGRE", $"ConnectionString='{postgreConnectionString}';Provider='PostgreSQL.9.5';SchemaName='AvanpostIntegrationTestTaskSchema';CacheExpiration='00:05:00'"}
         };
         static Dictionary<string, string> dataBasesCS = new Dictionary<string, string>
         {
@@ -33,8 +33,8 @@ namespace Task.Connector.Tests
         public IConnector GetConnector(string provider)
         {
             IConnector connector = new ConnectorDb();
-            // поставил логгер пораньше, чтобы он был доступен в StartUp и изменил формат названи€
-            connector.Logger = new FileLogger($"{DateTime.Now.ToShortTimeString()}connector{provider}.Log", $"{DateTime.Now}connector{provider}"); 
+            // поставил логгер пораньше, чтобы он был доступен в StartUp и изменил формат названи€ в безопасный дл€ файлов
+            connector.Logger = new FileLogger($"{DateTime.Now.ToString("dd-MM_HH-mm-ss")}_connector{provider}.Log", $"{DateTime.Now}connector{provider}"); 
             connector.StartUp(connectorsCS[provider]);
             return connector;
         }
