@@ -1,13 +1,35 @@
 ﻿using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
+using Task.Integration.Data.DbCommon;
+using Microsoft.EntityFrameworkCore;
 
 namespace Task.Connector
 {
     public class ConnectorDb : IConnector
     {
+        private DataContext _dbContext;
         public void StartUp(string connectionString)
         {
-            throw new NotImplementedException();
+            if(string.IsNullOrEmpty(connectionString))
+            {
+                Logger.Error("Empty connection string");
+                throw new ArgumentNullException("Connection string null or empty");
+            }
+
+            var optionsBuilder = new DbContextOptionsBuilder<DataContext>();
+
+            if(connectionString.Contains("SqlServer")) optionsBuilder.UseSqlServer(connectionString);
+            if(connectionString.Contains("PostgreSQL")) optionsBuilder.UseNpgsql(connectionString); 
+
+            try
+            {
+                _dbContext = new DataContext(optionsBuilder.Options);
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e.Message);
+                throw;
+            }
         }
 
         public void CreateUser(UserToCreate user)
@@ -27,7 +49,7 @@ namespace Task.Connector
 
         public bool IsUserExists(string userLogin)
         {
-            throw new NotImplementedException();
+            return _dbContext.Users.Find(userLogin) is not null;
         }
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
