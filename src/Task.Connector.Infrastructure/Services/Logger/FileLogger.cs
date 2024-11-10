@@ -1,25 +1,25 @@
-﻿using Task.Integration.Data.Models;
-
-namespace Task.Connector.Tests;
+﻿namespace Task.Connector.Infrastructure.Services.Logger;
 
 public class FileLogger : ILogger
 {
-    private readonly string _fileName;
-    private readonly string _connectorName;
+    private string _fileName = null!;
+    private string _connectorName = null!;
 
-    public FileLogger(string fileName, string connectorName)
+    public ILogger Init(string fileName, string connectorName)
     {
         _fileName = fileName;
         _connectorName = connectorName;
+        return this;
     }
 
     private void Append(string text)
     {
+        Console.WriteLine(text);
         using var sw = File.AppendText(_fileName);
         sw.WriteLine(text);
     }
 
-    public void Debug(string message)=> Append($"{DateTime.Now}:{_connectorName}:DEBUG:{message}");
+    public void Debug(string message) => Append($"{DateTime.Now}:{_connectorName}:DEBUG:{message}");
 
     public void Error(string message) => Append($"{DateTime.Now}:{_connectorName}:ERROR:{message}");
 

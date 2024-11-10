@@ -1,23 +1,59 @@
+networks:
+  connector:
+    driver: bridge
+  
+volumes: 
+  task.connector.tests-data:
+  postgres-data:
+  pgadmin-data:
+
 services:
   task.connector.tests:
-    image: ${DOCKER_REGISTRY-}taskconnectortests
+    container_name: task.connector.tests
     build:
       context: .
-      dockerfile: Task.Connector.Tests/Dockerfile
-
-  postgres:
-    image: postgres
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      dockerfile: tests/Task.Connector.Tests/Dockerfile
+    networks: 
+      - connector
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+     - task.connector.tests-data:/var/lib/task.connector.test
+    depends_on:
+      - postgres.db
+
+  # backup.db:
+  #   container_name: backup.db
+  #   build:
+  #     context: ./DbCreationUtility
+  #     dockerfile: Dockerfile
+  #   networks:
+  #     - connector
+  #   depends_on:
+  #     - postgres.db
+  #   command: [
+  #     "dotnet",
+  #     "Task.Integration.Data.DbCreationUtility.dll",
+  #     "-s",
+  #     "server=host.docker.internal;port=5432;database=test_db;username=user;password=12345678",
+  #     "-p",
+  #     "POSTGRE"
+  #   ] 
+
+  postgres.db:
+    container_name: postgres
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: 12345678
+      POSTGRES_DB: test_db
     ports:
       - "5432:5433"
     networks:
-      - postgres
+      - connector
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
 
   pgadmin:
+    container_name: pgadmin
     image: dpage/pgadmin4:8.11
     environment:
       PGADMIN_DEFAULT_EMAIL: "kalyazin.nik@yandex.ru"
@@ -29,27 +65,4 @@ services:
       - "5050:80"
     restart: unless-stopped
     networks:
-      - postgres
-
-  # web:
-  #   build:
-  #     context: ./DbCreationUtility
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - "5001:5000"
-  #   command: [
-  #     "dotnet",
-  #     "Task.Integration.Data.DbCreationUtility.dll",
-  #     "-s",
-  #     "server=host.docker.internal;port=5432;database=test_db;username=user;password=12345678",
-  #     "-p",
-  #     "POSTGRE"
-  #   ] 
-  
-volumes: 
-  postgres-data:
-  pgadmin-data:
-
-networks:
-  postgres:
-    driver: bridge
+      - connector
