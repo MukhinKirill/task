@@ -17,7 +17,12 @@ public class ConnectorDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.ApplyConfiguration(new ItRoleConfiguration());
         modelBuilder.ApplyConfiguration(new SecurityConfiguration());
+        modelBuilder.ApplyConfiguration(new RequestRightConfiguration());
+        modelBuilder.ApplyConfiguration(new UserConfiguration());
+        modelBuilder.ApplyConfiguration(new UserItRoleConfiguration());
+        modelBuilder.ApplyConfiguration(new UserRequestRightConfiguration());
 
         base.OnModelCreating(modelBuilder);
     }
