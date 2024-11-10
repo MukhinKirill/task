@@ -8,15 +8,27 @@ namespace Task.Connector.DataAccess.Configurations
     {
         public void Configure(EntityTypeBuilder<Security> builder)
         {
-            builder.ToTable("passwords");
+            builder.ToTable("passwords", "task");
 
             builder.HasKey(x => x.Id);
             builder.HasIndex(x => x.Id);
             builder.HasIndex(x => x.UserId);
 
-            builder.Property(x => x.Id).HasColumnName("id").IsRequired();
-            builder.Property(x => x.UserId).HasColumnName("user_id").HasMaxLength(22).IsRequired();
-            builder.Property(x => x.Password).HasColumnName("password").HasMaxLength(20).IsRequired();
+            builder.Property(x => x.Id)
+                .HasColumnName("id")
+                .IsRequired();
+
+            builder.Property(x => x.UserId)
+                .HasColumnType("varchar")
+                .HasColumnName("user_id")
+                .HasMaxLength(22)
+                .IsRequired();
+
+            builder.Property(x => x.Password)
+                .HasColumnType("varchar")
+                .HasColumnName("password")
+                .HasMaxLength(20)
+                .IsRequired();
         }
     }
 }
