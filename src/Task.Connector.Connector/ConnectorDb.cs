@@ -1,11 +1,12 @@
-﻿using Task.Integration.Data.Models;
+﻿using Task.Connector.DependencyInjection;
+using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
 
-namespace Task.Connector;
+namespace Task.Connector.Connector;
 
 public class ConnectorDb : IConnector
 {
-    public ILogger Logger { get; set; }
+    public ILogger Logger { get; set; } = null!;
 
     /// <summary>
     /// Конфигурация коннектора через строку подключения.
@@ -18,7 +19,7 @@ public class ConnectorDb : IConnector
     /// <param name="connectionString">Строка подключения.</param>
     public void StartUp(string connectionString)
     {
-        throw new NotImplementedException();
+        ServiceLocator.Init(connectionString);
     }
 
     /// <summary>
@@ -27,7 +28,7 @@ public class ConnectorDb : IConnector
     /// <param name="user">Модель создания пользователя.</param>
     public void CreateUser(UserToCreate user)
     {
-        throw new NotImplementedException();
+        Logger.Debug("проверка");
     }
 
     /// <summary>

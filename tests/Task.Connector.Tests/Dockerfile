@@ -9,12 +9,18 @@ WORKDIR /app
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["Task.Connector.Tests/Task.Connector.Tests.csproj", "Task.Connector.Tests/"]
-COPY ["Task.Connector/Task.Connector.csproj", "Task.Connector/"]
-RUN dotnet restore "./Task.Connector.Tests/Task.Connector.Tests.csproj"
+COPY ["tests/Task.Connector.Tests/Task.Connector.Tests.csproj", "tests/Task.Connector.Tests/"]
+COPY ["src/Task.Connector.Connector/Task.Connector.Connector.csproj", "src/Task.Connector.Connector/"]
+COPY ["src/Task.Connector.Infrastructure/Task.Connector.Infrastructure.csproj", "src/Task.Connector.Infrastructure/"]
+COPY ["src/Task.Connector.DataAccess/Task.Connector.DataAccess.csproj", "src/Task.Connector.DataAccess/"]
+COPY ["src/Task.Connector.Domain/Task.Connector.Domain.csproj", "src/Task.Connector.Domain/"]
+COPY ["src/Task.Connector.DependencyInjection/Task.Connector.DependencyInjection.csproj", "src/Task.Connector.DependencyInjection/"]
+COPY ["src/Task.Connector.ComponentRegistrar/Task.Connector.ComponentRegistrar.csproj", "src/Task.Connector.ComponentRegistrar/"]
+RUN dotnet restore "./tests/Task.Connector.Tests/Task.Connector.Tests.csproj"
 COPY . .
-WORKDIR "/src/Task.Connector.Tests"
+WORKDIR "/src/tests/Task.Connector.Tests"
 RUN dotnet build "./Task.Connector.Tests.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet test "./Task.Connector.Tests.csproj"
 
 # Этот этап используется для публикации проекта службы, который будет скопирован на последний этап
 FROM build AS publish

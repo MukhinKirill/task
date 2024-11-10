@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Task.Connector.Connector</AssemblyName>
+    <RootNamespace>Task.Connector.Connector</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Task.Connector.Infrastructure\Task.Connector.Infrastructure.csproj" />
+    <ProjectReference Include="..\Task.Connector.DependencyInjection\Task.Connector.DependencyInjection.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Task.Integration.Data.Models">
+      <HintPath>..\..\libs\Models\Task.Integration.Data.Models.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
