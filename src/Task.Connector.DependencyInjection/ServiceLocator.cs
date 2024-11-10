@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Task.Connector.ComponentRegistrar;
 using Task.Connector.DataAccess;
@@ -19,9 +20,18 @@ public static class ServiceLocator
         _serviceProvider = services.BuildServiceProvider();
     }
 
-    public static void Init(string connectionString)
+    public static void Init(string? connectionString)
     {
-        _connectionString = connectionString;
+        _connectionString = connectionString ?? GetConnectionString();
+    }
+
+    private static string GetConnectionString()
+    {
+        var builder = new ConfigurationBuilder();
+        builder.SetBasePath(Directory.GetCurrentDirectory());
+        builder.AddJsonFile("appsettings.json");
+        
+        return builder.Build().GetConnectionString("POSTGRE")!;
     }
 
     public static T GetService<T>()
