@@ -18,12 +18,21 @@ namespace Task.Connector
 
             var optionsBuilder = new DbContextOptionsBuilder<DataContext>();
 
-            if(connectionString.Contains("SqlServer")) optionsBuilder.UseSqlServer(connectionString);
-            if(connectionString.Contains("PostgreSQL")) optionsBuilder.UseNpgsql(connectionString); 
+            if(connectionString.Contains("SqlServer"))
+            {
+                optionsBuilder.UseSqlServer(connectionString);
+                Logger.Debug("Using SQL server database provider");
+            } 
+            if(connectionString.Contains("PostgreSQL"))
+            {
+                optionsBuilder.UseNpgsql(connectionString);
+                Logger.Debug("Using Npgsql database provider");
+            } 
 
             try
             {
                 _dbContext = new DataContext(optionsBuilder.Options);
+                Logger.Debug("Database context created");
             }
             catch (Exception e)
             {
