@@ -20,6 +20,16 @@ services:
     depends_on:
       - postgres.db
 
+  task.connector.dbmigrator:
+    container_name: task.connector.dbmigrator
+    build:
+      context: .
+      dockerfile: src/Task.Connector.DbMigrator/Dockerfile
+    networks:
+      - connector
+    depends_on:
+      - postgres.db
+
   # backup.db:
   #   container_name: backup.db
   #   build:
