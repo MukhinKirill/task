@@ -10,9 +10,9 @@ internal class UserRequestRightConfiguration : IEntityTypeConfiguration<UserRequ
     {
         builder.ToTable("user_request_right", "task");
 
-        builder.HasKey(x => x.UserId);
-        builder.HasKey(x => x.RightId);
+        builder.HasKey(x => new { x.UserId, x.RightId });
 
+        builder.HasIndex(x => new { x.UserId, x.RightId });
         builder.HasIndex(x => x.UserId);
         builder.HasIndex(x => x.RightId);
 
