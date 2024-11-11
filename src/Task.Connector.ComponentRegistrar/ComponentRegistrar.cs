@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Task.Connector.Infrastructure.Repository;
 using Task.Connector.Infrastructure.Services.Logger;
+using Task.Integration.Data.Models;
 
 namespace Task.Connector.ComponentRegistrar;
 

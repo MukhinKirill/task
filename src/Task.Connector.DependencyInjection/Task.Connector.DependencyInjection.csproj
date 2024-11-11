@@ -18,6 +18,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Task.Connector.ComponentRegistrar\Task.Connector.ComponentRegistrar.csproj" />
+    <ProjectReference Include="..\Task.Connector.Infrastructure\Task.Connector.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Task.Integration.Data.Models">
+      <HintPath>..\..\libs\Models\Task.Integration.Data.Models.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>
