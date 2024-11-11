@@ -10,9 +10,9 @@ internal class UserItRoleConfiguration : IEntityTypeConfiguration<UserItRole>
     {
         builder.ToTable("user_it_role", "task");
 
-        builder.HasKey(x => x.UserId);
-        builder.HasKey(x => x.RoleId);
+        builder.HasKey(x => new { x.UserId, x.RoleId });
 
+        builder.HasIndex(x => new { x.UserId, x.RoleId });
         builder.HasIndex(x => x.UserId);
         builder.HasIndex(x => x.RoleId);
 
