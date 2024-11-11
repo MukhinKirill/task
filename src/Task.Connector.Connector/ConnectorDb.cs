@@ -19,7 +19,8 @@ public class ConnectorDb : IConnector
     /// <param name="connectionString">Строка подключения.</param>
     public void StartUp(string connectionString)
     {
-        ServiceLocator.Init(connectionString);
+        ServiceLocator.SetConnectionString(connectionString);
+        Logger = ServiceLocator.GetService<ILogger>();
     }
 
     /// <summary>

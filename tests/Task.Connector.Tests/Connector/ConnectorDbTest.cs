@@ -35,7 +35,7 @@ namespace Task.Connector.Tests
         {
             IConnector connector = new ConnectorDb();
             connector.StartUp(connectorsCS[provider]);
-            connector.Logger = new FileLogger($"{DateTime.Now: dd.MM.yyyy}_connector_{provider}.Log", $"{DateTime.Now}connector{provider}");
+            //connector.Logger = new FileLogger($"{DateTime.Now: dd.MM.yyyy}_connector_{provider}.Log", $"{DateTime.Now}connector{provider}");
             return connector;
         }
 
@@ -43,9 +43,9 @@ namespace Task.Connector.Tests
         [InlineData("POSTGRE")]
         public void CreateUser(string provider)
         {
-            var dataSetter = Init(provider);
             var connector = GetConnector(provider);
             connector.CreateUser(new UserToCreate("testUserToCreate", "testPassword") { Properties = new UserProperty[] { new UserProperty("isLead", "false") } });
+            var dataSetter = Init(provider);
             Assert.NotNull(dataSetter.GetUser("testUserToCreate"));
             Assert.Equal(DefaultData.MasterUserDefaultPassword, dataSetter.GetUserPassword(DefaultData.MasterUserLogin));
         }
