@@ -1,0 +1,19 @@
+name: "avanpost"
+
+version: "3.8"
+
+services:
+  postgres:
+    container_name: postgres
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: v1nkoredb
+    ports:
+      - 5555:5432
+    volumes:
+     - postgres:/var/lib/postgresql/data
+
+volumes:
+  postgres:
