@@ -2,12 +2,16 @@
 using Task.Integration.Data.Models.Models;
 using Task.Integration.Data.DbCommon;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection.Metadata;
+using Task.Integration.Data.DbCommon.DbModels;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Task.Connector
 {
     public class ConnectorDb : IConnector
     {
         private DataContext _dbContext;
+        private List<Property> _clientUserProperties;
         public void StartUp(string connectionString)
         {
             if(string.IsNullOrEmpty(connectionString))
@@ -39,6 +43,14 @@ namespace Task.Connector
                 Logger.Error(e.Message);
                 throw;
             }
+
+            // This might need to be different if i need the db's column names instead of the model property names
+            _clientUserProperties = typeof(User).GetProperties().
+                Select(prop => new Property(prop.Name, prop.Name)).
+                ToList();
+            
+            _clientUserProperties.Add(new Property("Password", "Password"));
+            
         }
 
         public void CreateUser(UserToCreate user)
@@ -48,7 +60,10 @@ namespace Task.Connector
 
         public IEnumerable<Property> GetAllProperties()
         {
-            throw new NotImplementedException();
+            if(!_clientUserProperties.IsNullOrEmpty()) return _clientUserProperties;
+            string errorMessage = $"The list of user properties is null or empty, something went wrong on startup, or startup was not called";
+            Logger.Error(errorMessage);
+            throw new Exception(errorMessage);
         }
 
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
