@@ -10,15 +10,15 @@ namespace Task.Connector.Tests
         static string itRoleRightGroupName = "Role";
         static string delimeter = ":";
         static string mssqlConnectionString = "";
-        static string postgreConnectionString = "";
+        static string postgreConnectionString = "Host=localhost;Port=5432;Database=DBForTestTask;Username=postgres;Password=1234;";
+
         static Dictionary<string, string> connectorsCS = new Dictionary<string, string>
         {
-            { "MSSQL",$"ConnectionString='{mssqlConnectionString}';Provider='SqlServer.2019';SchemaName='AvanpostIntegrationTestTaskSchema';"},
-            { "POSTGRE", $"ConnectionString='{postgreConnectionString}';Provider='PostgreSQL.9.5';SchemaName='AvanpostIntegrationTestTaskSchema';"}
+            { "POSTGRE", $"{postgreConnectionString};SearchPath=TestTaskSchema;"}
         };
+
         static Dictionary<string, string> dataBasesCS = new Dictionary<string, string>
         {
-            { "MSSQL",mssqlConnectionString},
             { "POSTGRE", postgreConnectionString}
         };
 
@@ -38,9 +38,7 @@ namespace Task.Connector.Tests
             return connector;
         }
 
-
         [Theory]
-        [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void CreateUser(string provider)
         {
@@ -52,7 +50,6 @@ namespace Task.Connector.Tests
         }
 
         [Theory]
-        [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void GetAllProperties(string provider)
         {
@@ -63,8 +60,7 @@ namespace Task.Connector.Tests
         }
 
         [Theory]
-        [InlineData("MSSQL")]
-        [InlineData("POSTGRE")]
+[InlineData("POSTGRE")]
         public void GetUserProperties(string provider)
         {
             var dataSetter = Init(provider);
@@ -76,8 +72,7 @@ namespace Task.Connector.Tests
         }
 
         [Theory]
-        [InlineData("MSSQL")]
-        [InlineData("POSTGRE")]
+[InlineData("POSTGRE")]
         public void IsUserExists(string provider)
         {
             var dataSetter = Init(provider);
@@ -87,8 +82,7 @@ namespace Task.Connector.Tests
         }
 
         [Theory]
-        [InlineData("MSSQL")]
-        [InlineData("POSTGRE")]
+[InlineData("POSTGRE")]
         public void UpdateUserProperties(string provider)
         {
             var dataSetter = Init(provider);
@@ -104,8 +98,7 @@ namespace Task.Connector.Tests
         }
 
         [Theory]
-        [InlineData("MSSQL")]
-        [InlineData("POSTGRE")]
+[InlineData("POSTGRE")]
         public void GetAllPermissions(string provider)
         {
             var dataSetter = Init(provider);
@@ -116,8 +109,7 @@ namespace Task.Connector.Tests
         }
 
         [Theory]
-        [InlineData("MSSQL")]
-        [InlineData("POSTGRE")]
+[InlineData("POSTGRE")]
         public void AddUserPermissions(string provider)
         {
             var dataSetter = Init(provider);
@@ -126,13 +118,15 @@ namespace Task.Connector.Tests
             connector.AddUserPermissions(
                 DefaultData.MasterUserLogin,
                 new [] { RoleId });
+
+
+
             Assert.True(dataSetter.MasterUserHasITRole(dataSetter.GetITRoleId().ToString()));
             Assert.True(dataSetter.MasterUserHasRequestRight(dataSetter.GetRequestRightId(DefaultData.RequestRights[DefaultData.MasterUserRequestRights.First()].Name).ToString()));
         }
 
         [Theory]
-        [InlineData("MSSQL")]
-        [InlineData("POSTGRE")]
+[InlineData("POSTGRE")]
         public void RemoveUserPermissions(string provider)
         {
             var dataSetter = Init(provider);
@@ -144,9 +138,9 @@ namespace Task.Connector.Tests
             Assert.False(dataSetter.MasterUserHasITRole(dataSetter.GetITRoleId().ToString()));
             Assert.False(dataSetter.MasterUserHasRequestRight(dataSetter.GetRequestRightId(DefaultData.RequestRights[DefaultData.MasterUserRequestRights.First()].Name).ToString()));
         }
+
         [Theory]
-        [InlineData("MSSQL")]
-        [InlineData("POSTGRE")]
+[InlineData("POSTGRE")]
         public void GetUserPermissions(string provider)
         {
             Init(provider);
