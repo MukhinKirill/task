@@ -10,6 +10,8 @@ public class ConnectorDb : IConnector, IDisposable
 {
     private AppDbContext _context;
 
+    public ConnectorDb() { }
+
     public void StartUp(string connectionString)
     {
         try
