@@ -1,4 +1,3 @@
-using Microsoft.IdentityModel.Tokens;
 using Task.Integration.Data.DbCommon.DbModels;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
@@ -19,16 +18,22 @@ public class InternalUserToClientUserConverter : IModelConverter<UserToCreate, U
         // Still checking for null because the login property is public  
         if(string.IsNullOrEmpty(userIn.Login))
         {
-            string errorMessage = $"User login is required and can't be null - got null";
+            string errorMessage = $"{DateTime.Now} - Could not convert user : User login is required and can't be null; got null";
             Logger.Error(errorMessage);
             throw new ArgumentNullException(errorMessage);
         }
 
         user.Login = userIn.Login;
 
-        // I was thinking of doing something fancy reflection shenanigans, but then decided not to - their user structure supposedly won't change anyway, and this is just a test task.
-        foreach (var userProperty in userIn.Properties)
+        ParseAndSetUserProperties(ref user, userIn.Properties);
+
+        return user;
+    }
+    public void ParseAndSetUserProperties(ref User user, IEnumerable<UserProperty> properties)
+    {
+        foreach (var userProperty in properties)
         {
+            // I was thinking of using some reflection shenanigans, but then decided not to - their user structure supposedly won't change anyway, and this is just a test task.
             switch(userProperty.Name)
             {
                 case "isLead":
@@ -37,8 +42,8 @@ public class InternalUserToClientUserConverter : IModelConverter<UserToCreate, U
                     
                     if(!parseSuccess)
                     {
-                        string errorMessage = $"Could not parse required user property - {userProperty.Name}, expected Boolean.TrueString or Boolean.FalseString, found: {userProperty.Value}";
-                        Logger.Error($"Format Exception: {errorMessage}");
+                        string errorMessage = $"{DateTime.Now} - Could not parse required user property - {userProperty.Name}, expected Boolean.TrueString or Boolean.FalseString, found: {userProperty.Value}";
+                        Logger.Error($"{errorMessage}");
                         throw new FormatException($"{errorMessage}");
                     } 
                     user.IsLead = userIsLead;
@@ -66,7 +71,5 @@ public class InternalUserToClientUserConverter : IModelConverter<UserToCreate, U
                 }
             }
         }
-
-        return user;
     }
 }
