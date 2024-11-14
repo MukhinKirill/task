@@ -9,6 +9,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.13" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Task.Integration.Data.DbCommon">
+      <HintPath>..\libs\CommonForTest\Task.Integration.Data.DbCommon.dll</HintPath>
+    </Reference>
     <Reference Include="Task.Integration.Data.Models">
       <HintPath>..\libs\Models\Task.Integration.Data.Models.dll</HintPath>
     </Reference>
