@@ -9,7 +9,7 @@ namespace Task.Connector.Tests
         static string requestRightGroupName = "Request";
         static string itRoleRightGroupName = "Role";
         static string delimeter = ":";
-        static string mssqlConnectionString = "";
+        static string mssqlConnectionString = "Server=DESKTOP-AN609DF;Database=Avanpost_task;Trusted_Connection=True;TrustServerCertificate=True;";
         static string postgreConnectionString = "";
         static Dictionary<string, string> connectorsCS = new Dictionary<string, string>
         {
@@ -23,8 +23,8 @@ namespace Task.Connector.Tests
         };
 
         public DataManager Init(string providerName)
-        {
-            var factory = new DbContextFactory(dataBasesCS[providerName]);
+		{
+			var factory = new DbContextFactory(dataBasesCS[providerName]);
             var dataSetter = new DataManager(factory, providerName);
             dataSetter.PrepareDbForTest();
             return dataSetter;
@@ -33,11 +33,11 @@ namespace Task.Connector.Tests
         public IConnector GetConnector(string provider)
         {
             IConnector connector = new ConnectorDb();
-            connector.StartUp(connectorsCS[provider]);
-            connector.Logger = new FileLogger($"{DateTime.Now}connector{provider}.Log", $"{DateTime.Now}connector{provider}");
+			//connector.Logger = new FileLogger($"{DateTime.Now}connector{provider}.Log", $"{DateTime.Now}connector{provider}");
+			connector.Logger = new FileLogger($"connector{provider}.Log", $"connector{provider}");
+			connector.StartUp(connectorsCS[provider]);
             return connector;
         }
-
 
         [Theory]
         [InlineData("MSSQL")]
