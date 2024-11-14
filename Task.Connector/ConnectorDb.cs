@@ -390,12 +390,12 @@ namespace Task.Connector
 
         private void LogResponse(string methodName, params object[] parameters)
         {
-            Logger?.Debug(string.Format(LogMessages.ResponseLog, methodName, string.Join(';', parameters[0].ToString())));
+            Logger?.Debug(string.Format(LogMessages.ResponseLog, methodName, string.Join(';', parameters)));
         }
         
         private void LogRequest(string methodName, params object[] parameters)
         {
-            Logger?.Debug(string.Format(LogMessages.RequestLog, methodName, parameters.Length == 0 ? "Void" : string.Join(';', parameters[0].ToString())));
+            Logger?.Debug(string.Format(LogMessages.RequestLog, methodName, parameters.Length == 0 ? "Void" : string.Join(';', parameters)));
         }
     }
 }
