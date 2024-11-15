@@ -29,7 +29,7 @@
 
   <ItemGroup>
     <Folder Include="Migrations\" />
-    <Folder Include="TestResult\" />
+    <Folder Include="Results\" />
   </ItemGroup>
 
 </Project>
