@@ -139,7 +139,7 @@ namespace Task.Connector
                 return;
             }
 
-            Logger.Debug("Properties updated successfully.");
+            Logger.Debug($"Properties updated successfully for '{userLogin}'.");
         }
 
         public IEnumerable<Permission> GetAllPermissions()
@@ -166,7 +166,54 @@ namespace Task.Connector
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            throw new NotImplementedException();
+            Logger.Debug($"Adding permissions for '{userLogin}'...");
+
+            if (!IsUserExists(userLogin))
+            {
+                Logger.Error($"The user with login '{userLogin}' does not exist.");
+                return;
+            }
+
+            foreach (var rightId in rightIds)
+            {
+                var right = rightId.Split(':');
+                if (right[0] == "Role")
+                {
+                    var userITRole = new UserITRole
+                    { 
+                        UserId = userLogin,
+                        RoleId = int.Parse(right[1])
+                    };
+                    _dataContext.UserITRoles.Add(userITRole);
+                }
+                else if (right[0] == "Request")
+                {
+                    var userRequestRight = new UserRequestRight
+                    {
+                        UserId = userLogin,
+                        RightId = int.Parse(right[1])
+                    };
+                    _dataContext.UserRequestRights.Add(userRequestRight);
+                }
+                else
+                {
+                    Logger.Error($"Unknow group name: '{right[0]}'");
+                    return;
+                }
+
+                try
+                {
+                    Logger.Debug("Saving changes...");
+                    _dataContext.SaveChanges();
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"Error saving permission: {ex.Message}");
+                    return;
+                }
+
+                Logger.Debug($"Permissions added successfully for '{userLogin}'.");
+            }
         }
 
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
