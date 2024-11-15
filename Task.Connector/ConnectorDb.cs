@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 using Task.Integration.Data.DbCommon;
@@ -11,8 +12,9 @@ namespace Task.Connector
     public class ConnectorDb : IConnector
     {
         private static readonly Dictionary<string, PropertyInfo> _userProperties = typeof(User)
-                .GetProperties()
-                .ToDictionary(p => p.Name.ToLower(), p => p);
+            .GetProperties()
+            .Where(p => p.Name != nameof(User.Login))
+            .ToDictionary(p => p.Name.ToLower(), p => p);
 
         private DbContextFactory _dbContextFactory;
         private DataContext _dataContext;
@@ -29,6 +31,11 @@ namespace Task.Connector
         {
             Logger.Debug($"Creating user...");
 
+            if (IsUserExists(user.Login))
+            {
+                Logger.Error($"The user with login '{user.Login}' already exists.");
+                return;
+            }
             if (user.Login.Length > 22)
             {
                 Logger.Error("The length of login can not exceed 22.");
@@ -74,7 +81,14 @@ namespace Task.Connector
 
         public IEnumerable<Property> GetAllProperties()
         {
-            throw new NotImplementedException();
+            Logger.Debug("Getting all properties...");
+            var properties = _userProperties.Values
+                .Select(p => new Property(p.Name, string.Empty))
+                .ToList();
+            properties.Add(new Property("Password", string.Empty));
+
+            Logger.Debug($"Properties retrieved: {properties.Count}.");
+            return properties;
         }
 
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
@@ -84,7 +98,7 @@ namespace Task.Connector
 
         public bool IsUserExists(string userLogin)
         {
-            throw new NotImplementedException();
+            return _dataContext.Users.AsNoTracking().Any(u => u.Login == userLogin);
         }
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)

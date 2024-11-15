@@ -11,11 +11,6 @@ namespace Task.Connector.Tests
         static string delimeter = ":";
         static string mssqlConnectionString = "";
         static string postgreConnectionString = "Host=localhost;Port=6543;Username=postgres;Password=postgres;Database=postgres";
-        static Dictionary<string, string> connectorsCS = new Dictionary<string, string>
-        {
-            { "MSSQL",$"ConnectionString='{mssqlConnectionString}';Provider='SqlServer.2019';SchemaName='AvanpostIntegrationTestTaskSchema';"},
-            { "POSTGRE", $"ConnectionString='{postgreConnectionString}';Provider='PostgreSQL.9.5';SchemaName='AvanpostIntegrationTestTaskSchema';"}
-        };
         static Dictionary<string, string> dataBasesCS = new Dictionary<string, string>
         {
             { "MSSQL",mssqlConnectionString},
