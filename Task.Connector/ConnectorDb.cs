@@ -117,7 +117,28 @@ namespace Task.Connector
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
         {
-            throw new NotImplementedException();
+            Logger.Debug($"Updating properties of '{userLogin}'...");
+
+            var user = GetUser(userLogin);
+            if (user == null)
+            {
+                return;
+            }
+
+            SetUserProperties(user, properties);
+
+            try
+            {
+                Logger.Debug("Saving changes...");
+                _dataContext.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Error saving user: {ex.Message}");
+                return;
+            }
+
+            Logger.Debug("Properties updated successfully.");
         }
 
         public IEnumerable<Permission> GetAllPermissions()
