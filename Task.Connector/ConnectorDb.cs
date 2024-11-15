@@ -197,28 +197,81 @@ namespace Task.Connector
                 }
                 else
                 {
-                    Logger.Error($"Unknow group name: '{right[0]}'");
+                    Logger.Error($"Unknown group name: '{right[0]}'");
                     return;
                 }
-
-                try
-                {
-                    Logger.Debug("Saving changes...");
-                    _dataContext.SaveChanges();
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error($"Error saving permission: {ex.Message}");
-                    return;
-                }
-
-                Logger.Debug($"Permissions added successfully for '{userLogin}'.");
             }
+
+            try
+            {
+                Logger.Debug("Saving changes...");
+                _dataContext.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Error saving permissions: {ex.Message}");
+                return;
+            }
+
+            Logger.Debug($"Permissions added successfully for '{userLogin}'.");
         }
 
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            throw new NotImplementedException();
+            Logger.Debug($"Removing permissions for '{userLogin}'...");
+
+            if (!IsUserExists(userLogin))
+            {
+                Logger.Error($"The user with login '{userLogin}' does not exist.");
+                return;
+            }
+
+            foreach (var rightId in rightIds)
+            {
+                var right = rightId.Split(':');
+                if (right[0] == "Role")
+                {
+                    var userITRole = _dataContext.UserITRoles.FirstOrDefault(ur => ur.UserId == userLogin && ur.RoleId == int.Parse(right[1]));
+                    if (userITRole == null)
+                    {
+                        Logger.Warn($"ITRole '{right[1]}' was not found for user '{userLogin}'.");
+                        continue;
+                    }
+
+                    _dataContext.UserITRoles.Remove(userITRole);
+                    Logger.Debug($"'{right[1]}' was removed successfully.");
+                }
+                else if (right[0] == "Request")
+                {
+                    var userRequestRight = _dataContext.UserRequestRights.FirstOrDefault(urr => urr.UserId == userLogin && urr.RightId == int.Parse(right[1]));
+                    if (userRequestRight == null)
+                    {
+                        Logger.Warn($"ITRole '{right[1]}' was not found for user '{userLogin}'.");
+                        continue;
+                    }
+
+                    _dataContext.UserRequestRights.Remove(userRequestRight);
+                    Logger.Debug($"'{right[1]}' was removed successfully.");
+                }
+                else
+                {
+                    Logger.Error($"Unknown group name: '{right[0]}'");
+                    return;
+                }
+            }
+
+            try
+            {
+                Logger.Debug("Saving changes...");
+                _dataContext.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Error saving permissions: {ex.Message}");
+                return;
+            }
+
+            Logger.Debug($"Permissions removed successfully for '{userLogin}'.");
         }
 
         public IEnumerable<string> GetUserPermissions(string userLogin)
