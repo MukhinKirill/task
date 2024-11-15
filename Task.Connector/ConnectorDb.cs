@@ -82,6 +82,7 @@ namespace Task.Connector
         public IEnumerable<Property> GetAllProperties()
         {
             Logger.Debug("Getting all properties...");
+
             var properties = _userProperties.Values
                 .Select(p => new Property(p.Name, string.Empty))
                 .ToList();
@@ -93,7 +94,20 @@ namespace Task.Connector
 
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
         {
-            throw new NotImplementedException();
+            Logger.Debug($"Getting properties of '{userLogin}'...");
+
+            var user = GetUser(userLogin);
+            if (user == null)
+            {
+                Logger.Warn("Returning an empty enumerable!");
+                return Enumerable.Empty<UserProperty>();
+            }
+
+            var properties = _userProperties.Values
+                .Select(p => new UserProperty(p.Name, p.GetValue(user)!.ToString()!));
+
+            Logger.Debug($"Properties retrieved: {properties.Count()}");
+            return properties;
         }
 
         public bool IsUserExists(string userLogin)
@@ -124,6 +138,17 @@ namespace Task.Connector
         public IEnumerable<string> GetUserPermissions(string userLogin)
         {
             throw new NotImplementedException();
+        }
+
+        private User? GetUser(string userLogin)
+        {
+            var user = _dataContext.Users.FirstOrDefault(u => u.Login == userLogin);
+            if (user == null)
+            {
+                Logger.Error($"The user with login '{userLogin}' does not exist.");
+            }
+
+            return user;
         }
 
         // Uses cached properties of User
