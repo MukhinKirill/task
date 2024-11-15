@@ -10,4 +10,6 @@ public partial class ItRole
     public string Name { get; set; } = null!;
 
     public string CorporatePhoneNumber { get; set; } = null!;
+
+    public List<UserItrole> UserItroles { get; set; } = null!;
 }

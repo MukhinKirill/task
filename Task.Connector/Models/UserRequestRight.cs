@@ -5,7 +5,9 @@ namespace Task.Connector.Models;
 
 public partial class UserRequestRight
 {
-    public User UserId { get; set; } = null!;
+    public string UserId { get; set; } = null!;
+    public int RightId { get; set; } 
 
-    public List<RequestRight> RightId { get; set; }
+    public User User { get; set; } = null!;
+    public RequestRight RequestRight { get; set; } = null!;
 }
