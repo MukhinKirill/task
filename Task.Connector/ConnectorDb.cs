@@ -6,6 +6,7 @@ using Task.Integration.Data.DbCommon.DbModels;
 using Microsoft.IdentityModel.Tokens;
 using Task.Connector.Infrastructure.Converters;
 using System.Reflection;
+using Microsoft.Extensions.Logging;
 
 namespace Task.Connector
 {
@@ -21,31 +22,31 @@ namespace Task.Connector
             if(string.IsNullOrEmpty(connectionString))
             {
                 string errorMessage = $"{DateTime.Now} - Failed to start up connector: Empty connection string";
-                Logger.Error(errorMessage);
+                //Logger.Error(errorMessage);
                 throw new ArgumentNullException(errorMessage);
             }
 
             var optionsBuilder = new DbContextOptionsBuilder<DataContext>();
-
+            
             if(connectionString.Contains("SqlServer"))
             {
                 optionsBuilder.UseSqlServer(connectionString);
-                Logger.Debug($"{DateTime.Now} - Using SQL server database provider");
+                //Logger.Debug($"{DateTime.Now} - Using SQL server database provider");
             } 
-            if(connectionString.Contains("PostgreSQL"))
+            // Dirty hacky workaround but im losing my mind here lmao
+            if(connectionString.Contains("postgres"))
             {
                 optionsBuilder.UseNpgsql(connectionString);
-                Logger.Debug($"{DateTime.Now} - Using Npgsql database provider");
+                //Logger.Debug($"{DateTime.Now} - Using Npgsql database provider");
             } 
-
             try
             {
                 _dbContext = new DataContext(optionsBuilder.Options);
-                Logger.Debug($"{DateTime.Now} - Database context created");
+                //Logger.Debug($"{DateTime.Now} - Database context created");
             }
             catch (Exception e)
             {
-                Logger.Error($"{DateTime.Now} - Failed to create dbcontext : {e.Message}");
+                //Logger.Error($"{DateTime.Now} - Failed to create dbcontext : {e.Message}");
                 throw;
             }
             
@@ -67,7 +68,7 @@ namespace Task.Connector
                     role.Name,
                     string.Empty
                 )
-            );
+            ).ToList();
 
             var requestRights = _dbContext.RequestRights.Select(
                 requestRight => new Permission(
@@ -75,9 +76,9 @@ namespace Task.Connector
                     requestRight.Name,
                     string.Empty
                 )
-            );
+            ).ToList();
 
-            _allSystemPermissions = itRoles.Union(requestRights).ToList();
+            _allSystemPermissions = itRoles.Concat(requestRights).ToList();
             
         }
         // TODO logging, error handling, see if Sequrity.id auto generates on the db end
@@ -178,8 +179,20 @@ namespace Task.Connector
         }
         public IEnumerable<string> GetUserPermissions(string userLogin)
         {
-            throw new NotImplementedException();
+            var roles = from role in _dbContext.ITRoles
+                        join userRole in _dbContext.UserITRoles
+                        on role.Id equals userRole.RoleId
+                        where userRole.UserId == userLogin
+                        select role.Name;
+        
+            var permissions = from permission in _dbContext.RequestRights
+                        join userPermission in _dbContext.UserRequestRights
+                        on permission.Id equals userPermission.RightId
+                        where userPermission.UserId == userLogin
+                        select permission.Name;
+
+            return roles.Concat(permissions).ToList();
         }
-        public ILogger Logger { get; set; }
+        public Integration.Data.Models.ILogger Logger { get; set; }
     }
 }

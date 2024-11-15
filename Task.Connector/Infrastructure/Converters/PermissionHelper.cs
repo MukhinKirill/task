@@ -20,4 +20,9 @@ public static class PermissionHelper
                 throw new ArgumentException($"Could not parse permission type: got permission id {permissionId}");
         }
     }
+
+    public static IQueryable MatchDBSetToPermissionType(this IQueryable query)
+    {
+        throw new NotImplementedException();
+    }
 }
