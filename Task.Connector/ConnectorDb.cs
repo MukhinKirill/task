@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Data;
 using System.Reflection;
 using Task.Integration.Data.DbCommon;
 using Task.Integration.Data.DbCommon.DbModels;
@@ -143,7 +144,24 @@ namespace Task.Connector
 
         public IEnumerable<Permission> GetAllPermissions()
         {
-            throw new NotImplementedException();
+            Logger.Debug("Getting all permissions...");
+
+            var requestRights = _dataContext.RequestRights
+                .AsNoTracking()
+                .Select(rr => new Permission(rr.Id.ToString()!, rr.Name, string.Empty))
+                .ToList();
+            Logger.Debug($"RequestRights retrieved: {requestRights.Count}");
+
+            var itRoles = _dataContext.ITRoles
+                .AsNoTracking()
+                .Select(role => new Permission(role.Id.ToString()!, role.Name, string.Empty))
+                .ToList();
+            Logger.Debug($"RequestRights retrieved: {requestRights.Count}");
+
+            var permissions = requestRights.Concat(itRoles);
+            Logger.Debug($"Permissions retrieved: {permissions.Count()}");
+
+            return permissions;
         }
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
