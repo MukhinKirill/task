@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Task.Connector.Tests": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}

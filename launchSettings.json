@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Docker Compose": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "serviceActions": {
+        "task.connector.tests": "StartDebugging",
+        "taskapi": "StartDebugging"
+      }
+    }
+  }
+}

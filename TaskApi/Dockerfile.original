@@ -1,0 +1,35 @@
+# Используем официальный образ .NET SDK для сборки приложения
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+
+# Устанавливаем рабочую директорию
+WORKDIR /src
+
+# Копируем файлы проектов и восстанавливаем зависимости
+COPY ["TaskApi/TaskApi.csproj", "TaskApi/"]
+COPY ["Task.Integration.Data/Task.Integration.Data.csproj", "Task.Integration.Data/"]
+
+# Восстанавливаем зависимости
+RUN dotnet restore "TaskApi/TaskApi.csproj"
+
+# Копируем все остальные файлы и публикуем приложение
+COPY . .
+
+# Собираем проект
+WORKDIR "/src/TaskApi"
+RUN dotnet build "TaskApi.csproj" -c Release -o /app/build
+
+# Публикуем приложение
+FROM build AS publish
+RUN dotnet publish "TaskApi.csproj" -c Release -o /app/publish
+
+# Создаем финальный образ для запуска приложения
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+WORKDIR /app
+EXPOSE 80
+EXPOSE 443
+
+# Копируем опубликованные файлы из предыдущего шага
+COPY --from=publish /app/publish .
+
+# Устанавливаем точку входа для контейнера
+ENTRYPOINT ["dotnet", "TaskApi.dll"]

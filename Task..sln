@@ -7,6 +7,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Task.Connector", "Task.Conn
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Task.Connector.Tests", "Task.Connector.Tests\Task.Connector.Tests.csproj", "{9DFE11D3-9738-46B0-91FA-B6462C93EEAE}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TaskApi", "TaskApi\TaskApi.csproj", "{968E4045-7C8D-4814-BECF-357AA8083581}"
+EndProject
+Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{8745FCC6-9782-4273-880B-53BAB772AFB9}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Элементы решения", "Элементы решения", "{ED5CFC28-F181-4AF7-9872-B18865FC4CF5}"
+	ProjectSection(SolutionItems) = preProject
+		libs\Models\Task.Integration.Data.Models.dll = libs\Models\Task.Integration.Data.Models.dll
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +30,14 @@ Global
 		{9DFE11D3-9738-46B0-91FA-B6462C93EEAE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9DFE11D3-9738-46B0-91FA-B6462C93EEAE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9DFE11D3-9738-46B0-91FA-B6462C93EEAE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{968E4045-7C8D-4814-BECF-357AA8083581}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{968E4045-7C8D-4814-BECF-357AA8083581}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{968E4045-7C8D-4814-BECF-357AA8083581}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{968E4045-7C8D-4814-BECF-357AA8083581}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8745FCC6-9782-4273-880B-53BAB772AFB9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8745FCC6-9782-4273-880B-53BAB772AFB9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8745FCC6-9782-4273-880B-53BAB772AFB9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8745FCC6-9782-4273-880B-53BAB772AFB9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

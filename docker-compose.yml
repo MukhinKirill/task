@@ -1,0 +1,49 @@
+﻿version: '3.8'
+
+services:
+  db_postgres:
+    image: postgres:latest
+    container_name: db_postgres
+    environment:
+      POSTGRES_DB: testDb
+      POSTGRES_USER: testUser
+      POSTGRES_PASSWORD: 12345678
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app_network
+
+  db_mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: db_mssql
+    environment:
+      SA_PASSWORD: "12345678"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1433:1433"
+    networks:
+      - app_network
+
+  taskapi:
+    build:
+      context: ./  # Указываем путь до текущей директории, где находится docker-compose.yml
+      dockerfile: TaskApi/Dockerfile  # Указываем путь до Dockerfile в папке TaskApi
+    container_name: task_integration_app
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ConnectionStrings__PostgreSql: "Server=db_postgres;Port=5432;Database=testDb;Username=testUser;Password=12345678;"
+      ConnectionStrings__MSSQL: "Server=db_mssql;Database=testDb;User Id=sa;Password=12345678;"
+    depends_on:
+      - db_postgres
+      - db_mssql
+    networks:
+      - app_network
+
+volumes:
+  postgres_data:
+
+networks:
+  app_network:
+    driver: bridge
