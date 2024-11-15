@@ -12,6 +12,10 @@ namespace Task.Connector
 {
     public class ConnectorDb : IConnector
     {
+        private const string RequestRightGroupName = "Request";
+        private const string ItRoleRightGroupName = "Role";
+        private static string Delimiter = ":";
+
         private static readonly Dictionary<string, PropertyInfo> _userProperties = typeof(User)
             .GetProperties()
             .Where(p => p.Name != nameof(User.Login))
@@ -176,8 +180,8 @@ namespace Task.Connector
 
             foreach (var rightId in rightIds)
             {
-                var right = rightId.Split(':');
-                if (right[0] == "Role")
+                var right = rightId.Split(Delimiter);
+                if (right[0] == ItRoleRightGroupName)
                 {
                     var userITRole = new UserITRole
                     { 
@@ -186,7 +190,7 @@ namespace Task.Connector
                     };
                     _dataContext.UserITRoles.Add(userITRole);
                 }
-                else if (right[0] == "Request")
+                else if (right[0] == RequestRightGroupName)
                 {
                     var userRequestRight = new UserRequestRight
                     {
@@ -228,8 +232,8 @@ namespace Task.Connector
 
             foreach (var rightId in rightIds)
             {
-                var right = rightId.Split(':');
-                if (right[0] == "Role")
+                var right = rightId.Split(Delimiter);
+                if (right[0] == ItRoleRightGroupName)
                 {
                     var userITRole = _dataContext.UserITRoles.FirstOrDefault(ur => ur.UserId == userLogin && ur.RoleId == int.Parse(right[1]));
                     if (userITRole == null)
@@ -241,7 +245,7 @@ namespace Task.Connector
                     _dataContext.UserITRoles.Remove(userITRole);
                     Logger.Debug($"'{right[1]}' was removed successfully.");
                 }
-                else if (right[0] == "Request")
+                else if (right[0] == RequestRightGroupName)
                 {
                     var userRequestRight = _dataContext.UserRequestRights.FirstOrDefault(urr => urr.UserId == userLogin && urr.RightId == int.Parse(right[1]));
                     if (userRequestRight == null)
@@ -276,7 +280,42 @@ namespace Task.Connector
 
         public IEnumerable<string> GetUserPermissions(string userLogin)
         {
-            throw new NotImplementedException();
+            Logger.Debug("Getting user permissions...");
+
+            if (!IsUserExists(userLogin))
+            {
+                Logger.Error($"The user with login '{userLogin}' does not exist.");
+                return Enumerable.Empty<string>();
+            }
+
+            var userITRoles = _dataContext.ITRoles
+                .AsNoTracking()
+                .Join(_dataContext.UserITRoles,
+                    role => role.Id,
+                    userRole => userRole.RoleId,
+                    (role, userRole) => new { role, userRole })
+                .Where(joined => joined.userRole.UserId == userLogin)
+                .Select(joined => $"{ItRoleRightGroupName}{Delimiter}{joined.role.Id}")
+                .ToList();
+
+            Logger.Debug($"ITRoles for '{userLogin}': {userITRoles.Count}");
+
+            var userRequestRights = _dataContext.RequestRights
+                .AsNoTracking()
+                .Join(_dataContext.UserRequestRights,
+                    requestRight => requestRight.Id,
+                    userRequestRight => userRequestRight.RightId,
+                    (requestRight, userRequestRight) => new { requestRight, userRequestRight })
+                .Where(joined => joined.userRequestRight.UserId == userLogin)
+                .Select(joined => $"{ItRoleRightGroupName}{Delimiter}{joined.requestRight.Id}")
+                .ToList();
+
+            Logger.Debug($"RequestRights for '{userLogin}': {userRequestRights.Count}");
+
+            var permissions = userITRoles.Concat(userRequestRights);
+
+            Logger.Debug($"Permissions successfully retrieved for '{userLogin}'.");
+            return permissions;
         }
 
         private User? GetUser(string userLogin)
