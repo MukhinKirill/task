@@ -13,6 +13,7 @@ namespace Task.Connector
     {
         private DataContext _dbContext;
         private List<Property> _clientUserPropertiesFormatted;
+        private List<Permission> _allSystemPermissions;
         private InternalUserToClientUserConverter _internalToClientUserConverter;
         private PropertyInfo[] _clientUserModelProperties;
         public void StartUp(string connectionString)
@@ -48,6 +49,7 @@ namespace Task.Connector
                 throw;
             }
             
+            // Caching property info here because GetUserProperties is slow enough already
             _clientUserModelProperties = typeof(User).GetProperties();
 
             // This might need to be different if i need the db's column names instead of the model property names
@@ -56,6 +58,26 @@ namespace Task.Connector
                 ToList();
             
             _clientUserPropertiesFormatted.Add(new Property("Password", "Password"));
+
+            // Set up permissions
+
+            var itRoles = _dbContext.ITRoles.Select(
+                role => new Permission(
+                    "role-"+role.Id,
+                    role.Name,
+                    string.Empty
+                )
+            );
+
+            var requestRights = _dbContext.RequestRights.Select(
+                requestRight => new Permission(
+                    "right-"+requestRight.Id,
+                    requestRight.Name,
+                    string.Empty
+                )
+            );
+
+            _allSystemPermissions = itRoles.Union(requestRights).ToList();
             
         }
         // TODO logging, error handling, see if Sequrity.id auto generates on the db end
@@ -144,7 +166,7 @@ namespace Task.Connector
         }
         public IEnumerable<Permission> GetAllPermissions()
         {
-            throw new NotImplementedException();
+            return _allSystemPermissions;
         }
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
