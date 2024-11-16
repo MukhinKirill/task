@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>Task.Connector</AssemblyName>
     <RootNamespace>Task.Connector</RootNamespace>
+    <OutputType>Library</OutputType>
   </PropertyGroup>
 
   <ItemGroup>
