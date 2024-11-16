@@ -16,7 +16,7 @@ namespace Task.Connector
         private DataContext _dbContext;
         private List<Property> _clientUserPropertiesFormatted;
         private List<Permission> _allSystemPermissions;
-        private InternalUserToClientUserConverter _internalToClientUserConverter;
+        private InternalUserToClientUserConverter InternalToClientUserConverter {get => new InternalUserToClientUserConverter(Logger);}
         private PropertyInfo[] _clientUserModelProperties;
         public void StartUp(string connectionString)
         {
@@ -85,7 +85,7 @@ namespace Task.Connector
         // TODO logging, error handling, see if Sequrity.id auto generates on the db end
         public void CreateUser(UserToCreate user)
         {
-            var clientUser = _internalToClientUserConverter.Convert(user);
+            var clientUser = InternalToClientUserConverter.Convert(user);
             var passwordEntry = new Sequrity();
             passwordEntry.UserId = user.Login;
             passwordEntry.Password = user.HashPassword;
@@ -145,7 +145,7 @@ namespace Task.Connector
                 return;
             }
 
-            _internalToClientUserConverter.ParseAndSetUserProperties(ref user, properties);
+            InternalToClientUserConverter.ParseAndSetUserProperties(ref user, properties);
 
             var passwordProp = properties.Where(p => p.Name == "Password").First();
 
@@ -199,7 +199,21 @@ namespace Task.Connector
         }
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            throw new NotImplementedException();
+            foreach(var rightId in rightIds)
+            {
+                switch (PermissionHelper.GetPermissionTypeFromId(rightId))
+                {
+                    case PermissionType.ItRole:
+                        var roleRecord = _dbContext.UserITRoles.Single(r => r.UserId == userLogin && r.RoleId == PermissionHelper.GetClientPermissionIdFromString(rightId));
+                        _dbContext.UserITRoles.Remove(roleRecord);
+                    break;
+                    case PermissionType.RequestRight:
+                        var rightRecord = _dbContext.UserRequestRights.Single(r => r.UserId == userLogin && r.RightId == PermissionHelper.GetClientPermissionIdFromString(rightId));
+                        _dbContext.UserRequestRights.Remove(rightRecord);
+                    break;
+                }
+            }
+            _dbContext.SaveChanges();
         }
         public IEnumerable<string> GetUserPermissions(string userLogin)
         {
