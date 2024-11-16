@@ -21,6 +21,19 @@ public static class PermissionHelper
         }
     }
 
+    public static int GetClientPermissionIdFromString(this string permissionId)
+    {
+        switch (GetPermissionTypeFromId(permissionId))
+        {
+            case PermissionType.ItRole:
+                return int.Parse(permissionId.Substring(4));
+            case PermissionType.RequestRight:
+                return int.Parse(permissionId.Substring(5));
+        }
+
+        throw new FormatException($"Unable to parse permission: {permissionId}");
+    }
+
     public static IQueryable MatchDBSetToPermissionType(this IQueryable query)
     {
         throw new NotImplementedException();

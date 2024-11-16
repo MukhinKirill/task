@@ -4,6 +4,7 @@ using Task.Integration.Data.DbCommon;
 using Microsoft.EntityFrameworkCore;
 using Task.Integration.Data.DbCommon.DbModels;
 using Microsoft.IdentityModel.Tokens;
+using Task.Connector.Infrastructure;
 using Task.Connector.Infrastructure.Converters;
 using System.Reflection;
 using Microsoft.Extensions.Logging;
@@ -171,7 +172,30 @@ namespace Task.Connector
         }
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            throw new NotImplementedException();
+            foreach(var rightId in rightIds)
+            {
+                switch (PermissionHelper.GetPermissionTypeFromId(rightId))
+                {
+                    case PermissionType.ItRole:
+                        var roleRecord = new UserITRole
+                        {
+                            RoleId=PermissionHelper.GetClientPermissionIdFromString(rightId),
+                            UserId=userLogin
+                        };
+                        _dbContext.UserITRoles.Add(roleRecord);
+                    break;
+                    case PermissionType.RequestRight:
+                        var rightRecord = new UserRequestRight
+                        {
+                            UserId = userLogin,
+                            RightId = PermissionHelper.GetClientPermissionIdFromString(rightId)
+                        };
+                        _dbContext.UserRequestRights.Add(rightRecord);
+                    break;
+                }
+            }
+
+            _dbContext.SaveChanges();
         }
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
