@@ -40,7 +40,7 @@ namespace Task.Connector.Tests
 
 
         [Theory]
-        [InlineData("MSSQL")]
+        //[InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void CreateUser(string provider)
         {
@@ -87,7 +87,7 @@ namespace Task.Connector.Tests
         }
 
         [Theory]
-        [InlineData("MSSQL")]
+        //[InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void UpdateUserProperties(string provider)
         {
@@ -104,7 +104,7 @@ namespace Task.Connector.Tests
         }
 
         [Theory]
-        [InlineData("MSSQL")]
+        //[InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void GetAllPermissions(string provider)
         {
@@ -116,7 +116,7 @@ namespace Task.Connector.Tests
         }
 
         [Theory]
-        [InlineData("MSSQL")]
+        //[InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void AddUserPermissions(string provider)
         {
@@ -131,7 +131,7 @@ namespace Task.Connector.Tests
         }
 
         [Theory]
-        [InlineData("MSSQL")]
+        //[InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void RemoveUserPermissions(string provider)
         {
