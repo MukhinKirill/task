@@ -1,0 +1,18 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Task.Connector.Model
+{
+    internal class UserItRole
+    {
+        public int UserId { get; set; }
+        public int ItRoleId { get; set; }
+
+        // relations
+        public User User { get; set; }
+        public ItRole ItRole { get; set; }
+    }
+}
