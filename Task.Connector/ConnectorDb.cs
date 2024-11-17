@@ -65,7 +65,7 @@ namespace Task.Connector
 
                 if (properties == null)
                 {
-                    Logger?.Warn($"Users properties could not be found.");
+                    Logger?.Error($"Users properties could not be found.");
                     return Enumerable.Empty<Property>();
                 }
 
@@ -85,7 +85,7 @@ namespace Task.Connector
             {
                 if (!IsUserExists(userLogin))
                 {
-                    Logger.Warn($"The user with login {userLogin} could not be found.");
+                    Logger.Error($"The user with login {userLogin} could not be found.");
                     return Enumerable.Empty<UserProperty>();
                 }
 
@@ -109,7 +109,7 @@ namespace Task.Connector
             }
         }
 
-        public  bool IsUserExists(string userLogin)
+        public bool IsUserExists(string userLogin)
         {
             using (ConnectorDbContext db = new ConnectorDbContext())
             {
@@ -124,7 +124,7 @@ namespace Task.Connector
             {
                 if (!IsUserExists(userLogin))
                 {
-                    Logger.Warn($"The user with login {userLogin} could not be found.");
+                    Logger.Error($"The user with login {userLogin} could not be found.");
                     return;
                 }
 
@@ -181,57 +181,85 @@ namespace Task.Connector
             {
                 if (!IsUserExists(userLogin))
                 {
-                    Logger.Warn($"The user with login {userLogin} could not be found.");
+                    Logger.Error($"The user with login {userLogin} could not be found.");
                     return;
                 }
 
                 var user = db.Users.FirstOrDefault(u => u.Login == userLogin);
 
-                foreach (var rightId in rightIds)
+                List<int> allRights = new List<int>();
+                List<int> allRoles = new List<int>();
+
+
+                foreach (var rightId in rightIds) 
                 {
                     var right = rightId.Split(':');
-                    string rightType = right[0]; 
-                    int rightIdNumber = int.Parse(right[1]); 
+                    string rightType = right[0];
+                    int rightIdNumber = int.Parse(right[1]);
 
                     if (rightType.StartsWith("Role", StringComparison.OrdinalIgnoreCase))
+                    { 
+                        allRoles.Add(rightIdNumber);
+                    }
+                    else if (rightType.StartsWith("Right", StringComparison.OrdinalIgnoreCase))
                     {
-                        var currentRoleIds = db.UserItroles
+                        allRights.Add(rightIdNumber);
+                    }
+                    else
+                    {
+                        Logger.Error($"Incorrect data");
+                        return;
+                    }
+                }
+
+                List<int> all_db_rights = db.RequestRights.Select(rr => rr.Id).ToList();
+                List<int> all_db_roles = db.ItRoles.Select(rr => rr.Id).ToList();
+
+                if (!(Validation_FK<int>(all_db_rights, allRights, "rightids") || Validation_FK<int>(all_db_roles, allRoles, "roleids")))
+                {
+                    return;
+                }
+
+                foreach (var role in allRoles)
+                {
+                    var currentRoleIds = db.UserItroles
                             .Where(ur => ur.UserId == userLogin)
                             .Select(ur => ur.RoleId)
                             .ToList();
 
-                        bool roleExists = currentRoleIds.Contains(rightIdNumber);
+                    bool roleExists = currentRoleIds.Contains(role);
 
-                        if (!roleExists)
-                        {
-                            db.UserItroles.Add(new UserItrole { UserId = userLogin, RoleId = rightIdNumber });
-                            Logger?.Debug($"Role {rightIdNumber} has been added to user {userLogin}.");
-                        }
-                        else
-                        {
-                            Logger?.Warn($"The role {rightIdNumber} for user {userLogin} already exists.");
-                        }
+                    if (!roleExists)
+                    {
+                        db.UserItroles.Add(new UserItrole { UserId = userLogin, RoleId = role });
+                        Logger?.Debug($"Role {role} has been added to user {userLogin}.");
                     }
                     else
                     {
-                        var currentRighteIds = db.UserRequestRights
+                        Logger?.Warn($"The role {role} for user {userLogin} already exists.");
+                    }
+                }
+
+                foreach (var right in allRights)
+                {
+                    var currentRighteIds = db.UserRequestRights
                             .Where(ur => ur.UserId == userLogin)
                             .Select(ur => ur.RightId)
                             .ToList();
 
-                        bool rightExists = currentRighteIds.Contains(rightIdNumber);
+                    bool rightExists = currentRighteIds.Contains(right);
 
-                        if (!rightExists)
-                        {
-                            db.UserRequestRights.Add(new UserRequestRight { UserId = userLogin, RightId = rightIdNumber });
-                            Logger?.Debug($"Right {rightIdNumber} has been added to user {userLogin}.");
-                        }
-                        else
-                        {
-                            Logger?.Warn($"The right {rightIdNumber} for user {userLogin} already exists.");
-                        }
+                    if (!rightExists)
+                    {
+                        db.UserRequestRights.Add(new UserRequestRight { UserId = userLogin, RightId = right });
+                        Logger?.Debug($"Right {right} has been added to user {userLogin}.");
+                    }
+                    else
+                    {
+                        Logger?.Warn($"The right {right} for user {userLogin} already exists.");
                     }
                 }
+
                 db.SaveChanges();
                 Logger?.Debug($"The permissions for user {userLogin} have been added successfully.");
             }
@@ -324,6 +352,28 @@ namespace Task.Connector
                 Logger?.Debug($"The user with login {userLogin} has the following permissions: {permissions.Count}");
                 return permissions;
             }
+        }
+        public bool Validation_FK<T>(List<T> db_obj, List<T> data, string entity_name)
+        {
+            List<string> error_objs = new List<string>();
+
+            foreach (var obj in data)
+            {
+                if (!db_obj.Contains(obj)) 
+                {
+                    error_objs.Add(obj.ToString());
+                }
+            }
+
+            if (error_objs.Count > 0) {
+                Logger.Error($"Following {entity_name} not found in: {String.Join(", ", error_objs.ToArray())}");
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+
         }
     }
 }
