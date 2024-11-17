@@ -223,13 +223,13 @@ namespace Task.Connector
                         join userRole in _dbContext.UserITRoles
                         on role.Id equals userRole.RoleId
                         where userRole.UserId == userLogin
-                        select role.Name.ToString();
+                        select PermissionHelper.rolePrefix+PermissionHelper.delimiter+role.Id.ToString();
         
             var permissions = from permission in _dbContext.RequestRights
                         join userPermission in _dbContext.UserRequestRights
                         on permission.Id equals userPermission.RightId
                         where userPermission.UserId == userLogin
-                        select permission.Name.ToString();
+                        select PermissionHelper.requestRightPrefix+PermissionHelper.delimiter+permission.Id.ToString();
 
             return roles.Concat(permissions).ToList();
         }
