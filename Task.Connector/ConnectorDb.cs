@@ -64,7 +64,7 @@ public partial class ConnectorDb : IConnector
 		const string connection_mark = "ConnectionString";
 
 		string provider = param[provider_mark];
-		if (provider.IndexOf(Providers.providers[Providers.ProvidersSupported.SqlServer2019]) != -1)
+		if (provider == Providers.providers[Providers.ProvidersSupported.SqlServer2019])
 		{
 			ConnectorVerified = new MSSqlServer2019Connector();
 		}
