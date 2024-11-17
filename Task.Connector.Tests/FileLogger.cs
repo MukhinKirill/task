@@ -10,7 +10,9 @@ namespace Task.Connector.Tests
 
         public FileLogger(string fileName, string connectorName)
         {
-            _fileName = fileName;
+            //_fileName = fileName;
+            //В Windows не поддерживаются симовлы : в названии файлов
+            _fileName = fileName.Replace(":", "_").Replace(" ", "_");
             _connectorName = connectorName;
         }
         void Append(string text)
