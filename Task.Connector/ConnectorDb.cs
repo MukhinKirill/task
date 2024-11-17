@@ -33,8 +33,8 @@ namespace Task.Connector
         public void CreateUser(UserToCreate user)
         {
             Logger.Debug("Creating user.");
-            //Операция добавления пользователя и его пароля должны происходить
-            //как единое целое, по-этому нужна транзакция
+            //Операции добавления пользователя и его пароля должны происходить
+            //как единое целое, поэтому нужна транзакция
             using (var transaction = _context.Database.BeginTransaction())
             {
                 try
