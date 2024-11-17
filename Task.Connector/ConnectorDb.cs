@@ -17,7 +17,7 @@ namespace Task.Connector
         private List<Property> _clientUserPropertiesFormatted;
         private List<Permission> _allSystemPermissions;
         private InternalUserToClientUserConverter InternalToClientUserConverter {get => new InternalUserToClientUserConverter(Logger);}
-        private PropertyInfo[] _clientUserModelProperties;
+        private List<PropertyInfo> _clientUserModelProperties;
         public void StartUp(string connectionString)
         {
             if(string.IsNullOrEmpty(connectionString))
@@ -52,10 +52,10 @@ namespace Task.Connector
             }
             
             // Caching property info here because GetUserProperties is slow enough already
-            _clientUserModelProperties = typeof(User).GetProperties();
+            _clientUserModelProperties = typeof(User).GetProperties().Where(prop => prop.Name != "Login").ToList();
 
             // This might need to be different if i need the db's column names instead of the model property names
-            _clientUserPropertiesFormatted = typeof(User).GetProperties().
+            _clientUserPropertiesFormatted = _clientUserModelProperties.
                 Select(prop => new Property(prop.Name, prop.Name)).
                 ToList();
             
@@ -65,7 +65,7 @@ namespace Task.Connector
 
             var itRoles = _dbContext.ITRoles.Select(
                 role => new Permission(
-                    "role-"+role.Id,
+                    PermissionHelper.rolePrefix+PermissionHelper.delimiter+role.Id,
                     role.Name,
                     string.Empty
                 )
@@ -73,7 +73,7 @@ namespace Task.Connector
 
             var requestRights = _dbContext.RequestRights.Select(
                 requestRight => new Permission(
-                    "right-"+requestRight.Id,
+                    PermissionHelper.requestRightPrefix+PermissionHelper.delimiter+requestRight.Id,
                     requestRight.Name,
                     string.Empty
                 )
@@ -125,7 +125,9 @@ namespace Task.Connector
                 properties.Add(new UserProperty(name, value));
             }
 
-            properties.Add(new UserProperty("Password", password!.Password));
+
+            // It was implied in the readme that password was supposed to be included - but looking at the unit test, password should not be included here
+            // properties.Add(new UserProperty("Password", password!.Password));
 
             return properties;
         }
@@ -147,7 +149,7 @@ namespace Task.Connector
 
             InternalToClientUserConverter.ParseAndSetUserProperties(ref user, properties);
 
-            var passwordProp = properties.Where(p => p.Name == "Password").First();
+            var passwordProp = properties.Where(p => p.Name == "Password").FirstOrDefault();
 
             if(passwordProp is not null && !string.IsNullOrEmpty(passwordProp.Value) && !string.IsNullOrWhiteSpace(passwordProp.Value))
             {
@@ -221,13 +223,13 @@ namespace Task.Connector
                         join userRole in _dbContext.UserITRoles
                         on role.Id equals userRole.RoleId
                         where userRole.UserId == userLogin
-                        select role.Name;
+                        select role.Name.ToString();
         
             var permissions = from permission in _dbContext.RequestRights
                         join userPermission in _dbContext.UserRequestRights
                         on permission.Id equals userPermission.RightId
                         where userPermission.UserId == userLogin
-                        select permission.Name;
+                        select permission.Name.ToString();
 
             return roles.Concat(permissions).ToList();
         }
