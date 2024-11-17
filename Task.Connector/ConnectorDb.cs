@@ -1,60 +1,114 @@
-﻿using Task.Integration.Data.Models;
+﻿using AutoMapper;
+using FluentValidation;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using System.Text.RegularExpressions;
+using Task.Connector.Infrastructure;
+using Task.Connector.Validation;
+using Task.Integration.Data.DbCommon.DbModels;
+using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
 
-namespace Task.Connector
+namespace Task.Connector;
+
+public class ConnectorDb : IConnector
 {
-    public class ConnectorDb : IConnector
+    private TaskDbContext _context;
+    private IMapper _mapper;
+
+    public ConnectorDb()
     {
-        public void StartUp(string connectionString)
-        {
-            throw new NotImplementedException();
-        }
+        
+    }
 
-        public void CreateUser(UserToCreate user)
-        {
-            throw new NotImplementedException();
-        }
+    public void StartUp(string connectionString)
+    {
+        var actualConnectionString = GetActualConnectionString(connectionString);
 
-        public IEnumerable<Property> GetAllProperties()
-        {
-            throw new NotImplementedException();
-        }
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddServices(actualConnectionString);
 
-        public IEnumerable<UserProperty> GetUserProperties(string userLogin)
-        {
-            throw new NotImplementedException();
-        }
+        var serviceProvider = serviceCollection.BuildServiceProvider();
 
-        public bool IsUserExists(string userLogin)
-        {
-            throw new NotImplementedException();
-        }
+        _mapper = serviceProvider.GetRequiredService<IMapper>();
+        _context = serviceProvider.GetRequiredService<TaskDbContext>();
 
-        public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
-        {
-            throw new NotImplementedException();
-        }
+    }
 
-        public IEnumerable<Permission> GetAllPermissions()
-        {
-            throw new NotImplementedException();
-        }
+    public void CreateUser(UserToCreate user)
+    {
+        Logger.Debug($"Создание пользователя {user.Login}");
+        var newUser = _mapper.Map<User>(user);
 
-        public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
+        var validator = new UserValidator();
+        try
         {
-            throw new NotImplementedException();
+            validator.Validate(newUser, options => options.ThrowOnFailures());
         }
-
-        public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
+        catch
         {
-            throw new NotImplementedException();
+            Logger.Error("Данные невалидны");
+            throw;
         }
+        _context.Users.Add(newUser);
 
-        public IEnumerable<string> GetUserPermissions(string userLogin)
+        try
         {
-            throw new NotImplementedException();
+            _context.SaveChanges();
         }
+        catch (DbUpdateException ex)
+        {
+            Logger?.Error($"Ошибка при создании пользователя. Логин: {user.Login}.");
+            throw;
+        }
+    }
 
-        public ILogger Logger { get; set; }
+    public IEnumerable<Property> GetAllProperties()
+    {
+        throw new NotImplementedException();
+    }
+
+    public IEnumerable<UserProperty> GetUserProperties(string userLogin)
+    {
+        throw new NotImplementedException();
+    }
+
+    public bool IsUserExists(string userLogin)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
+    {
+        throw new NotImplementedException();
+    }
+
+    public IEnumerable<Permission> GetAllPermissions()
+    {
+        throw new NotImplementedException();
+    }
+
+    public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
+    {
+        throw new NotImplementedException();
+    }
+
+    public IEnumerable<string> GetUserPermissions(string userLogin)
+    {
+        throw new NotImplementedException();
+    }
+
+    public ILogger Logger { get; set; }
+
+    private string GetActualConnectionString(string connectionString)
+    {
+        string connectionStringPattern = @"ConnectionString='([^']*)'";
+        var match = Regex.Match(connectionString, connectionStringPattern);
+        return match.Groups[1].Value;
     }
 }

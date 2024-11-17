@@ -1,0 +1,17 @@
+version: '3.9'
+
+services:
+    kippgdatabase:
+        image: postgres
+        environment:
+            POSTGRES_DB: "avanpost_db"
+            POSTGRES_USER: "dbuser"
+            POSTGRES_PASSWORD: "dbpassword"
+        ports:
+            - "5432:5432"
+        volumes:
+            - pg-data:/var/lib/postgresql/avanpostAPI
+
+volumes:
+    pg-data:
+        driver: local

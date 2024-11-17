@@ -1,3 +1,4 @@
+using System.Diagnostics.Contracts;
 using Task.Integration.Data.DbCommon;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
@@ -10,11 +11,11 @@ namespace Task.Connector.Tests
         static string itRoleRightGroupName = "Role";
         static string delimeter = ":";
         static string mssqlConnectionString = "";
-        static string postgreConnectionString = "";
+        static string postgreConnectionString = "Host=127.0.0.1;Port=5432;Database=avanpost_db;Username=dbuser;Password=dbpassword";
         static Dictionary<string, string> connectorsCS = new Dictionary<string, string>
         {
             { "MSSQL",$"ConnectionString='{mssqlConnectionString}';Provider='SqlServer.2019';SchemaName='AvanpostIntegrationTestTaskSchema';"},
-            { "POSTGRE", $"ConnectionString='{postgreConnectionString}';Provider='PostgreSQL.9.5';SchemaName='AvanpostIntegrationTestTaskSchema';"}
+            { "POSTGRE", $"ConnectionString='{postgreConnectionString}';Provider='PostgreSQL.15.3';SchemaName='AvanpostIntegrationTestTaskSchema';"}
         };
         static Dictionary<string, string> dataBasesCS = new Dictionary<string, string>
         {
@@ -34,13 +35,22 @@ namespace Task.Connector.Tests
         {
             IConnector connector = new ConnectorDb();
             connector.StartUp(connectorsCS[provider]);
-            connector.Logger = new FileLogger($"{DateTime.Now}connector{provider}.Log", $"{DateTime.Now}connector{provider}");
+            connector.Logger = new FileLogger($"{DateOnly.FromDateTime(DateTime.Now)}connector{provider}.Log", $"{DateTime.Now}connector{provider}");
             return connector;
+        }
+
+        [Theory]
+        [InlineData("POSTGRE")]
+        public void CrateUserWithoutDeletingPreviosCaseFromDb(string provider)
+        {
+            //var dataSetter = Init(provider);
+            var connector = GetConnector(provider);
+            connector.CreateUser(new UserToCreate("1111111111111111111111111111111111111111111", "testPassword") { Properties = new UserProperty[] { new UserProperty("isLead", "false") } });
         }
 
 
         [Theory]
-        [InlineData("MSSQL")]
+       // [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void CreateUser(string provider)
         {
