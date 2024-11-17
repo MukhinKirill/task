@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Task.Connector.Models;
+﻿namespace Task.Connector.Models;
 
 public partial class ItRole
 {
@@ -10,6 +7,4 @@ public partial class ItRole
     public string Name { get; set; } = null!;
 
     public string CorporatePhoneNumber { get; set; } = null!;
-
-    public List<UserItrole> UserItroles { get; set; } = null!;
 }

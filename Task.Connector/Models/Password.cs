@@ -6,7 +6,5 @@ public partial class Password
 
     public string UserId { get; set; } = null!;
 
-    public User User { get; set; }
-
     public string Password1 { get; set; } = null!;
 }

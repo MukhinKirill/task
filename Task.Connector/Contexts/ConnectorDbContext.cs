@@ -144,32 +144,5 @@ public partial class ConnectorDbContext : DbContext
         OnModelCreatingPartial(modelBuilder);
     }
 
-    private void OnModelCreatingPartial(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<User>()
-            .HasMany(u => u.Passwords) 
-            .WithOne(p => p.User) 
-            .HasForeignKey(p => p.UserId) 
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<UserItrole>()
-            .HasOne(uit => uit.User)
-            .WithMany(u => u.UserItroles) 
-            .HasForeignKey(uit => uit.UserId);
-
-        modelBuilder.Entity<UserItrole>()
-            .HasOne(uit => uit.ItRole)
-            .WithMany(ir => ir.UserItroles) 
-            .HasForeignKey(uit => uit.RoleId);
-
-        modelBuilder.Entity<UserRequestRight>()
-            .HasOne(urr => urr.User)
-            .WithMany(u => u.UserRequestRights) 
-            .HasForeignKey(urr => urr.UserId);
-
-        modelBuilder.Entity<UserRequestRight>()
-            .HasOne(urr => urr.RequestRight)
-            .WithMany(rr => rr.UserRequestRights) 
-            .HasForeignKey(urr => urr.RightId);
-    }
+    private void OnModelCreatingPartial(ModelBuilder modelBuilder) { }
 }

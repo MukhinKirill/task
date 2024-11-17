@@ -10,7 +10,7 @@ namespace Task.Connector.Tests
 
         public FileLogger(string fileName, string connectorName)
         {
-            _fileName = fileName;
+            _fileName = @"C:\Users\eliza\source\repos\task\logs\" + fileName;
             _connectorName = connectorName;
         }
         void Append(string text)
