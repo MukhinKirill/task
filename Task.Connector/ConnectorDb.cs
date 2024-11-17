@@ -29,15 +29,19 @@ namespace Task.Connector
 
             var optionsBuilder = new DbContextOptionsBuilder<DataContext>();
             
-            if(connectionString.Contains("SqlServer"))
+            // This is not the best way of doing it, but I don't want to spend more time on it now
+            int dbConnectionStringStart = connectionString.IndexOf("'") +1;
+            int dbConnectionStringEnd = connectionString.IndexOf("Provider")-2;
+            string dbConnectionString = connectionString.Substring(dbConnectionStringStart, dbConnectionStringEnd-dbConnectionStringStart);
+
+            if(connectionString.Contains("Provider='SqlServer.2019'"))
             {
-                optionsBuilder.UseSqlServer(connectionString);
+                optionsBuilder.UseSqlServer(dbConnectionString);
                 //Logger.Debug($"{DateTime.Now} - Using SQL server database provider");
             } 
-            // Dirty hacky workaround but im losing my mind here lmao
-            if(connectionString.Contains("postgres"))
+            if(connectionString.Contains("Provider='PostgreSQL.9.5'"))
             {
-                optionsBuilder.UseNpgsql(connectionString);
+                optionsBuilder.UseNpgsql(dbConnectionString);
                 //Logger.Debug($"{DateTime.Now} - Using Npgsql database provider");
             } 
             try
@@ -82,20 +86,30 @@ namespace Task.Connector
             _allSystemPermissions = itRoles.Concat(requestRights).ToList();
             
         }
-        // TODO logging, error handling, see if Sequrity.id auto generates on the db end
         public void CreateUser(UserToCreate user)
         {
-            var clientUser = InternalToClientUserConverter.Convert(user);
-            var passwordEntry = new Sequrity();
-            passwordEntry.UserId = user.Login;
-            passwordEntry.Password = user.HashPassword;
-            
-            _dbContext.Users.Add(clientUser);
-            _dbContext.Passwords.Add(passwordEntry);
-            
-            Logger.Debug($"{DateTime.Now} - Created user {user.Login}");
+            try
+            {
+                var clientUser = InternalToClientUserConverter.Convert(user);
+                var passwordEntry = new Sequrity();
 
-            _dbContext.SaveChanges();
+                passwordEntry.UserId = user.Login;
+                passwordEntry.Password = user.HashPassword;
+                
+                _dbContext.Users.Add(clientUser);
+                _dbContext.Passwords.Add(passwordEntry);
+                
+                _dbContext.SaveChanges();
+
+                Logger.Debug($"{DateTime.Now} - Created user {user.Login}");
+
+            }
+            catch(Exception e)
+            {
+                Logger.Error($"Failed to create user: {e.Message}");
+                throw;
+            }
+            
         }
         public IEnumerable<Property> GetAllProperties()
         {
@@ -176,24 +190,32 @@ namespace Task.Connector
         {
             foreach(var rightId in rightIds)
             {
-                switch (PermissionHelper.GetPermissionTypeFromId(rightId))
+                try
                 {
-                    case PermissionType.ItRole:
-                        var roleRecord = new UserITRole
-                        {
-                            RoleId=PermissionHelper.GetClientPermissionIdFromString(rightId),
-                            UserId=userLogin
-                        };
-                        _dbContext.UserITRoles.Add(roleRecord);
-                    break;
-                    case PermissionType.RequestRight:
-                        var rightRecord = new UserRequestRight
-                        {
-                            UserId = userLogin,
-                            RightId = PermissionHelper.GetClientPermissionIdFromString(rightId)
-                        };
-                        _dbContext.UserRequestRights.Add(rightRecord);
-                    break;
+                    switch (PermissionHelper.GetPermissionTypeFromId(rightId))
+                    {
+                        case PermissionType.ItRole:
+                            var roleRecord = new UserITRole
+                            {
+                                RoleId=PermissionHelper.GetClientPermissionIdFromString(rightId),
+                                UserId=userLogin
+                            };
+                            _dbContext.UserITRoles.Add(roleRecord);
+                        break;
+                        case PermissionType.RequestRight:
+                            var rightRecord = new UserRequestRight
+                            {
+                                UserId = userLogin,
+                                RightId = PermissionHelper.GetClientPermissionIdFromString(rightId)
+                            };
+                            _dbContext.UserRequestRights.Add(rightRecord);
+                        break;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Logger.Error($"Failed to add user permission: User login {userLogin}; Error message: {e.Message}");
+                    throw;
                 }
             }
 
@@ -203,17 +225,26 @@ namespace Task.Connector
         {
             foreach(var rightId in rightIds)
             {
-                switch (PermissionHelper.GetPermissionTypeFromId(rightId))
+                try
                 {
-                    case PermissionType.ItRole:
-                        var roleRecord = _dbContext.UserITRoles.Single(r => r.UserId == userLogin && r.RoleId == PermissionHelper.GetClientPermissionIdFromString(rightId));
-                        _dbContext.UserITRoles.Remove(roleRecord);
-                    break;
-                    case PermissionType.RequestRight:
-                        var rightRecord = _dbContext.UserRequestRights.Single(r => r.UserId == userLogin && r.RightId == PermissionHelper.GetClientPermissionIdFromString(rightId));
-                        _dbContext.UserRequestRights.Remove(rightRecord);
-                    break;
+                    switch (PermissionHelper.GetPermissionTypeFromId(rightId))
+                    {
+                        case PermissionType.ItRole:
+                            var roleRecord = _dbContext.UserITRoles.Single(r => r.UserId == userLogin && r.RoleId == PermissionHelper.GetClientPermissionIdFromString(rightId));
+                            _dbContext.UserITRoles.Remove(roleRecord);
+                        break;
+                        case PermissionType.RequestRight:
+                            var rightRecord = _dbContext.UserRequestRights.Single(r => r.UserId == userLogin && r.RightId == PermissionHelper.GetClientPermissionIdFromString(rightId));
+                            _dbContext.UserRequestRights.Remove(rightRecord);
+                        break;
+                    }
                 }
+                catch (Exception e)
+                {
+                    Logger.Error($"Could not remove permission from user {userLogin}");
+                    throw;
+                }
+                
             }
             _dbContext.SaveChanges();
         }

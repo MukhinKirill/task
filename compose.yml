@@ -45,6 +45,22 @@ services:
       network:
         ipv4_address: 10.5.0.4
 
+  # mssql:
+  #     container_name: sql-server
+  #     image: mcr.microsoft.com/mssql/server
+  #     restart: always
+  #     environment:
+  #       ACCEPT_EULA: "Y"
+  #       MSSQL_SA_PASSWORD: "Password1"
+  #     ports:
+  #       - 1433:1433
+  #     volumes:
+  #       - ./db/mssqldata:/var/opt/mssql
+
+  #     networks:
+  #       network:
+  #         ipv4_address: 10.5.0.6
+
   pgadmin:
     container_name: pgadmin_container
     image: dpage/pgadmin4:latest
@@ -69,9 +85,10 @@ services:
 volumes:
   database-data:
   pgadmin-data:
-  # crudthing-data:
+  # mssql-data:
+  # crudthing-data: 
 
-networks:
+networks: 
   network:
     driver: bridge
     ipam:
