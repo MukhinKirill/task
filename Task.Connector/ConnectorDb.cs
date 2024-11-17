@@ -1,7 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Data.Common;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using Task.Integration.Data.DbCommon;
 using Task.Integration.Data.DbCommon.DbModels;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
@@ -10,14 +12,9 @@ namespace Task.Connector
 {
     public class ConnectorDb : IConnector
     {
-        
-        private ApplicationContext _context;
-        //private DataContext _context;
+        private DataContext _context;
 
-        public ConnectorDb()
-        {
-            
-        }
+        public ConnectorDb() {}
 
         public void StartUp(string connectionString)
         {
@@ -27,12 +24,10 @@ namespace Task.Connector
             if (!match.Success) throw new ArgumentException("Invalid connection string format", nameof(connectionString));
 
             var actualConnectionString = match.Groups["ConnectionString"].Value;
-            var provider = match.Groups["Provider"].Value;
+            var provider = match.Groups["Provider"].Value.ToLower().Contains("postgresql") ? "POSTGRE" : "MSSQL";
 
-            _context = new ApplicationContext(actualConnectionString);
-            //Не стал использовать уже реализованные классы
-            //var factory = new DbContextFactory(connectionString);
-            //_context = factory.GetContext("POSTGRE");
+            var factory = new DbContextFactory(actualConnectionString);
+            _context = factory.GetContext(provider);
         }
 
         public void CreateUser(UserToCreate user)
