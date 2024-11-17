@@ -21,6 +21,11 @@ namespace Task.Connector
             }
         }
 
+
+        /// <summary>
+        /// Add new user to database
+        /// </summary>
+        /// <param name="user">New user with properties</param>
         public void CreateUser(UserToCreate user)
         {
             using (ConnectorDbContext db = new ConnectorDbContext())
@@ -57,6 +62,10 @@ namespace Task.Connector
             }
         }
 
+        /// <summary>
+        /// Get all properties' names from class User
+        /// </summary>
+        /// <returns>All user properties' names</returns>
         public IEnumerable<Property> GetAllProperties()
         {
             using (ConnectorDbContext db = new ConnectorDbContext())
@@ -79,7 +88,12 @@ namespace Task.Connector
             }
         }
 
-        public  IEnumerable<UserProperty> GetUserProperties(string userLogin)
+        /// <summary>
+        /// Get all User's properties' values
+        /// </summary>
+        /// <param name="userLogin">User's Login as Id</param>
+        /// <returns>All User's properties' values</returns>
+        public IEnumerable<UserProperty> GetUserProperties(string userLogin)
         {
             using (ConnectorDbContext db = new ConnectorDbContext())
             {
@@ -109,6 +123,11 @@ namespace Task.Connector
             }
         }
 
+        /// <summary>
+        /// Checks if this user exists 
+        /// </summary>
+        /// <param name="userLogin">User's Login as Id</param>
+        /// <returns>True or False</returns>
         public bool IsUserExists(string userLogin)
         {
             using (ConnectorDbContext db = new ConnectorDbContext())
@@ -118,7 +137,12 @@ namespace Task.Connector
             }
         }
 
-        public  void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
+        /// <summary>
+        /// Updates User's properties' values
+        /// </summary>
+        /// <param name="userLogin">User's Login as Id</param>
+        /// /// <param name="properties">New properties' values for user</param>
+        public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
         {
             using (ConnectorDbContext db = new ConnectorDbContext())
             {
@@ -151,7 +175,11 @@ namespace Task.Connector
             }
         }
 
-        public  IEnumerable<Permission> GetAllPermissions()
+        /// <summary>
+        /// Gets all rights and roles in the system
+        /// </summary>
+        /// <returns>All rights and roles in the system in one List</returns>
+        public IEnumerable<Permission> GetAllPermissions()
         {
             using (ConnectorDbContext db = new ConnectorDbContext())
             {
@@ -175,7 +203,12 @@ namespace Task.Connector
             }
         }
 
-        public  void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
+        /// <summary>
+        /// Adds new rights or roles to user
+        /// </summary>
+        /// <param name="userLogin">User's Login as Id</param>
+        /// /// <param name="rightIds">List of new roles and rights</param>
+        public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
             using (ConnectorDbContext db = new ConnectorDbContext())
             {
@@ -265,6 +298,11 @@ namespace Task.Connector
             }
         }
 
+        /// <summary>
+        /// Removes some roles or rights from user
+        /// </summary>
+        /// <param name="userLogin">User's Login as Id</param>
+        /// /// <param name="rightIds">List of some roles or rights to delete</param>
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
             using (ConnectorDbContext db = new ConnectorDbContext())
@@ -327,7 +365,12 @@ namespace Task.Connector
             }
         }
 
-        public  IEnumerable<string> GetUserPermissions(string userLogin)
+        /// <summary>
+        /// Gets all User's rights and roles
+        /// </summary>
+        /// <param name="userLogin">User's Login as Id</param>
+        /// <returns>All User's rights and roles</returns>
+        public IEnumerable<string> GetUserPermissions(string userLogin)
         {
             using (ConnectorDbContext db = new ConnectorDbContext())
             {
@@ -353,6 +396,14 @@ namespace Task.Connector
                 return permissions;
             }
         }
+
+        /// <summary>
+        /// Checks if needed data exists in some class
+        /// </summary>
+        /// <param name="db_obj">Database context</param>
+        /// <param name="data">Context property</param>
+        /// <param name="entity_name">Values</param>
+        /// <returns>True or False</returns>
         public bool Validation_FK<T>(List<T> db_obj, List<T> data, string entity_name)
         {
             List<string> error_objs = new List<string>();
