@@ -13,8 +13,8 @@ namespace Task.Connector.Tests
         static string postgreConnectionString = "Host=127.0.0.1;Username=postgres;Password=mixasoroko12369;Database=AvanpostDb";
         static Dictionary<string, string> connectorsCS = new Dictionary<string, string>
         {
-            { "MSSQL",$"ConnectionString='{mssqlConnectionString}';Provider='SqlServer.2019';SchemaName='AvanpostIntegrationTestTaskSchema';"},
-            { "POSTGRE", $"ConnectionString='{postgreConnectionString}';Provider='PostgreSQL.9.5';SchemaName='AvanpostIntegrationTestTaskSchema';"}
+            { "MSSQL", mssqlConnectionString},
+            { "POSTGRE", postgreConnectionString}
         };
         static Dictionary<string, string> dataBasesCS = new Dictionary<string, string>
         {

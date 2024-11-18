@@ -7,7 +7,7 @@ namespace Task.Connector
 {
     public class ConnectorDb : IConnector
     {
-        private NpgsqlDataSource _dataSource;
+        private NpgsqlDataSource? _dataSource = null;
 
         private const string _login = "login";
         private const string _lastName = "lastName";
@@ -31,35 +31,42 @@ namespace Task.Connector
         /// <param name="user">Данные пользователя</param>
         public void CreateUser(UserToCreate user)
         {
-            using var connection = _dataSource.OpenConnection();
-            using var transaction = connection.BeginTransaction();
+            try
+            {
+                using var connection = _dataSource.OpenConnection();
+                using var transaction = connection.BeginTransaction();
 
-            using var cmd1 = new NpgsqlCommand($"""
+                using var cmd1 = new NpgsqlCommand($"""
                 INSERT INTO "TestTaskSchema"."User" 
                 ("{_login}", "{_lastName}", "{_firstName}", "{_middleName}", "{_telephoneNumber}", "{_isLead}") 
                 VALUES 
                 (@{_login}, @{_lastName}, @{_firstName}, @{_middleName}, @{_telephoneNumber}, @{_isLead})
                 """, connection, transaction);
 
-            cmd1.Parameters.AddWithValue(_login, user.Login);
-            cmd1.Parameters.AddWithValue(_lastName, user.Properties.FirstOrDefault(x => x.Name == _lastName)?.Value ?? "");
-            cmd1.Parameters.AddWithValue(_firstName, user.Properties.FirstOrDefault(x => x.Name == _firstName)?.Value ?? "");
-            cmd1.Parameters.AddWithValue(_middleName, user.Properties.FirstOrDefault(x => x.Name == _middleName)?.Value ?? "");
-            cmd1.Parameters.AddWithValue(_telephoneNumber, user.Properties.FirstOrDefault(x => x.Name == _telephoneNumber)?.Value ?? "");
-            cmd1.Parameters.AddWithValue(_isLead, (user.Properties.FirstOrDefault(x => x.Name == _isLead)?.Value ?? "false") == "true" ? true : false);
+                cmd1.Parameters.AddWithValue(_login, user.Login);
+                cmd1.Parameters.AddWithValue(_lastName, user.Properties.FirstOrDefault(x => x.Name == _lastName)?.Value ?? "");
+                cmd1.Parameters.AddWithValue(_firstName, user.Properties.FirstOrDefault(x => x.Name == _firstName)?.Value ?? "");
+                cmd1.Parameters.AddWithValue(_middleName, user.Properties.FirstOrDefault(x => x.Name == _middleName)?.Value ?? "");
+                cmd1.Parameters.AddWithValue(_telephoneNumber, user.Properties.FirstOrDefault(x => x.Name == _telephoneNumber)?.Value ?? "");
+                cmd1.Parameters.AddWithValue(_isLead, (user.Properties.FirstOrDefault(x => x.Name == _isLead)?.Value ?? "false") == "true" ? true : false);
 
-            cmd1.ExecuteNonQuery();
+                cmd1.ExecuteNonQuery();
 
-            using var cmd2 = new NpgsqlCommand($"""
+                using var cmd2 = new NpgsqlCommand($"""
                 INSERT INTO "TestTaskSchema"."Passwords" 
                 ("userId", "{_password}") 
                 VALUES
                 ('{user.Login}', '{user.HashPassword}')
                 """, connection, transaction);
 
-            cmd2.ExecuteNonQuery();
+                cmd2.ExecuteNonQuery();
 
-            transaction.Commit();
+                transaction.Commit();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Ошибка создания пользователя: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -73,6 +80,7 @@ namespace Task.Connector
                 new Property(_firstName, "Имя"),
                 new Property(_middleName, "Отчество"),
                 new Property(_lastName, "Фамилия"),
+                new Property(_telephoneNumber, "Номер телефона"),
                 new Property(_isLead, "Главный"),
                 new Property(_password, "Пароль")
             };
@@ -86,22 +94,29 @@ namespace Task.Connector
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
         {
             var result = new List<UserProperty>();
-            using var cmd = _dataSource.CreateCommand(
+
+            try
+            {
+                using var cmd = _dataSource.CreateCommand(
                 $"""
-                SELECT "lastName", "firstName", "middleName", "telephoneNumber", "isLead", "password"
+                SELECT "lastName", "firstName", "middleName", "telephoneNumber", "isLead"
                 FROM "TestTaskSchema"."User"
-                JOIN "TestTaskSchema"."Passwords"
-                ON "TestTaskSchema"."Passwords"."userId" = "TestTaskSchema"."User"."login"
                 WHERE "login" = '{userLogin}';
                 """);
-            using var reader = cmd.ExecuteReader();
+                using var reader = cmd.ExecuteReader();
 
-            reader.Read();
+                reader.Read();
 
-            for (int i = 0; i < reader.FieldCount; i++)
-            {
-                result.Add(new UserProperty(reader.GetName(i), reader.GetValue(i).ToString()));
+                for (int i = 0; i < reader.FieldCount; i++)
+                {
+                    result.Add(new UserProperty(reader.GetName(i), reader.GetValue(i).ToString()));
+                }
             }
+            catch (Exception ex)
+            {
+                Logger.Error($"Ошибка получения всех значений свойств пользователей: {ex.Message}");
+            }
+
             return result;
         }
 
@@ -112,12 +127,25 @@ namespace Task.Connector
         /// <returns>true/false</returns>
         public bool IsUserExists(string userLogin)
         {
-            using var cmd = _dataSource.CreateCommand($"SELECT \"login\" FROM \"TestTaskSchema\".\"User\" WHERE \"login\" = '{userLogin}'");
-            using var reader = cmd.ExecuteReader();
+            try
+            {
+                using var cmd = _dataSource.CreateCommand($"SELECT \"login\" FROM \"TestTaskSchema\".\"User\" WHERE \"login\" = '{userLogin}'");
+                using var reader = cmd.ExecuteReader();
+                return reader.Read();
+            }
+            catch (Exception ex) 
+            {
+                Logger.Error($"Ошибка проверки существования пользователя: {ex.Message}");
+            }
 
-            return reader.Read();
+            return false;
         }
 
+        /// <summary>
+        /// Устанавливать значения свойств пользователя
+        /// </summary>
+        /// <param name="properties"></param>
+        /// <param name="userLogin"></param>
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
         {
             
@@ -130,26 +158,32 @@ namespace Task.Connector
         public IEnumerable<Permission> GetAllPermissions()
         {
             var result = new List<Permission>();
-            using var cmd = _dataSource.CreateCommand(
+            try
+            {
+                using var firstCmd = _dataSource.CreateCommand(
                 $"""
                 SELECT id, name
                 FROM "TestTaskSchema"."ItRole";
                 """);
-            using var reader = cmd.ExecuteReader();
+                using var firstReader = firstCmd.ExecuteReader();
 
-            while (reader.Read())
-                result.Add(new Permission(reader["id"].ToString(), reader["name"].ToString(), "Роль"));
+                while (firstReader.Read())
+                    result.Add(new Permission(firstReader["id"].ToString(), firstReader["name"].ToString(), "Роль"));
 
-            using var cmd1 = _dataSource.CreateCommand(
-                $"""
+                using var secondCmd = _dataSource.CreateCommand(
+                    $"""
                 SELECT id, name
                 FROM "TestTaskSchema"."RequestRight";
                 """);
-            using var reader1 = cmd1.ExecuteReader();
+                using var secondReader = secondCmd.ExecuteReader();
 
-            while (reader1.Read())
-                result.Add(new Permission(reader1["id"].ToString(), reader1["name"].ToString(), "Права"));
-
+                while (secondReader.Read())
+                    result.Add(new Permission(secondReader["id"].ToString(), secondReader["name"].ToString(), "Права"));
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Ошибка получения всех прав в системе: {ex.Message}");
+            }
             return result;
         }
 
@@ -161,83 +195,132 @@ namespace Task.Connector
         /// <exception cref="NotImplementedException"></exception>
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            using var connection = _dataSource.OpenConnection();
-            using var transaction = connection.BeginTransaction();
-            foreach (var id in rightIds)
+            try
             {
-                if (rightIds.Contains("Role"))
+                using var connection = _dataSource.OpenConnection();
+                using var transaction = connection.BeginTransaction();
+                foreach (var id in rightIds)
                 {
-                    using var command1 = new NpgsqlCommand(
-                        $"""
+                    var cmd = new NpgsqlCommand();
+                    if (id.Contains("Role"))
+                    {
+                        cmd = new NpgsqlCommand(
+                            $"""
                         INSERT INTO "TestTaskSchema"."UserITRole"(
                         "userId", "roleId")
-                        VALUES ('{userLogin}', '{id.Replace("Role","").Replace(":", "")}');
+                        VALUES ('{userLogin}', '{id.Replace("Role", "").Replace(":", "")}');
                         """, connection, transaction);
-                    command1.ExecuteNonQuery();
-                }
-                else if (rightIds.Contains("Request"))
-                {
-                    using var command1 = new NpgsqlCommand(
-                        $"""
+                        cmd.ExecuteNonQuery();
+                    }
+                    else if (id.Contains("Request"))
+                    {
+                        cmd = new NpgsqlCommand(
+                            $"""
                         INSERT INTO "TestTaskSchema"."UserRequestRight"(
                         "userId", "rightId")
                         VALUES ('{userLogin}', '{id.Replace("Role", "").Replace(":", "")}');
                         """, connection, transaction);
-                    command1.ExecuteNonQuery();
+                        cmd.ExecuteNonQuery();
+                    }
+                    else
+                    {
+                        Logger.Warn("Неправильно заданы параметры");
+                    }
                 }
-                else
-                {
 
-                }
+                transaction.Commit();
             }
-
-            transaction.Commit();
+            catch (Exception ex)
+            {
+                Logger.Error($"Ошибка добавления прав пользователю: {ex.Message}");
+            }
         }
 
         /// <summary>
-        /// Удалить права пользователю в системе (переделать)
+        /// Удалить права пользователю в системе
         /// </summary>
         /// <param name="userLogin">Логин пользователя</param>
         /// <param name="rightIds">Идентификатор прав/роли</param>
         /// <exception cref="NotImplementedException"></exception>
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            using var connection = _dataSource.OpenConnection();
-            using var transaction = connection.BeginTransaction();
-            foreach (var id in rightIds)
+            try
             {
-                if (rightIds.Contains("Role"))
+                using var connection = _dataSource.OpenConnection();
+                using var transaction = connection.BeginTransaction();
+                foreach (var id in rightIds)
                 {
-                    using var command1 = new NpgsqlCommand(
-                        $"""
-                        INSERT INTO "TestTaskSchema"."UserITRole"(
-                        "userId", "roleId")
-                        VALUES ('{userLogin}', '{id.Replace("Role", "").Replace(":", "")}');
+                    var cmd = new NpgsqlCommand();
+                    if (id.Contains("Role"))
+                    {
+                        cmd = new NpgsqlCommand(
+                            $"""
+                        DELETE FROM "TestTaskSchema"."UserITRole"
+                        WHERE "userId" = '{userLogin}' AND "roleId" = '{id.Replace("Role", "").Replace(":", "")}';
                         """, connection, transaction);
-                    command1.ExecuteNonQuery();
-                }
-                else if (rightIds.Contains("Request"))
-                {
-                    using var command1 = new NpgsqlCommand(
-                        $"""
-                        INSERT INTO "TestTaskSchema"."UserRequestRight"(
-                        "userId", "rightId")
-                        VALUES ('{userLogin}', '{id.Replace("Role", "").Replace(":", "")}');
+                        cmd.ExecuteNonQuery();
+                    }
+                    else if (id.Contains("Request"))
+                    {
+                        cmd = new NpgsqlCommand(
+                            $"""
+                        DELETE FROM "TestTaskSchema"."UserRequestRight"
+                        WHERE "userId" = '{userLogin}' AND "rightId" = '{id.Replace("Request", "").Replace(":", "")}';
                         """, connection, transaction);
-                    command1.ExecuteNonQuery();
+                        cmd.ExecuteNonQuery();
+                    }
+                    else
+                    {
+                        Logger.Warn("Неправильно заданы параметры");
+                    }
                 }
-                else
-                {
 
-                }
+                transaction.Commit();
             }
-
-            transaction.Commit();
+            catch (Exception ex)
+            {
+                Logger.Error($"Ошибка удаления прав пользователю: {ex.Message}");
+            }
         }
 
+        /// <summary>
+        /// Получить права пользователя в системе
+        /// </summary>
+        /// <param name="userLogin"></param>
+        /// <returns></returns>
         public IEnumerable<string> GetUserPermissions(string userLogin)
         {
-            throw new NotImplementedException();
+            var result = new List<string>();
+            try
+            {
+                using var firstCmd = _dataSource.CreateCommand(
+                    $"""
+                SELECT "roleId"
+                FROM "TestTaskSchema"."UserITRole"
+                WHERE "userId" = '{userLogin}';
+                """);
+                using var firstReader = firstCmd.ExecuteReader();
+
+                while (firstReader.Read())
+                    result.Add(firstReader["roleId"].ToString());
+
+                using var secondCmd = _dataSource.CreateCommand(
+                    $"""
+                SELECT "rightId"
+                FROM "TestTaskSchema"."UserRequestRight"
+                WHERE "userId" = '{userLogin}';
+                """);
+                using var secondReader = secondCmd.ExecuteReader();
+
+                while (secondReader.Read())
+                    result.Add(secondReader["rightId"].ToString());
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Ошибка получения прав пользователя: {ex.Message}");
+            }
+
+            return result;
         }
 
         public ILogger Logger { get; set; }
