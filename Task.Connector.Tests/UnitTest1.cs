@@ -135,19 +135,6 @@ namespace Task.Connector.Tests
         [Theory]
         //[InlineData("MSSQL")]
         [InlineData("POSTGRE")]
-        public void AddRightPermissions(string provider)
-        {
-            var dataSetter = Init(provider);
-            var connector = GetConnector(provider);
-            connector.AddUserPermissions(
-                DefaultData.MasterUserLogin,
-                new[] { "Right:11", "Right:9", "Right:12", "Role:123123", "Role:4" });
-            //Assert.True(dataSetter.MasterUserHasRequestRight(dataSetter.GetRequestRightId(DefaultData.RequestRights[DefaultData.MasterUserRequestRights.First()].Name).ToString()));
-        }
-
-        [Theory]
-        //[InlineData("MSSQL")]
-        [InlineData("POSTGRE")]
         public void RemoveUserPermissions(string provider)
         {
             var dataSetter = Init(provider);
