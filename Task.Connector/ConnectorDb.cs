@@ -80,10 +80,7 @@ public class ConnectorDb : IConnector
         throw new NotImplementedException();
     }
 
-    public bool IsUserExists(string userLogin)
-    {
-        throw new NotImplementedException();
-    }
+    public bool IsUserExists(string userLogin) => _context.Users.AsNoTracking().Any(u => u.Login == userLogin);
 
     public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
     {
