@@ -9,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Task.Connector.Models
 {
+    [Table("Passwords", Schema = "TestTaskSchema")]
     public class Password
     {
         [Key]
