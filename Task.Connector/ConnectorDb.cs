@@ -89,7 +89,18 @@ public class ConnectorDb : IConnector
 
     public IEnumerable<Permission> GetAllPermissions()
     {
-        throw new NotImplementedException();
+        var allRequestRights = _context.RequestRights.AsNoTracking().ToList();
+        var allItRoles = _context.Roles.AsNoTracking().ToList();
+
+        var permissions = new List<Permission>();
+        if (allRequestRights.Any())
+            permissions = _mapper.Map<List<Permission>>(allRequestRights);
+        
+        var roles = new List<ITRole>();
+        if(allItRoles.Any())
+            permissions.AddRange(_mapper.Map<List<Permission>>(allItRoles));
+
+        return permissions;
     }
 
     public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)

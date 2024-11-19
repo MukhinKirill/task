@@ -2,7 +2,7 @@
 using Task.Integration.Data.DbCommon.DbModels;
 using Task.Integration.Data.Models.Models;
 
-namespace Task.Connector.Mapping;
+namespace Task.Connector.Mapping.Converters;
 
 internal class UserConverter : ITypeConverter<UserToCreate, User>
 {

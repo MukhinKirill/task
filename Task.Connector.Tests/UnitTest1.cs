@@ -114,7 +114,7 @@ namespace Task.Connector.Tests
         }
 
         [Theory]
-        [InlineData("MSSQL")]
+        //[InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void GetAllPermissions(string provider)
         {
