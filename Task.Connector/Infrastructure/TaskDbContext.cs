@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Task.Connector.Models;
 using Task.Integration.Data.DbCommon.DbModels;
 
 namespace Task.Connector.Infrastructure;
@@ -20,6 +21,8 @@ public class TaskDbContext : DbContext
     public DbSet<UserITRole> UserITRoles { get; set; }
 
     public DbSet<RequestRight> RequestRights { get; set; }
+
+    public DbSet<Password> Passwords { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

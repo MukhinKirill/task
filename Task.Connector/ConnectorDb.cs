@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text.RegularExpressions;
 using Task.Connector.Infrastructure;
+using Task.Connector.Models;
 using Task.Connector.Validation;
 using Task.Integration.Data.DbCommon.DbModels;
 using Task.Integration.Data.Models;
@@ -35,22 +36,28 @@ public class ConnectorDb : IConnector
 
     }
 
-    public void CreateUser(UserToCreate user)
+    public void CreateUser(UserToCreate userToCreate)
     {
-        Logger.Debug($"Создание пользователя {user.Login}");
-        var newUser = _mapper.Map<User>(user);
+        Logger.Debug($"Создание пользователя {userToCreate.Login}");
+        var newUser = _mapper.Map<User>(userToCreate);
 
-        var validator = new UserValidator();
+        var newUsersPassword = new Password(userToCreate.Login, userToCreate.HashPassword);
+
+        var userValidator = new UserValidator();
+        var passwordValidator = new PasswordValidator();
         try
         {
-            validator.Validate(newUser, options => options.ThrowOnFailures());
+            userValidator.Validate(newUser, options => options.ThrowOnFailures());
+            passwordValidator.Validate(newUsersPassword, options => options.ThrowOnFailures());
         }
-        catch
+        catch(ValidationException ex)
         {
-            Logger.Error("Данные невалидны");
+            Logger.Error("Данные невалидны" + ex.Message);
             throw;
         }
+
         _context.Users.Add(newUser);
+        _context.Passwords.Add(newUsersPassword);
 
         try
         {
@@ -58,7 +65,7 @@ public class ConnectorDb : IConnector
         }
         catch (DbUpdateException ex)
         {
-            Logger?.Error($"Ошибка при создании пользователя. Логин: {user.Login}.");
+            Logger?.Error($"Ошибка при создании пользователя. Логин: {userToCreate.Login}. {ex.Message}");
             throw;
         }
     }

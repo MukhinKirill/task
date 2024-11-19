@@ -14,24 +14,24 @@ namespace Task.Connector.Validation
         {
 
             RuleFor(user => user.Login)
-            .NotEmpty().WithMessage("Login не может быть пустым.")
-            .NotNull().WithMessage("Login обязателен.")
-            .MaximumLength(22).WithMessage("Login не может превышать 22 символа.");
+            .NotEmpty().WithMessage("Логин не может быть пустым.")
+            .NotNull().WithMessage("Логин обязателен.")
+            .MaximumLength(22).WithMessage("Логин не может превышать 22 символа.");
 
             RuleFor(user => user.LastName)
-                .MaximumLength(20).WithMessage("LastName не может превышать 20 символов.");
+                .MaximumLength(20).WithMessage("Фамилия не может превышать 20 символов.");
 
             RuleFor(user => user.FirstName)
-                .MaximumLength(20).WithMessage("FirstName не может превышать 20 символов.");
+                .MaximumLength(20).WithMessage("Имя не может превышать 20 символов.");
 
             RuleFor(user => user.MiddleName)
-                .MaximumLength(20).WithMessage("MiddleName не может превышать 20 символов.");
+                .MaximumLength(20).WithMessage("Отчество не может превышать 20 символов.");
 
             RuleFor(user => user.TelephoneNumber)
-                .MaximumLength(20).WithMessage("TelephoneNumber не может превышать 20 символов.");
+                .MaximumLength(20).WithMessage("Номер телефона не может превышать 20 символов.");
 
             RuleFor(user => user.IsLead)
-                .NotNull().WithMessage("IsLead обязателен.");
+                .NotNull().WithMessage("парметр IsLead обязателен.");
         }
     }
 }
