@@ -20,22 +20,20 @@ namespace Task.DbModule.Data
 		{
 			modelBuilder.Entity<User>(user =>
 			{
-				user.HasKey(u => u.Id);
+				user.HasKey(u => u.Login);
 				user.HasOne(u => u.Password).WithOne(p => p.User)
-					.HasForeignKey<Password>(p => p.UserId);
+					.HasForeignKey<Password>(p => p.UserLogin);
 
 				user.HasMany(u => u.UserItRoles).WithOne(ur => ur.User)
-					.HasForeignKey(ur => ur.UserId);
+					.HasForeignKey(ur => ur.UserLogin);
 
 				user.HasMany(u => u.UserRequestRights).WithOne(ure => ure.User)
-					.HasForeignKey(ure => ure.UserId);
+					.HasForeignKey(ure => ure.UserLogin);
 			});
 
 			modelBuilder.Entity<Password>(pass =>
 			{
-				pass.HasKey(p => p.Id);
-				pass.HasOne(p => p.User).WithOne(u => u.Password)
-					.HasForeignKey<User>(u => u.PasswordId);
+				pass.HasKey(p => p.UserLogin);
 			});
 
 			modelBuilder.Entity<ItRole>(role =>
@@ -48,7 +46,7 @@ namespace Task.DbModule.Data
 
 			modelBuilder.Entity<UserItRole>(usRole =>
 			{
-				usRole.HasKey(ur => new { ur.ItRoleId, ur.UserId });
+				usRole.HasKey(ur => new { ur.ItRoleId, ur.UserLogin });
 			});
 
 			modelBuilder.Entity<RequestRight>(request =>
@@ -61,7 +59,7 @@ namespace Task.DbModule.Data
 
 			modelBuilder.Entity<UserRequestRight>(usRequest =>
 			{
-				usRequest.HasKey(ur => new { ur.UserId, ur.RequestRightId });
+				usRequest.HasKey(ur => new { ur.UserLogin, ur.RequestRightId });
 			});
 		}
 	}
