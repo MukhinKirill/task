@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Collections;
+using Microsoft.EntityFrameworkCore;
+using System.Reflection;
 using Task.DbModule.Data;
 using Task.DbModule.Models;
 using Task.Integration.Data.Models;
@@ -96,23 +98,30 @@ namespace Task.Connector
 
         public IEnumerable<Property> GetAllProperties()
         {
-			var users = _context.Users.AsNoTracking().Include(u => u.Password).ToList();
-			var properties = new List<Property>();
+	        var allProperties = new List<Property>();
+	        var user = new User()
+	        {
+		        Login = "login",
+		        FirstName = "firstName",
+		        LastName = "lastName",
+		        MiddleName = "middleName",
+		        TelephoneNumber = "0-000-000-00-00",
+		        IsLead = false,
+	        };
 
-			foreach (var user in users)
-			{
-				properties.Add(new Property("Login", user.Login));
-				properties.Add(new Property("LastName", user.LastName));
-				properties.Add(new Property("FirstName", user.FirstName));
-				properties.Add(new Property("MiddleName", user.MiddleName));
-				properties.Add(new Property("TelephoneNumber", user.TelephoneNumber));
-				properties.Add(new Property("IsLead", user.IsLead.ToString()));
+	        var userProperties = typeof(User).GetProperties();
 
-				if (user.Password != null)
-					properties.Add(new Property("PasswordHash", user.Password.PasswordHash));
-			}
+	        foreach (var property in user.GetType().GetProperties())
+	        {
+		        string propertyName = property.Name;
+		        string? propertyValue = property.GetValue(user)?.ToString();
+				if (!String.IsNullOrEmpty(propertyName) && !String.IsNullOrEmpty(propertyValue) && propertyName != "Login")
+					allProperties.Add(new Property(propertyName, propertyValue));
+	        }
 
-			return properties;
+			allProperties.Add(new Property("Password", "Password"));
+			
+	        return allProperties;
 		}
 
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
@@ -152,7 +161,8 @@ namespace Task.Connector
 				throw new ArgumentException($"Пользователь с логином {userLogin} не найден.", nameof(userLogin));
 			}
 
-			var user = _context.Users.Include(u => u.Password).First(u => u.Login == userLogin);
+			var user = _context.Users.First(u => u.Login == userLogin);
+			var userPassword = _context.Passwords.FirstOrDefault(p => p.UserLogin == userLogin);
 
 			using (var transaction = _context.Database.BeginTransaction())
 			{
@@ -186,19 +196,19 @@ namespace Task.Connector
 								break;
 							case "PasswordHash":
 							case "HashPassword":
-								if (user.Password == null)
+								if (userPassword == null)
 								{
-									user.Password = new Password
+									var password = new Password
 									{
 										UserLogin = userLogin,
 										PasswordHash = property.Value
 									};
 
-									_context.Passwords.Add(user.Password);
+									_context.Passwords.Add(password);
 								}
 								else
 								{
-									user.Password.PasswordHash = property.Value;
+									userPassword.PasswordHash = property.Value;
 								}
 								break;
 							default:
