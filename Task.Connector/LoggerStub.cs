@@ -10,7 +10,6 @@ namespace Task.Connector
 
 		public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception?, string> formatter)
 		{
-			// Заглушка: фиксируем вызовы в консоль или делаем ничего
 			Console.WriteLine($"[{logLevel}] {formatter(state, exception)}");
 		}
 	}
