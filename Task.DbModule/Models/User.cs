@@ -9,7 +9,7 @@
 		public required string TelephoneNumber { get; set; }
 		public required bool IsLead { get; set; }
 		public Password? Password { get; set; }
-		public ICollection<UserItRole>? UserItRoles { get; set; }
+		public ICollection<UserITRole>? UserITRoles { get; set; }
 		public ICollection<UserRequestRight>? UserRequestRights { get; set; }
 	}
 }

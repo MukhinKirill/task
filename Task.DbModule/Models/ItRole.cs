@@ -1,9 +1,10 @@
 ﻿namespace Task.DbModule.Models
 {
-	public class ItRole
+	public class ITRole
 	{
-		public required uint Id { get; set; }
+		public required int Id { get; set; }
 		public required string Name { get; set; }
-		public ICollection<UserItRole>? UserItRoles { get; set; }
+		public required string CorporatePhoneNumber { get; set; }
+		public ICollection<UserITRole>? UserITRoles { get; set; }
 	}
 }
