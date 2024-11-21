@@ -1,12 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.IdentityModel.Abstractions;
 using Task.DbModule.Data;
 using Task.DbModule.Models;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
-using ILogger = Task.Integration.Data.Models.ILogger;
 
 namespace Task.Connector
 {
@@ -15,7 +11,7 @@ namespace Task.Connector
 	    private BaseContext _context;
 		public ConnectorDb()
         {
-        }
+		}
 
         public ILogger Logger { get; set; }
 
@@ -33,16 +29,16 @@ namespace Task.Connector
 
 				if (_context.Database.CanConnect())
 				{
-					Logger.Debug("Успешное подключение к базе данных.");
+					Logger?.Debug("Успешное подключение к базе данных.");
 				}
 				else
 				{
-					Logger.Error("Не удалось подключиться к базе данных. Проверьте строку подключения.");
+					Logger?.Error("Не удалось подключиться к базе данных. Проверьте строку подключения.");
 				}
 			}
 			catch (Exception ex)
 			{
-				Logger.Error($"Ошибка при подключении к базе данных:\n {ex.Message}");
+				Logger?.Error($"Ошибка при подключении к базе данных:\n {ex.Message}");
 				throw;
 			}
 		}
@@ -51,7 +47,7 @@ namespace Task.Connector
         {
 	        if (user == null)
 	        {
-                Logger.Error("Попытка создать пользователя с отсутствующей ссылкой user");
+                Logger?.Error("Попытка создать пользователя с отсутствующей ссылкой user");
                 throw new ArgumentException("Параметр 'user' не может быть null", nameof(user));
 			}
 
@@ -87,12 +83,12 @@ namespace Task.Connector
                     _context.SaveChanges();
 
                     transaction.Commit();
-                    Logger.Debug($"Пользователь {user.Login} успешно создан!");
+                    Logger?.Debug($"Пользователь {user.Login} успешно создан!");
 		        }
 		        catch (Exception ex)
 		        {
                     transaction.Rollback();
-                    Logger.Error($"Ошибка при создании пользователя:\n {ex}");
+                    Logger?.Error($"Ошибка при создании пользователя:\n {ex}");
                     throw;
 				}
 	        }
@@ -100,7 +96,7 @@ namespace Task.Connector
 
         public IEnumerable<Property> GetAllProperties()
         {
-			var users = _context.Users.Include(u => u.Password).ToList();
+			var users = _context.Users.AsNoTracking().Include(u => u.Password).ToList();
 			var properties = new List<Property>();
 
 			foreach (var user in users)
@@ -123,11 +119,11 @@ namespace Task.Connector
         {
 	        if (!IsUserExists(userLogin))
 	        {
-                Logger.Warn($"Пользователь с логином {userLogin} не найден!");
+                Logger?.Warn($"Пользователь с логином {userLogin} не найден!");
 		        return new List<UserProperty>();
 	        }
 
-	        var user = _context.Users.First(u => u.Login == userLogin);
+	        var user = _context.Users.AsNoTracking().First(u => u.Login == userLogin);
 
 	        var userProps = new List<UserProperty>
 	        {
@@ -138,21 +134,21 @@ namespace Task.Connector
 		        new UserProperty("IsLead", user.IsLead.ToString()),
 	        };
 
-			Logger.Debug($"Свойства пользователя с логином {user.Login} были успешно получены!");
+			Logger?.Debug($"Свойства пользователя с логином {user.Login} были успешно получены!");
 
 			return userProps;
         }
 
         public bool IsUserExists(string userLogin)
         {
-			return _context.Users.Any(u => u.Login == userLogin);
+			return _context.Users.AsNoTracking().Any(u => u.Login == userLogin);
 		}
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
         {
 			if (!IsUserExists(userLogin))
 			{
-				Logger.Warn($"Пользователь с логином {userLogin} не найден!");
+				Logger?.Warn($"Пользователь с логином {userLogin} не найден!");
 				throw new ArgumentException($"Пользователь с логином {userLogin} не найден.", nameof(userLogin));
 			}
 
@@ -185,7 +181,7 @@ namespace Task.Connector
 								}
 								else
 								{
-									Logger.Warn($"Некорректное значение для свойства IsLead: {property.Value}");
+									Logger?.Warn($"Некорректное значение для свойства IsLead: {property.Value}");
 								}
 								break;
 							case "PasswordHash":
@@ -206,19 +202,19 @@ namespace Task.Connector
 								}
 								break;
 							default:
-								Logger.Warn($"Свойство {property.Name} не распознано и не может быть обновлено!");
+								Logger?.Warn($"Свойство {property.Name} не распознано и не может быть обновлено!");
 								break;
 						}
 					}
 
 					_context.SaveChanges();
 					transaction.Commit();
-					Logger.Debug($"Свойства пользователя с логином {userLogin} успешно обновлены.");
+					Logger?.Debug($"Свойства пользователя с логином {userLogin} успешно обновлены.");
 				}
 				catch (Exception ex)
 				{
 					transaction.Rollback();
-					Logger.Error($"Ошибка при обновлении свойств пользователя с логином {userLogin}:\n {ex}");
+					Logger?.Error($"Ошибка при обновлении свойств пользователя с логином {userLogin}:\n {ex}");
 					throw;
 				}
 			}
@@ -233,7 +229,7 @@ namespace Task.Connector
         {
 			if (!IsUserExists(userLogin))
 			{
-				Logger.Warn($"Пользователь с логином {userLogin} не найден!");
+				Logger?.Warn($"Пользователь с логином {userLogin} не найден!");
 				throw new ArgumentException($"Пользователь с логином {userLogin} не найден.", nameof(userLogin));
 			}
 
@@ -245,7 +241,7 @@ namespace Task.Connector
 			{
 				if (!requestRights.Contains(rightId))
 				{
-					Logger.Warn($"Право под номером {rightId} не найдено!");
+					Logger?.Warn($"Право под номером {rightId} не найдено!");
 				}
 				else
 				{
@@ -264,11 +260,11 @@ namespace Task.Connector
 			{
 				_context.UserRequestRights.AddRange(userRequestRights);
 				_context.SaveChanges();
-				Logger.Debug($"Выбранные права были успешно добавлены пользователю с логином {userLogin}!");
+				Logger?.Debug($"Выбранные права были успешно добавлены пользователю с логином {userLogin}!");
 			}
 			catch (Exception ex)
 			{
-				Logger.Error($"Ошибка при обновлении прав пользователя:\n {ex}");
+				Logger?.Error($"Ошибка при обновлении прав пользователя:\n {ex}");
 				throw;
 			}
         }
@@ -277,7 +273,7 @@ namespace Task.Connector
         {
 			if (!IsUserExists(userLogin))
 			{
-				Logger.Warn($"Пользователь с логином {userLogin} не найден!");
+				Logger?.Warn($"Пользователь с логином {userLogin} не найден!");
 				throw new ArgumentException($"Пользователь с логином {userLogin} не найден.", nameof(userLogin));
 			}
 
@@ -289,7 +285,7 @@ namespace Task.Connector
 			{
 				if (!requestRights.Contains(rightId))
 				{
-					Logger.Warn($"Право под номером {rightId} не найдено!");
+					Logger?.Warn($"Право под номером {rightId} не найдено!");
 				}
 				else
 				{
@@ -308,11 +304,11 @@ namespace Task.Connector
 			{
 				_context.UserRequestRights.RemoveRange(userRequestRights);
 				_context.SaveChanges();
-				Logger.Debug($"Выбранные права пользователя с логином {userLogin} были успешно удалены!");
+				Logger?.Debug($"Выбранные права пользователя с логином {userLogin} были успешно удалены!");
 			}
 			catch (Exception ex)
 			{
-				Logger.Error($"Ошибка при удалении прав пользователя:\n {ex}");
+				Logger?.Error($"Ошибка при удалении прав пользователя:\n {ex}");
 				throw;
 			}
 		}
@@ -321,11 +317,11 @@ namespace Task.Connector
         {
 			if (!IsUserExists(userLogin))
 			{
-				Logger.Warn($"Пользователь с логином {userLogin} не найден!");
+				Logger?.Warn($"Пользователь с логином {userLogin} не найден!");
 				throw new ArgumentException($"Пользователь с логином {userLogin} не найден.", nameof(userLogin));
 			}
 
-			return _context.UserRequestRights.Where(urr => urr.UserLogin == userLogin)
+			return _context.UserRequestRights.AsNoTracking().Where(urr => urr.UserLogin == userLogin)
 				.Include(urr => urr.RequestRight).Select(urr => urr.RequestRight.Name).ToList();
         }
     }
