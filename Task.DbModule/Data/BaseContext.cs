@@ -49,8 +49,8 @@ namespace Task.DbModule.Data
 				user.ToTable("User", "TestTaskSchema");
 
 				user.HasKey(u => u.Login);
-				user.HasOne(u => u.Password).WithOne(p => p.User)
-					.HasForeignKey<Password>(p => p.UserLogin);
+				user.HasMany(u => u.Passwords).WithOne(p => p.User)
+					.HasForeignKey(p => p.UserLogin);
 
 				user.HasMany(u => u.UserITRoles).WithOne(ur => ur.User)
 					.HasForeignKey(ur => ur.UserLogin);

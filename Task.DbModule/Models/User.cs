@@ -8,7 +8,7 @@
 		public required string MiddleName { get; set; }
 		public required string TelephoneNumber { get; set; }
 		public required bool IsLead { get; set; }
-		public Password? Password { get; set; }
+		public ICollection<Password>? Passwords { get; set; }
 		public ICollection<UserITRole>? UserITRoles { get; set; }
 		public ICollection<UserRequestRight>? UserRequestRights { get; set; }
 	}
