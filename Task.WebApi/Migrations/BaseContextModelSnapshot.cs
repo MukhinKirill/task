@@ -21,111 +21,143 @@ namespace Task.WebApi.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Task.DbModule.Models.ItRole", b =>
+            modelBuilder.Entity("Task.DbModule.Models.ITRole", b =>
                 {
-                    b.Property<long>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
+                        .HasColumnType("int")
+                        .HasColumnName("id");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CorporatePhoneNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("corporatePhoneNumber");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("name");
 
                     b.HasKey("Id");
 
-                    b.ToTable("ItRoles");
+                    b.ToTable("ITRole", "TestTaskSchema");
                 });
 
             modelBuilder.Entity("Task.DbModule.Models.Password", b =>
                 {
-                    b.Property<string>("UserLogin")
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("password");
 
-                    b.HasKey("UserLogin");
+                    b.Property<string>("UserLogin")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)")
+                        .HasColumnName("userId");
 
-                    b.ToTable("Passwords");
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserLogin")
+                        .IsUnique();
+
+                    b.ToTable("Passwords", "TestTaskSchema");
                 });
 
             modelBuilder.Entity("Task.DbModule.Models.RequestRight", b =>
                 {
-                    b.Property<long>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
+                        .HasColumnType("int")
+                        .HasColumnName("id");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("name");
 
                     b.HasKey("Id");
 
-                    b.ToTable("RequestRights");
+                    b.ToTable("RequestRight", "TestTaskSchema");
                 });
 
             modelBuilder.Entity("Task.DbModule.Models.User", b =>
                 {
                     b.Property<string>("Login")
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("nvarchar(450)")
+                        .HasColumnName("login");
 
                     b.Property<string>("FirstName")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("firstName");
 
                     b.Property<bool>("IsLead")
-                        .HasColumnType("bit");
+                        .HasColumnType("bit")
+                        .HasColumnName("isLead");
 
                     b.Property<string>("LastName")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("lastName");
 
                     b.Property<string>("MiddleName")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("middleName");
 
                     b.Property<string>("TelephoneNumber")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("telephoneNumber");
 
                     b.HasKey("Login");
 
-                    b.ToTable("Users");
+                    b.ToTable("User", "TestTaskSchema");
                 });
 
-            modelBuilder.Entity("Task.DbModule.Models.UserItRole", b =>
+            modelBuilder.Entity("Task.DbModule.Models.UserITRole", b =>
                 {
-                    b.Property<long>("ItRoleId")
-                        .HasColumnType("bigint");
+                    b.Property<int>("ITRoleId")
+                        .HasColumnType("int")
+                        .HasColumnName("roleId");
 
                     b.Property<string>("UserLogin")
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("nvarchar(450)")
+                        .HasColumnName("userId");
 
-                    b.HasKey("ItRoleId", "UserLogin");
+                    b.HasKey("ITRoleId", "UserLogin");
 
                     b.HasIndex("UserLogin");
 
-                    b.ToTable("UserItRoles");
+                    b.ToTable("UserITRole", "TestTaskSchema");
                 });
 
             modelBuilder.Entity("Task.DbModule.Models.UserRequestRight", b =>
                 {
                     b.Property<string>("UserLogin")
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("nvarchar(450)")
+                        .HasColumnName("userId");
 
-                    b.Property<long>("RequestRightId")
-                        .HasColumnType("bigint");
+                    b.Property<int>("RequestRightId")
+                        .HasColumnType("int")
+                        .HasColumnName("rightId");
 
                     b.HasKey("UserLogin", "RequestRightId");
 
                     b.HasIndex("RequestRightId");
 
-                    b.ToTable("UserRequestRights");
+                    b.ToTable("UserRequestRight", "TestTaskSchema");
                 });
 
             modelBuilder.Entity("Task.DbModule.Models.Password", b =>
@@ -139,21 +171,21 @@ namespace Task.WebApi.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Task.DbModule.Models.UserItRole", b =>
+            modelBuilder.Entity("Task.DbModule.Models.UserITRole", b =>
                 {
-                    b.HasOne("Task.DbModule.Models.ItRole", "ItRole")
-                        .WithMany("UserItRoles")
-                        .HasForeignKey("ItRoleId")
+                    b.HasOne("Task.DbModule.Models.ITRole", "ITRole")
+                        .WithMany("UserITRoles")
+                        .HasForeignKey("ITRoleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("Task.DbModule.Models.User", "User")
-                        .WithMany("UserItRoles")
+                        .WithMany("UserITRoles")
                         .HasForeignKey("UserLogin")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("ItRole");
+                    b.Navigation("ITRole");
 
                     b.Navigation("User");
                 });
@@ -177,9 +209,9 @@ namespace Task.WebApi.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Task.DbModule.Models.ItRole", b =>
+            modelBuilder.Entity("Task.DbModule.Models.ITRole", b =>
                 {
-                    b.Navigation("UserItRoles");
+                    b.Navigation("UserITRoles");
                 });
 
             modelBuilder.Entity("Task.DbModule.Models.RequestRight", b =>
@@ -191,7 +223,7 @@ namespace Task.WebApi.Migrations
                 {
                     b.Navigation("Password");
 
-                    b.Navigation("UserItRoles");
+                    b.Navigation("UserITRoles");
 
                     b.Navigation("UserRequestRights");
                 });
