@@ -6,11 +6,14 @@ using Task.DbModule.Models;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
 using System.Linq;
+using Microsoft.Extensions.Logging;
+using ILogger = Task.Integration.Data.Models.ILogger;
 
 namespace Task.Connector
 {
 	public class ConnectorDb : IConnector
 	{
+		private readonly ILogger<ConnectorDb> _logger = new LoggerStub<ConnectorDb>();
 		private BaseContext _context;
 		public ConnectorDb()
 		{
@@ -23,7 +26,6 @@ namespace Task.Connector
 			var optionsBuilder = new DbContextOptionsBuilder<BaseContext>();
 			optionsBuilder.UseSqlServer(connectionString);
 
-
 			try
 			{
 				_context = new BaseContext(optionsBuilder.Options);
@@ -32,16 +34,16 @@ namespace Task.Connector
 
 				if (_context.Database.CanConnect())
 				{
-					Logger?.Debug("Успешное подключение к базе данных.");
+					_logger?.LogDebug("Успешное подключение к базе данных.");
 				}
 				else
 				{
-					Logger?.Error("Не удалось подключиться к базе данных. Проверьте строку подключения.");
+					_logger?.LogError("Не удалось подключиться к базе данных. Проверьте строку подключения.");
 				}
 			}
 			catch (Exception ex)
 			{
-				Logger?.Error($"Ошибка при подключении к базе данных:\n {ex.Message}");
+				_logger?.LogError($"Ошибка при подключении к базе данных:\n {ex.Message}");
 				throw;
 			}
 		}
@@ -50,7 +52,7 @@ namespace Task.Connector
 		{
 			if (user == null)
 			{
-				Logger?.Error("Попытка создать пользователя с отсутствующей ссылкой user");
+				_logger?.LogError("Попытка создать пользователя с отсутствующей ссылкой user");
 				throw new ArgumentException("Параметр 'user' не может быть null", nameof(user));
 			}
 
@@ -86,12 +88,12 @@ namespace Task.Connector
 					_context.SaveChanges();
 
 					transaction.Commit();
-					//Logger?.Debug($"Пользователь {user.Login} успешно создан!");
+					_logger?.LogDebug($"Пользователь {user.Login} успешно создан!");
 				}
 				catch (Exception ex)
 				{
 					transaction.Rollback();
-					//Logger?.Error($"Ошибка при создании пользователя:\n {ex}");
+					_logger?.LogError($"Ошибка при создании пользователя:\n {ex}");
 					throw;
 				}
 			}
@@ -129,7 +131,7 @@ namespace Task.Connector
 		{
 			if (!IsUserExists(userLogin))
 			{
-				Logger?.Warn($"Пользователь с логином {userLogin} не найден!");
+				_logger?.LogWarning($"Пользователь с логином {userLogin} не найден!");
 				return new List<UserProperty>();
 			}
 
@@ -144,7 +146,7 @@ namespace Task.Connector
 				new UserProperty("IsLead", user.IsLead.ToString()),
 			};
 
-			//Logger?.Debug($"Свойства пользователя с логином {user.Login} были успешно получены!");
+			_logger?.LogDebug($"Свойства пользователя с логином {user.Login} были успешно получены!");
 
 			return userProps;
 		}
@@ -158,7 +160,7 @@ namespace Task.Connector
 		{
 			if (!IsUserExists(userLogin))
 			{
-				//Logger?.Warn($"Пользователь с логином {userLogin} не найден!");
+				_logger?.LogWarning($"Пользователь с логином {userLogin} не найден!");
 				throw new ArgumentException($"Пользователь с логином {userLogin} не найден.", nameof(userLogin));
 			}
 
@@ -213,18 +215,18 @@ namespace Task.Connector
 								}
 								break;
 							default:
-								//Logger?.Warn($"Свойство {property.Name} не распознано и не может быть обновлено!");
+								_logger?.LogWarning($"Свойство {property.Name} не распознано и не может быть обновлено!");
 								break;
 						}
 					}
 
 					_context.SaveChanges();
 					transaction.Commit();
-					//Logger?.Debug($"Свойства пользователя с логином {userLogin} успешно обновлены.");
+					_logger?.LogDebug($"Свойства пользователя с логином {userLogin} успешно обновлены.");
 				}
 				catch (Exception ex)
 				{
-					//Logger?.Error($"Ошибка при обновлении свойств пользователя с логином {userLogin}:\n {ex}");
+					_logger?.LogError($"Ошибка при обновлении свойств пользователя с логином {userLogin}:\n {ex}");
 					transaction.Rollback();
 					throw;
 				}
@@ -245,7 +247,7 @@ namespace Task.Connector
 		{
 			if (!IsUserExists(userLogin))
 			{
-				//Logger?.Warn($"Пользователь с логином {userLogin} не найден!");
+				_logger?.LogWarning($"Пользователь с логином {userLogin} не найден!");
 				throw new ArgumentException($"Пользователь с логином {userLogin} не найден.", nameof(userLogin));
 			}
 
@@ -295,12 +297,12 @@ namespace Task.Connector
 					_context.SaveChanges();
 
 					transaction.Commit();
-					//Logger?.Debug($"Выбранные права были успешно добавлены пользователю с логином {userLogin}!");
+					_logger?.LogDebug($"Выбранные права были успешно добавлены пользователю с логином {userLogin}!");
 				}
 				catch (Exception ex)
 				{
 					transaction.Rollback();
-					//Logger?.Error($"Ошибка при обновлении прав пользователя:\n {ex}");
+					_logger?.LogError($"Ошибка при обновлении прав пользователя:\n {ex}");
 					throw;
 				}
 			}
@@ -310,7 +312,7 @@ namespace Task.Connector
 		{
 			if (!IsUserExists(userLogin))
 			{
-				//Logger?.Warn($"Пользователь с логином {userLogin} не найден!");
+				_logger?.LogWarning($"Пользователь с логином {userLogin} не найден!");
 				throw new ArgumentException($"Пользователь с логином {userLogin} не найден.", nameof(userLogin));
 			}
 
@@ -360,12 +362,12 @@ namespace Task.Connector
 					_context.SaveChanges();
 
 					transaction.Commit();
-					//Logger?.Debug($"Выбранные права были успешно добавлены пользователю с логином {userLogin}!");
+					_logger?.LogDebug($"Выбранные права были успешно добавлены пользователю с логином {userLogin}!");
 				}
 				catch (Exception ex)
 				{
 					transaction.Rollback();
-					//Logger?.Error($"Ошибка при обновлении прав пользователя:\n {ex}");
+					_logger?.LogError($"Ошибка при обновлении прав пользователя:\n {ex}");
 					throw;
 				}
 			}
@@ -375,7 +377,7 @@ namespace Task.Connector
 		{
 			if (!IsUserExists(userLogin))
 			{
-				Logger?.Warn($"Пользователь с логином {userLogin} не найден!");
+				_logger?.LogWarning($"Пользователь с логином {userLogin} не найден!");
 				throw new ArgumentException($"Пользователь с логином {userLogin} не найден.", nameof(userLogin));
 			}
 
