@@ -1,24 +1,30 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.IdentityModel.Abstractions;
 using Task.DbModule.Data;
 using Task.DbModule.Models;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
+using ILogger = Task.Integration.Data.Models.ILogger;
 
 namespace Task.Connector
 {
     public class ConnectorDb : IConnector
     {
 	    private BaseContext _context;
-
-        public ConnectorDb()
+		public ConnectorDb()
         {
         }
 
-        public void StartUp(string connectionString)
+        public ILogger Logger { get; set; }
+
+		public void StartUp(string connectionString)
         {
 	        var optionsBuilder = new DbContextOptionsBuilder<BaseContext>();
 	        optionsBuilder.UseSqlServer(connectionString);
 
+	       
 			try
 			{
 				_context = new BaseContext(optionsBuilder.Options);
@@ -37,6 +43,7 @@ namespace Task.Connector
 			catch (Exception ex)
 			{
 				Logger.Error($"Ошибка при подключении к базе данных:\n {ex.Message}");
+				throw;
 			}
 		}
 
@@ -86,6 +93,7 @@ namespace Task.Connector
 		        {
                     transaction.Rollback();
                     Logger.Error($"Ошибка при создании пользователя:\n {ex}");
+                    throw;
 				}
 	        }
         }
@@ -211,6 +219,7 @@ namespace Task.Connector
 				{
 					transaction.Rollback();
 					Logger.Error($"Ошибка при обновлении свойств пользователя с логином {userLogin}:\n {ex}");
+					throw;
 				}
 			}
 		}
@@ -240,7 +249,7 @@ namespace Task.Connector
 				}
 				else
 				{
-					if (UInt32.TryParse(rightId, out var result))
+					if (Int32.TryParse(rightId, out var result))
 					{
 						userRequestRights.Add(new UserRequestRight()
 						{
@@ -260,6 +269,7 @@ namespace Task.Connector
 			catch (Exception ex)
 			{
 				Logger.Error($"Ошибка при обновлении прав пользователя:\n {ex}");
+				throw;
 			}
         }
 
@@ -283,7 +293,7 @@ namespace Task.Connector
 				}
 				else
 				{
-					if (UInt32.TryParse(rightId, out var result))
+					if (Int32.TryParse(rightId, out var result))
 					{
 						userRequestRights.Add(new UserRequestRight()
 						{
@@ -303,6 +313,7 @@ namespace Task.Connector
 			catch (Exception ex)
 			{
 				Logger.Error($"Ошибка при удалении прав пользователя:\n {ex}");
+				throw;
 			}
 		}
 
@@ -317,7 +328,5 @@ namespace Task.Connector
 			return _context.UserRequestRights.Where(urr => urr.UserLogin == userLogin)
 				.Include(urr => urr.RequestRight).Select(urr => urr.RequestRight.Name).ToList();
         }
-
-        public ILogger Logger { get; set; }
     }
 }
