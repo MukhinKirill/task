@@ -11,7 +11,7 @@ using Task.DbModule.Data;
 namespace Task.WebApi.Migrations
 {
     [DbContext(typeof(BaseContext))]
-    [Migration("20241121122652_FirstTestBase")]
+    [Migration("20241121141557_FirstTestBase")]
     partial class FirstTestBase
     {
         /// <inheritdoc />
@@ -69,8 +69,7 @@ namespace Task.WebApi.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserLogin")
-                        .IsUnique();
+                    b.HasIndex("UserLogin");
 
                     b.ToTable("Passwords", "TestTaskSchema");
                 });
@@ -166,8 +165,8 @@ namespace Task.WebApi.Migrations
             modelBuilder.Entity("Task.DbModule.Models.Password", b =>
                 {
                     b.HasOne("Task.DbModule.Models.User", "User")
-                        .WithOne("Password")
-                        .HasForeignKey("Task.DbModule.Models.Password", "UserLogin")
+                        .WithMany("Passwords")
+                        .HasForeignKey("UserLogin")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -224,7 +223,7 @@ namespace Task.WebApi.Migrations
 
             modelBuilder.Entity("Task.DbModule.Models.User", b =>
                 {
-                    b.Navigation("Password");
+                    b.Navigation("Passwords");
 
                     b.Navigation("UserITRoles");
 

@@ -139,8 +139,7 @@ namespace Task.WebApi.Migrations
                 name: "IX_Passwords_userId",
                 schema: "TestTaskSchema",
                 table: "Passwords",
-                column: "userId",
-                unique: true);
+                column: "userId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserITRole_userId",
