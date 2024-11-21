@@ -232,7 +232,12 @@ namespace Task.Connector
 
         public IEnumerable<Permission> GetAllPermissions()
         {
-	        return _context.RequestRights.AsNoTracking().Select(request => new Permission(request.Id.ToString(), request.Name, ""));
+			var requestRights = _context.RequestRights.AsNoTracking()
+				.Select(request => new Permission(request.Id.ToString(), request.Name, "")).ToList();
+			var itRoles = _context.ITRoles.AsNoTracking()
+				.Select(request => new Permission(request.Id.ToString(), request.Name, "")).ToList();
+			
+			return requestRights.Concat(itRoles);
         }
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
