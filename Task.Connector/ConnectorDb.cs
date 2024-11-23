@@ -33,6 +33,11 @@ public class ConnectorDb : IConnector
 
     public void CreateUser(UserToCreate userToCreate)
     {
+        if (IsUserExists(userToCreate.Login))
+        {
+            throw new InvalidOperationException($"Пользователь {userToCreate.Login} уже существует в системе");
+        }
+
         var newUser = _mapper.Map<User>(userToCreate);
 
         var newUsersPassword = new Password(userToCreate.Login, userToCreate.HashPassword);
@@ -46,7 +51,7 @@ public class ConnectorDb : IConnector
         }
         catch(ValidationException ex)
         {
-            Logger.Error("Данные невалидны" + ex.Message);
+            Logger.Error("Данные невалидны:\n" + ex.Message);
             throw;
         }
 
@@ -96,6 +101,7 @@ public class ConnectorDb : IConnector
     {
         if (!IsUserExists(userLogin))
         {
+            Logger.Error($"Ошибка обновления атрибутов пользователя {userLogin}");
             throw new InvalidOperationException($"Пользователь {userLogin} не найден");
         }
 
@@ -112,6 +118,8 @@ public class ConnectorDb : IConnector
 
         _context.Users.Update(user);
         _context.SaveChanges();
+
+        Logger.Debug($"Пользователь {userLogin} успешно обновлен");
     }
 
     public IEnumerable<Permission> GetAllPermissions()

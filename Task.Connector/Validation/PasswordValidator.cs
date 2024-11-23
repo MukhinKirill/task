@@ -1,9 +1,4 @@
 ﻿using FluentValidation;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Task.Connector.Models;
 
 namespace Task.Connector.Validation
@@ -12,8 +7,6 @@ namespace Task.Connector.Validation
     {
         public PasswordValidator()
         {
-            //RuleFor(password => password.Id).NotNull().WithMessage("Не указан Id пароля");
-
             RuleFor(password => password.UserId)
                 .NotEmpty().WithMessage("Логин пользователя не может быть пустым.")
                 .NotNull().WithMessage("Пользователь должен быть указан.")

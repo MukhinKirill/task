@@ -1,9 +1,4 @@
 ﻿using FluentValidation;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Task.Integration.Data.DbCommon.DbModels;
 
 namespace Task.Connector.Validation
@@ -12,7 +7,6 @@ namespace Task.Connector.Validation
     {
         public UserValidator()
         {
-
             RuleFor(user => user.Login)
             .NotEmpty().WithMessage("Логин не может быть пустым.")
             .NotNull().WithMessage("Логин обязателен.")

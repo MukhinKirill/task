@@ -8,9 +8,7 @@ public class TaskDbContext : DbContext
 {
     
     public TaskDbContext(DbContextOptions options) : base(options)
-    {
-        
-    }
+    {}
 
     public DbSet<User> Users { get; set; }
 
@@ -26,7 +24,6 @@ public class TaskDbContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        //optionsBuilder.UseNpgsql(_connectionString);
         base.OnConfiguring(optionsBuilder);
     }
 

@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Task.Connector.Models
+﻿namespace Task.Connector.Models
 {
     internal class SpecifiedPermission
     {

@@ -1,4 +1,3 @@
-using System.Diagnostics.Contracts;
 using Task.Integration.Data.DbCommon;
 using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;

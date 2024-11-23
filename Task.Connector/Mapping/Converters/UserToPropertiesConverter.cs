@@ -1,12 +1,6 @@
 ﻿using AutoMapper;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Task.Integration.Data.DbCommon.DbModels;
 using Task.Integration.Data.Models.Models;
-using System.Reflection;
 
 namespace Task.Connector.Mapping.Converters
 {
