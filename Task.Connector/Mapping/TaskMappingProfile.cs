@@ -14,5 +14,7 @@ public class TaskMappingProfile : Profile
         CreateMap<RequestRight, Permission>().ConvertUsing<RequestRightToPermissionConverter>();
 
         CreateMap<ITRole, Permission>().ConvertUsing<ItRoleToPermissionConverter>();
+
+        CreateMap<User, IEnumerable<UserProperty>>().ConvertUsing<UserToPropertiesConverter>();
     }
 }

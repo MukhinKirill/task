@@ -17,11 +17,6 @@ public class ConnectorDb : IConnector
     private TaskDbContext _context;
     private IMapper _mapper;
 
-    public ConnectorDb()
-    {
-        
-    }
-
     public void StartUp(string connectionString)
     {
         var actualConnectionString = GetActualConnectionString(connectionString);
@@ -38,7 +33,6 @@ public class ConnectorDb : IConnector
 
     public void CreateUser(UserToCreate userToCreate)
     {
-        Logger.Debug($"Создание пользователя {userToCreate.Login}");
         var newUser = _mapper.Map<User>(userToCreate);
 
         var newUsersPassword = new Password(userToCreate.Login, userToCreate.HashPassword);
@@ -65,26 +59,59 @@ public class ConnectorDb : IConnector
         }
         catch (DbUpdateException ex)
         {
-            Logger?.Error($"Ошибка при создании пользователя. Логин: {userToCreate.Login}. {ex.Message}");
-            throw;
+            Logger.Error($"Ошибка при создании пользователя. Логин: {userToCreate.Login}. {ex.Message}");
+            throw new InvalidOperationException(ex.Message);
         }
+
     }
 
     public IEnumerable<Property> GetAllProperties()
     {
-        throw new NotImplementedException();
+        var type = typeof(User);
+        var userProperties = new List<Property>();
+        foreach (var property in type.GetProperties())
+        {
+            userProperties.Add(new Property(property.Name, property.PropertyType.ToString()));
+        }
+
+        return userProperties.AsEnumerable();
     }
 
     public IEnumerable<UserProperty> GetUserProperties(string userLogin)
     {
-        throw new NotImplementedException();
+        if (!IsUserExists(userLogin))
+        {
+            throw new InvalidOperationException($"Пользователь {userLogin} не найден");
+        }
+
+        var user = _context.Users.AsNoTracking().SingleOrDefault(u => u.Login == userLogin);
+
+        var properties = _mapper.Map<List<UserProperty>>(user);
+        return properties;
     }
 
     public bool IsUserExists(string userLogin) => _context.Users.AsNoTracking().Any(u => u.Login == userLogin);
 
-    public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
+    public void UpdateUserProperties(IEnumerable<UserProperty> propertiesToUpdate, string userLogin)
     {
-        throw new NotImplementedException();
+        if (!IsUserExists(userLogin))
+        {
+            throw new InvalidOperationException($"Пользователь {userLogin} не найден");
+        }
+
+        var properties = propertiesToUpdate.ToDictionary(p => p.Name, p => p.Value);
+
+        var user = _context.Users.AsNoTracking().SingleOrDefault(u => u.Login == userLogin);
+        var userType = user.GetType();
+
+        foreach(var userProperty in userType.GetProperties())
+        {
+            if (properties.ContainsKey(userProperty.Name))
+                userProperty.SetValue(user, properties[userProperty.Name]);
+        }
+
+        _context.Users.Update(user);
+        _context.SaveChanges();
     }
 
     public IEnumerable<Permission> GetAllPermissions()
@@ -96,7 +123,7 @@ public class ConnectorDb : IConnector
         if (allRequestRights.Any())
             permissions = _mapper.Map<List<Permission>>(allRequestRights);
         
-        var roles = new List<ITRole>();
+        
         if(allItRoles.Any())
             permissions.AddRange(_mapper.Map<List<Permission>>(allItRoles));
 
@@ -105,25 +132,113 @@ public class ConnectorDb : IConnector
 
     public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
     {
-        throw new NotImplementedException();
+        if (!IsUserExists(userLogin))
+            throw new InvalidOperationException($"Пользователь {userLogin} не найден");
+
+        foreach (var rightId in rightIds)
+        {
+            var currentPermission = GetPermissionInfo(rightId);
+
+            if (SpecifiedPermissionExists(currentPermission))
+            {
+                if (currentPermission.Type == "Request")
+                {
+                    _context.UserRequestRights.Add(new UserRequestRight()
+                    {
+                        RightId = currentPermission.Id,
+                        UserId = userLogin
+                    });
+                }
+                else if (currentPermission.Type == "Role")
+                {
+                    _context.UserITRoles.Add(new UserITRole()
+                    {
+                        UserId = userLogin,
+                        RoleId = currentPermission.Id,
+                    });
+                }
+            }
+        }
+
+        _context.SaveChanges();
     }
 
     public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
     {
-        throw new NotImplementedException();
+        if (!IsUserExists(userLogin))
+            throw new InvalidOperationException($"Пользователь {userLogin} не найден");
+
+        foreach (var rightId in rightIds)
+        {
+            var currentPermission = GetPermissionInfo(rightId);
+            
+            if (currentPermission.Type == "Request")
+            {
+                var requestRightToDelete = _context.UserRequestRights
+                    .SingleOrDefault(urr => urr.RightId == currentPermission.Id && urr.UserId == userLogin);
+
+                if (requestRightToDelete is not null)
+                    _context.UserRequestRights.Remove(requestRightToDelete);
+            }
+            else if(currentPermission.Type == "Role")
+            {
+                var roleToDelete = _context.UserITRoles
+                    .SingleOrDefault(r =>  r.RoleId == currentPermission.Id && r.UserId == userLogin);
+
+                if(roleToDelete is not null)
+                    _context.UserITRoles.Remove(roleToDelete);
+            }      
+        }
+
+        _context.SaveChanges();
     }
 
     public IEnumerable<string> GetUserPermissions(string userLogin)
     {
-        throw new NotImplementedException();
+        if (!IsUserExists(userLogin))
+        {
+            throw new InvalidOperationException($"Пользователь {userLogin} не найден");
+        }
+
+        var userPermissions = new List<string>();
+        var userRightIds = _context.UserRequestRights.AsNoTracking()
+            .Where(urr => urr.UserId == userLogin)
+            .Select(urr => urr.UserId)
+            .ToList();
+
+        userPermissions.AddRange(userRightIds);
+
+        return userPermissions;
     }
 
     public ILogger Logger { get; set; }
 
-    private string GetActualConnectionString(string connectionString)
+    string GetActualConnectionString(string connectionString)
     {
         string connectionStringPattern = @"ConnectionString='([^']*)'";
         var match = Regex.Match(connectionString, connectionStringPattern);
         return match.Groups[1].Value;
+    }
+
+    bool SpecifiedPermissionExists(SpecifiedPermission permission)
+    {
+        var exists = false;
+
+        if (permission.Type == "Request")
+        {
+            exists = _context.RequestRights.Any(rr => rr.Id == permission.Id);
+        }
+        else if (permission.Type == "Role")
+        {
+            exists = _context.Roles.Any(r => r.Id == permission.Id);
+        }
+        
+        return exists;
+    }
+
+    SpecifiedPermission GetPermissionInfo(string rightId)
+    {
+        var typeAndId = rightId.Split(':');
+        return new SpecifiedPermission(typeAndId[0], typeAndId[1]);
     }
 }
