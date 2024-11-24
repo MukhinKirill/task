@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using Task.Connector.Exceptions;
 using Task.Connector.Infrastructure;
 using Task.Connector.Models;
+using Task.Connector.Strategies.Permission;
 using Task.Connector.Validation;
 using Task.Integration.Data.DbCommon.DbModels;
 using Task.Integration.Data.Models;
@@ -130,29 +131,16 @@ public class ConnectorDb : IConnector
     {
         if (!IsUserExists(userLogin))
             throw new NotFoundException($"Пользователь с логином {userLogin} не найден");
-
+        
         foreach (var rightId in rightIds)
         {
             var currentPermission = GetPermissionInfo(rightId);
 
             if (SpecifiedPermissionExists(currentPermission))
             {
-                if (currentPermission.Type == "Request")
-                {
-                    _context.UserRequestRights.Add(new UserRequestRight()
-                    {
-                        RightId = currentPermission.Id,
-                        UserId = userLogin
-                    });
-                }
-                else if (currentPermission.Type == "Role")
-                {
-                    _context.UserITRoles.Add(new UserITRole()
-                    {
-                        UserId = userLogin,
-                        RoleId = currentPermission.Id,
-                    });
-                }
+                var strategyContext = new PermissionStrategyContext(currentPermission, userLogin, _context);
+                var strategy = strategyContext.GetStrategy(currentPermission);
+                strategyContext.ApplyAddStrategy(strategy);
             }
         }
 
@@ -167,23 +155,10 @@ public class ConnectorDb : IConnector
         foreach (var rightId in rightIds)
         {
             var currentPermission = GetPermissionInfo(rightId);
-            
-            if (currentPermission.Type == "Request")
-            {
-                var requestRightToDelete = _context.UserRequestRights
-                    .SingleOrDefault(urr => urr.RightId == currentPermission.Id && urr.UserId == userLogin);
 
-                if (requestRightToDelete is not null)
-                    _context.UserRequestRights.Remove(requestRightToDelete);
-            }
-            else if(currentPermission.Type == "Role")
-            {
-                var roleToDelete = _context.UserITRoles
-                    .SingleOrDefault(r =>  r.RoleId == currentPermission.Id && r.UserId == userLogin);
-
-                if(roleToDelete is not null)
-                    _context.UserITRoles.Remove(roleToDelete);
-            }      
+            var strategyContext = new PermissionStrategyContext(currentPermission, userLogin, _context);
+            var strategy = strategyContext.GetStrategy(currentPermission);
+            strategyContext.ApplyRemoveStrategy(strategy);     
         }
 
         _context.SaveChanges();
