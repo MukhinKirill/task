@@ -3,6 +3,7 @@ using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text.RegularExpressions;
+using Task.Connector.Exceptions;
 using Task.Connector.Infrastructure;
 using Task.Connector.Models;
 using Task.Connector.Validation;
@@ -16,6 +17,8 @@ public class ConnectorDb : IConnector
 {
     private TaskDbContext _context;
     private IMapper _mapper;
+    private IValidator<User> _userValidator;
+    private IValidator<Password> _passwordValidator;
 
     public void StartUp(string connectionString)
     {
@@ -28,46 +31,34 @@ public class ConnectorDb : IConnector
 
         _mapper = serviceProvider.GetRequiredService<IMapper>();
         _context = serviceProvider.GetRequiredService<TaskDbContext>();
-
+        _userValidator = serviceProvider.GetRequiredService<IValidator<User>>();
+        _passwordValidator = serviceProvider.GetRequiredService<IValidator<Password>>();
     }
 
     public void CreateUser(UserToCreate userToCreate)
     {
         if (IsUserExists(userToCreate.Login))
-        {
-            throw new InvalidOperationException($"Пользователь {userToCreate.Login} уже существует в системе");
-        }
+            throw new InvalidUserException($"Пользователь {userToCreate.Login} уже существует в системе");
 
         var newUser = _mapper.Map<User>(userToCreate);
 
         var newUsersPassword = new Password(userToCreate.Login, userToCreate.HashPassword);
-
-        var userValidator = new UserValidator();
-        var passwordValidator = new PasswordValidator();
-        try
+        
+        if (!_userValidator.Validate(newUser).IsValid)
         {
-            userValidator.Validate(newUser, options => options.ThrowOnFailures());
-            passwordValidator.Validate(newUsersPassword, options => options.ThrowOnFailures());
+            Logger.Error($"Невозможно создать пользователя с логином {userToCreate.Login}");
+            throw new ValidationException("Некорректная информация для создания пользователя");
         }
-        catch(ValidationException ex)
+
+        if (!_passwordValidator.Validate(newUsersPassword).IsValid)
         {
-            Logger.Error("Данные невалидны:\n" + ex.Message);
-            throw;
+            Logger.Error("Пароль не отвечает требоваиям системы");
+            throw new ValidationException("Некорректный пароль");
         }
 
         _context.Users.Add(newUser);
         _context.Passwords.Add(newUsersPassword);
-
-        try
-        {
-            _context.SaveChanges();
-        }
-        catch (DbUpdateException ex)
-        {
-            Logger.Error($"Ошибка при создании пользователя. Логин: {userToCreate.Login}. {ex.Message}");
-            throw new InvalidOperationException(ex.Message);
-        }
-
+        _context.SaveChanges();
     }
 
     public IEnumerable<Property> GetAllProperties()
@@ -84,12 +75,8 @@ public class ConnectorDb : IConnector
 
     public IEnumerable<UserProperty> GetUserProperties(string userLogin)
     {
-        if (!IsUserExists(userLogin))
-        {
-            throw new InvalidOperationException($"Пользователь {userLogin} не найден");
-        }
-
-        var user = _context.Users.AsNoTracking().SingleOrDefault(u => u.Login == userLogin);
+        var user = _context.Users.AsNoTracking().SingleOrDefault(u => u.Login == userLogin)
+            ?? throw new NotFoundException($"Пользователь с логином {userLogin} не найден");
 
         var properties = _mapper.Map<List<UserProperty>>(user);
         return properties;
@@ -99,21 +86,23 @@ public class ConnectorDb : IConnector
 
     public void UpdateUserProperties(IEnumerable<UserProperty> propertiesToUpdate, string userLogin)
     {
-        if (!IsUserExists(userLogin))
-        {
-            Logger.Error($"Ошибка обновления атрибутов пользователя {userLogin}");
-            throw new InvalidOperationException($"Пользователь {userLogin} не найден");
-        }
+        var user = _context.Users.AsNoTracking().SingleOrDefault(u => u.Login == userLogin)
+            ?? throw new NotFoundException($"Пользователь с логином {userLogin} не найден");
 
         var properties = propertiesToUpdate.ToDictionary(p => p.Name, p => p.Value);
 
-        var user = _context.Users.AsNoTracking().SingleOrDefault(u => u.Login == userLogin);
         var userType = user.GetType();
 
         foreach(var userProperty in userType.GetProperties())
         {
             if (properties.ContainsKey(userProperty.Name))
                 userProperty.SetValue(user, properties[userProperty.Name]);
+        }
+
+        if (!_userValidator.Validate(user).IsValid)
+        {
+            Logger.Error($"Ошибка обновления атрибутов пользователя {userLogin}. Данные пользователя некорректны");
+            throw new ValidationException("Предоставлена некорректная информация для обновления атрибутов пользователя");
         }
 
         _context.Users.Update(user);
@@ -131,7 +120,6 @@ public class ConnectorDb : IConnector
         if (allRequestRights.Any())
             permissions = _mapper.Map<List<Permission>>(allRequestRights);
         
-        
         if(allItRoles.Any())
             permissions.AddRange(_mapper.Map<List<Permission>>(allItRoles));
 
@@ -141,7 +129,7 @@ public class ConnectorDb : IConnector
     public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
     {
         if (!IsUserExists(userLogin))
-            throw new InvalidOperationException($"Пользователь {userLogin} не найден");
+            throw new NotFoundException($"Пользователь с логином {userLogin} не найден");
 
         foreach (var rightId in rightIds)
         {
@@ -174,7 +162,7 @@ public class ConnectorDb : IConnector
     public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
     {
         if (!IsUserExists(userLogin))
-            throw new InvalidOperationException($"Пользователь {userLogin} не найден");
+            throw new NotFoundException($"Пользователь с логином {userLogin} не найден");
 
         foreach (var rightId in rightIds)
         {
@@ -204,9 +192,7 @@ public class ConnectorDb : IConnector
     public IEnumerable<string> GetUserPermissions(string userLogin)
     {
         if (!IsUserExists(userLogin))
-        {
-            throw new InvalidOperationException($"Пользователь {userLogin} не найден");
-        }
+            throw new NotFoundException($"Пользователь с логином {userLogin} не найден");
 
         var userPermissions = new List<string>();
         var userRightIds = _context.UserRequestRights.AsNoTracking()
