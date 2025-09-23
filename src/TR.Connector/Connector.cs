@@ -8,7 +8,7 @@ namespace TR.Connector
 {
     public partial class Connector : IConnector
     {
-        public ILogger Logger { get; set; }
+        public ILogger Logger { get; set; } 
 
         private string url = "";
         private string login = "";
