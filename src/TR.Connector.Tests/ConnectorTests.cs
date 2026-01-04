@@ -13,13 +13,13 @@ namespace TR.Connector.Tests
             _connector = new Connector();
 
             _connector.Logger = new ConsoleLogger();
-            _connector.StartUp(connectorString);
+            _connector.StartUpAsync(connectorString).Wait();
         }
 
         [Fact]
-        public void GetAllPermissions_Ok()
+        public async Task GetAllPermissions_Ok()
         {
-            var permissions = _connector.GetAllPermissions();
+            var permissions = await _connector.GetAllPermissionsAsync();
             Assert.NotNull(permissions);
 
             var ItRole9 = permissions.FirstOrDefault(_ => _.Name == "ITRole9");
@@ -30,10 +30,10 @@ namespace TR.Connector.Tests
         }
 
         [Fact]
-        public void GetUserPermissions_Ok()
+        public async Task GetUserPermissions_Ok()
         {
             var login = "Login3";
-            var permissions = _connector.GetUserPermissions(login).ToList();
+            var permissions = (await _connector.GetUserPermissionsAsync(login)).ToList();
 
             Assert.NotNull(permissions);
             Assert.NotNull(permissions.FirstOrDefault(_ => _.Contains("ItRole")));
@@ -45,7 +45,7 @@ namespace TR.Connector.Tests
         {
             var login = "Login4"; //lock
 
-            //Сейчас не пройдет. сервак вернет ошибку "Пользователь Login4 заблокирован".
+            //пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ. пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ "пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ Login4 пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ".
             var permissions = _connector.GetUserPermissions(login);
 
             Assert.NotNull(permissions);
@@ -53,20 +53,20 @@ namespace TR.Connector.Tests
         }*/
 
         [Fact]
-        public void Add_Drop_Permissions_Ok()
+        public async Task Add_Drop_Permissions_Ok()
         {
             var login = "Login7";
             var userRole = "ItRole,5";
             var userRight = "RequestRight,5";
-            _connector.AddUserPermissions(login, new List<string>(){userRole, userRight});
+            await _connector.AddUserPermissionsAsync(login, new List<string>(){userRole, userRight});
 
-            var userPermissions = _connector.GetUserPermissions(login).ToList();
+            var userPermissions = (await _connector.GetUserPermissionsAsync(login)).ToList();
             Assert.NotNull(userPermissions.FirstOrDefault(_ => _.Contains(userRole)));
             Assert.NotNull(userPermissions.FirstOrDefault(_ => _.Contains(userRight)));
 
-            _connector.RemoveUserPermissions(login, new List<string>(){userRole, userRight});
+           await _connector.RemoveUserPermissionsAsync(login, new List<string>(){userRole, userRight});
 
-            userPermissions = _connector.GetUserPermissions(login).ToList();
+            userPermissions = (await _connector.GetUserPermissionsAsync(login)).ToList();
             Assert.Null(userPermissions.FirstOrDefault(_ => _.Contains(userRole)));
             Assert.Null(userPermissions.FirstOrDefault(_ => _.Contains(userRight)));
         }
@@ -81,10 +81,10 @@ namespace TR.Connector.Tests
         }
 
         [Fact]
-        public void Get_UpdateUserProperties_Ok()
+        public async Task Get_UpdateUserProperties_Ok()
         {
             var login = "Login3";
-            var userProperties = _connector.GetUserProperties(login);
+            var userProperties = await _connector.GetUserPropertiesAsync(login);
             Assert.NotNull(userProperties);
 
             Assert.Equal("FirstName3", userProperties.FirstOrDefault(_ => _.Name == "firstName").Value);
@@ -95,10 +95,10 @@ namespace TR.Connector.Tests
                 new UserProperty("firstName", "FirstName13"),
                 new UserProperty("telephoneNumber", "TelephoneNumber13"),
             };
-            _connector.UpdateUserProperties(userProps, login);
+            await _connector.UpdateUserPropertiesAsync(userProps, login);
 
 
-            userProperties = _connector.GetUserProperties(login);
+            userProperties = await _connector.GetUserPropertiesAsync(login);
             Assert.NotNull(userProperties);
 
             Assert.Equal("FirstName13", userProperties.FirstOrDefault(_ => _.Name == "firstName").Value);
@@ -106,11 +106,11 @@ namespace TR.Connector.Tests
         }
 
         [Fact]
-        public void Get_CreateUser_Ok()
+        public async Task Get_CreateUser_Ok()
         {
             var login = "Login100";
 
-            var isUser = _connector.IsUserExists(login);
+            var isUser = await _connector.IsUserExistsAsync(login);
             Assert.False(isUser);
 
             var user = new UserToCreate(login, "Password100")
@@ -125,9 +125,9 @@ namespace TR.Connector.Tests
                 }
             };
 
-            _connector.CreateUser(user);
+            await _connector.CreateUserAsync(user);
 
-            isUser = _connector.IsUserExists(login);
+            isUser = await _connector.IsUserExistsAsync(login);
             Assert.True(isUser);
         }
     }
