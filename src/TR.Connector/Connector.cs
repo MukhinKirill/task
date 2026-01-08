@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
 using TR.Connector.Configuration;
+using TR.Connector.Helpers;
 using TR.Connector.Models;
 using TR.Connectors.Api.Entities;
 using TR.Connectors.Api.Interfaces;
@@ -32,19 +33,12 @@ namespace TR.Connector
 
         public async Task StartUpAsync(string connectionString)
         {
-            ArgumentException.ThrowIfNullOrWhiteSpace(connectionString, nameof(connectionString));
-
             Logger?.Debug("Строка подключения: " + connectionString);
 
-            string login = "", password = "";
-            foreach (var item in connectionString.Split(';'))
-            {
-                if (item.StartsWith("url")) _baseUrl = item.Split('=')[1].TrimEnd('/');
-                if (item.StartsWith("login")) login = item.Split('=')[1];
-                if (item.StartsWith("password")) password = item.Split('=')[1];
-            }
+            var parsedConnection = ConnectionStringParser.Parse(connectionString);
+            _baseUrl = parsedConnection.Url;
 
-            var body = new { login, password };
+            var body = new { login = parsedConnection.Login, password = parsedConnection.Password };
             var content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
             var response = await HttpClient.PostAsync($"{_baseUrl}/{_settings.Endpoints.Login}", content);
 
