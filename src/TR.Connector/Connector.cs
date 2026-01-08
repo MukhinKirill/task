@@ -15,7 +15,7 @@ namespace TR.Connector
     {
         private static readonly HttpClient HttpClient = new();
 
-        public ILogger Logger { get; set; }
+        public ILogger? Logger { get; set; }
 
         private readonly ConnectorSettings _settings;
 
@@ -121,14 +121,14 @@ namespace TR.Connector
             var rolesContent = await rolesResponse.Content.ReadAsStringAsync();
             var itRoleResponse = JsonSerializer.Deserialize<RoleResponse>(rolesContent);
             var itRolePermissions =
-                itRoleResponse!.Data!.Select(r => new Permission($"{_settings.PermissionTypes.ItRole},{r.Id}", r.Name, r.CorporatePhoneNumber));
+                itRoleResponse!.Data!.Select(r => new Permission($"{_settings.PermissionTypes.ItRole},{r.Id}", r.Name, r.CorporatePhoneNumber ?? string.Empty));
 
             var rightsResponse = await HttpClient.SendAsync(CreateRequest(HttpMethod.Get, _settings.Endpoints.RightsAll));
             rightsResponse.EnsureSuccessStatusCode();
             var rightsContent = await rightsResponse.Content.ReadAsStringAsync();
             var rightResponse = JsonSerializer.Deserialize<RightResponse>(rightsContent);
             var rightPermissions = rightResponse!.Data!.Select(r =>
-                new Permission($"{_settings.PermissionTypes.RequestRight},{r.Id}", r.Name, null));
+                new Permission($"{_settings.PermissionTypes.RequestRight},{r.Id}", r.Name, string.Empty));
 
             return itRolePermissions.Concat(rightPermissions);
         }
@@ -224,7 +224,7 @@ namespace TR.Connector
                 throw new Exception($"Невозможно получить свойства, пользователь {userLogin} залочен");
 
             return user.GetType().GetProperties()
-                .Select(prop => new UserProperty(GetJsonPropertyName(prop), prop.GetValue(user)?.ToString()));
+                .Select(prop => new UserProperty(GetJsonPropertyName(prop), prop.GetValue(user)?.ToString() ?? string.Empty));
         }
 
         public async Task UpdateUserPropertiesAsync(IEnumerable<UserProperty> properties, string userLogin)
