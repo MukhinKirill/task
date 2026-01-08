@@ -32,6 +32,8 @@ namespace TR.Connector
 
         public async Task StartUpAsync(string connectionString)
         {
+            ArgumentException.ThrowIfNullOrWhiteSpace(connectionString, nameof(connectionString));
+
             Logger?.Debug("Строка подключения: " + connectionString);
 
             string login = "", password = "";
@@ -88,6 +90,9 @@ namespace TR.Connector
         private string GetPermissionEndpoint(string permissionId, string userLogin, bool isAdd)
         {
             var parts = permissionId.Split(',');
+            if (parts.Length != 2)
+                throw new ArgumentException($"Invalid permission ID format: {permissionId}. Expected format: 'Type,Id'");
+
             var permissionType = parts[0];
             var id = parts[1];
 
@@ -136,6 +141,8 @@ namespace TR.Connector
 
         public async Task<IEnumerable<string>> GetUserPermissionsAsync(string userLogin)
         {
+            ArgumentException.ThrowIfNullOrWhiteSpace(userLogin, nameof(userLogin));
+
             var rolesResponse = await HttpClient.SendAsync(CreateRequest(HttpMethod.Get, string.Format(_settings.Endpoints.UserRoles, userLogin)));
             rolesResponse.EnsureSuccessStatusCode();
             var rolesContent = await rolesResponse.Content.ReadAsStringAsync();
@@ -153,6 +160,9 @@ namespace TR.Connector
 
         public async Task AddUserPermissionsAsync(string userLogin, IEnumerable<string> rightIds)
         {
+            ArgumentException.ThrowIfNullOrWhiteSpace(userLogin, nameof(userLogin));
+            ArgumentNullException.ThrowIfNull(rightIds, nameof(rightIds));
+
             var user = await GetUserByLoginAsync(userLogin);
 
             if (IsUserLocked(user))
@@ -174,6 +184,9 @@ namespace TR.Connector
 
         public async Task RemoveUserPermissionsAsync(string userLogin, IEnumerable<string> rightIds)
         {
+            ArgumentException.ThrowIfNullOrWhiteSpace(userLogin, nameof(userLogin));
+            ArgumentNullException.ThrowIfNull(rightIds, nameof(rightIds));
+
             var user = await GetUserByLoginAsync(userLogin);
 
             if (IsUserLocked(user))
@@ -204,6 +217,8 @@ namespace TR.Connector
 
         public async Task<IEnumerable<UserProperty>> GetUserPropertiesAsync(string userLogin)
         {
+            ArgumentException.ThrowIfNullOrWhiteSpace(userLogin, nameof(userLogin));
+
             var response = await HttpClient.SendAsync(CreateRequest(HttpMethod.Get, string.Format(_settings.Endpoints.UserByLogin, userLogin)));
             response.EnsureSuccessStatusCode();
             var content = await response.Content.ReadAsStringAsync();
@@ -220,6 +235,9 @@ namespace TR.Connector
 
         public async Task UpdateUserPropertiesAsync(IEnumerable<UserProperty> properties, string userLogin)
         {
+            ArgumentNullException.ThrowIfNull(properties, nameof(properties));
+            ArgumentException.ThrowIfNullOrWhiteSpace(userLogin, nameof(userLogin));
+
             var getResponse = await HttpClient.SendAsync(CreateRequest(HttpMethod.Get, string.Format(_settings.Endpoints.UserByLogin, userLogin)));
             getResponse.EnsureSuccessStatusCode();
             var getContent = await getResponse.Content.ReadAsStringAsync();
@@ -243,12 +261,17 @@ namespace TR.Connector
 
         public async Task<bool> IsUserExistsAsync(string userLogin)
         {
+            ArgumentException.ThrowIfNullOrWhiteSpace(userLogin, nameof(userLogin));
+
             var user = await GetUserByLoginAsync(userLogin);
             return user != null;
         }
 
         public async Task CreateUserAsync(UserToCreate user)
         {
+            ArgumentNullException.ThrowIfNull(user, nameof(user));
+            ArgumentException.ThrowIfNullOrWhiteSpace(user.Login, nameof(user.Login));
+
             var newUser = new CreateUserDto
             {
                 Login = user.Login,
