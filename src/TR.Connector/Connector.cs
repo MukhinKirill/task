@@ -1,6 +1,8 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Options;
+using TR.Connector.Configuration;
 using TR.Connector.Models;
 using TR.Connectors.Api.Entities;
 using TR.Connectors.Api.Interfaces;
@@ -11,53 +13,56 @@ namespace TR.Connector
     {
         public ILogger Logger { get; set; }
 
-        private string url = "";
-        private string login = "";
-        private string password = "";
+        private readonly ConnectorSettings _settings;
 
-        private string token = "";
+        private string _url = "";
+        private string _login = "";
+        private string _password = "";
+        private string _token = "";
 
-        //Пустой конструктор
-        public Connector() {}
+        public Connector() : this(Options.Create(new ConnectorSettings()))
+        {
+        }
+
+        public Connector(IOptions<ConnectorSettings> options)
+        {
+            _settings = options.Value;
+        }
 
         public void StartUp(string connectionString)
         {
-            //Парсим строку подключения.
             Logger.Debug("Строка подключения: " + connectionString);
             foreach (var item in connectionString.Split(';'))
             {
-                if (item.StartsWith("url")) url = item.Split('=')[1];
-                if (item.StartsWith("login")) login = item.Split('=')[1];
-                if (item.StartsWith("password")) password = item.Split('=')[1];
+                if (item.StartsWith("url")) _url = item.Split('=')[1];
+                if (item.StartsWith("login")) _login = item.Split('=')[1];
+                if (item.StartsWith("password")) _password = item.Split('=')[1];
             }
 
-            //Проходим аунтификацию на сервере.
             var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(url);
-            var body = new { login, password };
+            httpClient.BaseAddress = new Uri(_url);
+            var body = new { login = _login, password = _password };
             var content = new StringContent(JsonSerializer.Serialize(body), UnicodeEncoding.UTF8, "application/json");
-            var response = httpClient.PostAsync("api/v1/login", content).Result;
+            var response = httpClient.PostAsync(_settings.Endpoints.Login, content).Result;
             var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(response.Content.ReadAsStringAsync().Result);
-            token = tokenResponse!.Data!.AccessToken;
+            _token = tokenResponse!.Data!.AccessToken;
         }
 
         public IEnumerable<Permission> GetAllPermissions()
         {
             var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(url);
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            httpClient.BaseAddress = new Uri(_url);
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
 
-            //Получаем ИТРоли
-            var response = httpClient.GetAsync("api/v1/roles/all").Result;
+            var response = httpClient.GetAsync(_settings.Endpoints.RolesAll).Result;
             var itRoleResponse = JsonSerializer.Deserialize<RoleResponse>(response.Content.ReadAsStringAsync().Result);
             var itRolePermissions =
-                itRoleResponse!.Data!.Select(_ => new Permission($"ItRole,{_.Id}", _.Name, _.CorporatePhoneNumber));
+                itRoleResponse!.Data!.Select(_ => new Permission($"{_settings.PermissionTypes.ItRole},{_.Id}", _.Name, _.CorporatePhoneNumber));
 
-            //Получаем права
-            response = httpClient.GetAsync("api/v1/rights/all").Result;
+            response = httpClient.GetAsync(_settings.Endpoints.RightsAll).Result;
             var rightResponse = JsonSerializer.Deserialize<RightResponse>(response.Content.ReadAsStringAsync().Result);
             var rightPermissions = rightResponse!.Data!.Select(_ =>
-                new Permission($"RequestRight,{_.Id}", _.Name, null));
+                new Permission($"{_settings.PermissionTypes.RequestRight},{_.Id}", _.Name, null));
 
             return itRolePermissions.Concat(rightPermissions);
         }
@@ -65,18 +70,16 @@ namespace TR.Connector
         public IEnumerable<string> GetUserPermissions(string userLogin)
         {
             var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(url);
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            httpClient.BaseAddress = new Uri(_url);
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
 
-            //Получаем ИТРоли
-            var response = httpClient.GetAsync($"api/v1/users/{userLogin}/roles").Result;
+            var response = httpClient.GetAsync(string.Format(_settings.Endpoints.UserRoles, userLogin)).Result;
             var itRoleResponse = JsonSerializer.Deserialize<UserRoleResponse>(response.Content.ReadAsStringAsync().Result);
-            var result1 = itRoleResponse!.Data!.Select(_ => $"ItRole,{_.Id}").ToList();
+            var result1 = itRoleResponse!.Data!.Select(_ => $"{_settings.PermissionTypes.ItRole},{_.Id}").ToList();
 
-            //Получаем права
-            response = httpClient.GetAsync($"api/v1/users/{userLogin}/rights").Result;
+            response = httpClient.GetAsync(string.Format(_settings.Endpoints.UserRights, userLogin)).Result;
             var rightResponse = JsonSerializer.Deserialize<UserRightResponse>(response.Content.ReadAsStringAsync().Result);
-            var result2 = rightResponse!.Data!.Select(_ => $"RequestRight,{_.Id}").ToList();
+            var result2 = rightResponse!.Data!.Select(_ => $"{_settings.PermissionTypes.RequestRight},{_.Id}").ToList();
 
             return result1.Concat(result2).ToList();
         }
@@ -84,72 +87,72 @@ namespace TR.Connector
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
             var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(url);
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            httpClient.BaseAddress = new Uri(_url);
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
 
-             //проверяем что пользователь не залочен.
-             var response = httpClient.GetAsync($"api/v1/users/all").Result;
-             var userResponse = JsonSerializer.Deserialize<UserResponse>(response.Content.ReadAsStringAsync().Result);
-             var user = userResponse!.Data!.FirstOrDefault(_ => _.Login == userLogin);
+            var response = httpClient.GetAsync(_settings.Endpoints.UsersAll).Result;
+            var userResponse = JsonSerializer.Deserialize<UserResponse>(response.Content.ReadAsStringAsync().Result);
+            var user = userResponse!.Data!.FirstOrDefault(_ => _.Login == userLogin);
 
-             if (user != null && user.Status == "Lock")
-             {
+            if (user != null && user.Status == _settings.UserStatus.Locked)
+            {
                 Logger.Error($"Пользователь {userLogin} залочен.");
                 return;
-             }
-             //Назначаем права.
-             else if (user != null && user.Status == "Unlock")
-             {
-                 foreach (var rightId in rightIds)
-                 {
-                     var rightStr = rightId.Split(',');
-                     switch (rightStr[0])
-                     {
-                        case "ItRole":
-                            httpClient.PutAsync($"api/v1/users/{userLogin}/add/role/{rightStr[1]}", null).Wait();
-                            break;
-                        case "RequestRight":
-                            httpClient.PutAsync($"api/v1/users/{userLogin}/add/right/{rightStr[1]}", null).Wait();
-                            break;
-                        default: 
-                            throw new Exception($"Тип доступа {rightStr[0]} не определен");
-                     }
-                 }
-             }
+            }
+
+            if (user != null && user.Status == _settings.UserStatus.Unlocked)
+            {
+                foreach (var rightId in rightIds)
+                {
+                    var rightStr = rightId.Split(',');
+                    if (rightStr[0] == _settings.PermissionTypes.ItRole)
+                    {
+                        httpClient.PutAsync(string.Format(_settings.Endpoints.AddRole, userLogin, rightStr[1]), null).Wait();
+                    }
+                    else if (rightStr[0] == _settings.PermissionTypes.RequestRight)
+                    {
+                        httpClient.PutAsync(string.Format(_settings.Endpoints.AddRight, userLogin, rightStr[1]), null).Wait();
+                    }
+                    else
+                    {
+                        throw new Exception($"Тип доступа {rightStr[0]} не определен");
+                    }
+                }
+            }
         }
 
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
             var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(url);
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            httpClient.BaseAddress = new Uri(_url);
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
 
-            //проверяем что пользователь не залочен.
-            var response = httpClient.GetAsync($"api/v1/users/all").Result;
+            var response = httpClient.GetAsync(_settings.Endpoints.UsersAll).Result;
             var userResponse = JsonSerializer.Deserialize<UserResponse>(response.Content.ReadAsStringAsync().Result);
             var user = userResponse!.Data!.FirstOrDefault(_ => _.Login == userLogin);
 
-            if (user != null && user.Status == "Lock")
+            if (user != null && user.Status == _settings.UserStatus.Locked)
             {
                 Logger.Error($"Пользователь {userLogin} залочен.");
                 return;
             }
-             //отзываем права.
-            else if (user != null && user.Status == "Unlock")
+
+            if (user != null && user.Status == _settings.UserStatus.Unlocked)
             {
                 foreach (var rightId in rightIds)
                 {
                     var rightStr = rightId.Split(',');
-                    switch (rightStr[0])
+                    if (rightStr[0] == _settings.PermissionTypes.ItRole)
                     {
-                        case "ItRole":
-                            httpClient.DeleteAsync($"api/v1/users/{userLogin}/drop/role/{rightStr[1]}").Wait();
-                            break;
-                        case "RequestRight":
-                            httpClient.DeleteAsync($"api/v1/users/{userLogin}/drop/right/{rightStr[1]}").Wait();
-                            break;
-                        default:
-                            throw new Exception($"Тип доступа {rightStr[0]} не определен");
+                        httpClient.DeleteAsync(string.Format(_settings.Endpoints.DropRole, userLogin, rightStr[1])).Wait();
+                    }
+                    else if (rightStr[0] == _settings.PermissionTypes.RequestRight)
+                    {
+                        httpClient.DeleteAsync(string.Format(_settings.Endpoints.DropRight, userLogin, rightStr[1])).Wait();
+                    }
+                    else
+                    {
+                        throw new Exception($"Тип доступа {rightStr[0]} не определен");
                     }
                 }
             }
@@ -174,15 +177,15 @@ namespace TR.Connector
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
         {
             var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(url);
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            httpClient.BaseAddress = new Uri(_url);
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
 
-            var response = httpClient.GetAsync($"api/v1/users/{userLogin}").Result;
+            var response = httpClient.GetAsync(string.Format(_settings.Endpoints.UserByLogin, userLogin)).Result;
             var userResponse = JsonSerializer.Deserialize<UserPropertyResponse>(response.Content.ReadAsStringAsync().Result);
 
             var user = userResponse!.Data ?? throw new NullReferenceException($"Пользователь {userLogin} не найден");
 
-            if (user.Status == "Lock")
+            if (user.Status == _settings.UserStatus.Locked)
                 throw new Exception($"Невозможно получить свойства, пользователь {userLogin} залочен");
 
             return user.GetType().GetProperties()
@@ -198,14 +201,14 @@ namespace TR.Connector
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
         {
             var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(url);
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            httpClient.BaseAddress = new Uri(_url);
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
 
-            var response = httpClient.GetAsync($"api/v1/users/{userLogin}").Result;
+            var response = httpClient.GetAsync(string.Format(_settings.Endpoints.UserByLogin, userLogin)).Result;
             var userResponse = JsonSerializer.Deserialize<UserPropertyResponse>(response.Content.ReadAsStringAsync().Result);
 
             var user = userResponse!.Data ?? throw new NullReferenceException($"Пользователь {userLogin} не найден");
-            if (user.Status == "Lock")
+            if (user.Status == _settings.UserStatus.Locked)
                 throw new Exception($"Невозможно обновить свойства, пользователь {userLogin} залочен");
 
             foreach (var property in properties)
@@ -224,29 +227,27 @@ namespace TR.Connector
             }
 
             var content = new StringContent(JsonSerializer.Serialize(user), UnicodeEncoding.UTF8, "application/json");
-            httpClient.PutAsync("api/v1/users/edit", content).Wait();
+            httpClient.PutAsync(_settings.Endpoints.EditUser, content).Wait();
         }
 
         public bool IsUserExists(string userLogin)
         {
             var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(url);
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            httpClient.BaseAddress = new Uri(_url);
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
 
-            var response = httpClient.GetAsync($"api/v1/users/all").Result;
+            var response = httpClient.GetAsync(_settings.Endpoints.UsersAll).Result;
             var userResponse = JsonSerializer.Deserialize<UserResponse>(response.Content.ReadAsStringAsync().Result);
-            var user = userResponse!.Data!.FirstOrDefault(_ => _.Login == userLogin);
+            var user = userResponse!.Data!.FirstOrDefault(u => u.Login == userLogin);
 
-            if(user != null) return true;
-
-            return false;
+            return user != null;
         }
 
         public void CreateUser(UserToCreate user)
         {
             var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(url);
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            httpClient.BaseAddress = new Uri(_url);
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
 
             var newUser = new CreateUserDto
             {
@@ -266,7 +267,7 @@ namespace TR.Connector
             };
 
             var content = new StringContent(JsonSerializer.Serialize(newUser), UnicodeEncoding.UTF8, "application/json");
-            httpClient.PostAsync("api/v1/users/create", content).Wait();
+            httpClient.PostAsync(_settings.Endpoints.CreateUser, content).Wait();
         }
     }
 }
