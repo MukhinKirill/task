@@ -4,7 +4,7 @@ namespace TR.Connectors.Api.Interfaces;
 
 public interface IConnector
 {
-    ILogger Logger { get; set; }
+    ILogger? Logger { get; set; }
 
     Task StartUpAsync(string connectionString);
     Task CreateUserAsync(UserToCreate user);
