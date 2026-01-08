@@ -11,13 +11,13 @@ namespace TR.Connector
 {
     public class Connector : IConnector
     {
+        private static readonly HttpClient HttpClient = new();
+
         public ILogger Logger { get; set; }
 
         private readonly ConnectorSettings _settings;
 
-        private string _url = "";
-        private string _login = "";
-        private string _password = "";
+        private string _baseUrl = "";
         private string _token = "";
 
         public Connector() : this(Options.Create(new ConnectorSettings()))
@@ -31,72 +31,86 @@ namespace TR.Connector
 
         public void StartUp(string connectionString)
         {
-            Logger.Debug("Строка подключения: " + connectionString);
+            Logger?.Debug("Строка подключения: " + connectionString);
+
+            string login = "", password = "";
             foreach (var item in connectionString.Split(';'))
             {
-                if (item.StartsWith("url")) _url = item.Split('=')[1];
-                if (item.StartsWith("login")) _login = item.Split('=')[1];
-                if (item.StartsWith("password")) _password = item.Split('=')[1];
+                if (item.StartsWith("url")) _baseUrl = item.Split('=')[1].TrimEnd('/');
+                if (item.StartsWith("login")) login = item.Split('=')[1];
+                if (item.StartsWith("password")) password = item.Split('=')[1];
             }
 
-            var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(_url);
-            var body = new { login = _login, password = _password };
-            var content = new StringContent(JsonSerializer.Serialize(body), UnicodeEncoding.UTF8, "application/json");
-            var response = httpClient.PostAsync(_settings.Endpoints.Login, content).Result;
+            var body = new { login, password };
+            var content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
+            var response = HttpClient.PostAsync($"{_baseUrl}/{_settings.Endpoints.Login}", content).Result;
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Logger?.Error($"Ошибка аутентификации: {response.StatusCode}");
+                throw new HttpRequestException($"Authentication failed: {response.StatusCode}");
+            }
+
             var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(response.Content.ReadAsStringAsync().Result);
-            _token = tokenResponse!.Data!.AccessToken;
+            _token = tokenResponse?.Data?.AccessToken ?? throw new Exception("Failed to get access token");
+        }
+
+        private HttpRequestMessage CreateRequest(HttpMethod method, string endpoint)
+        {
+            var request = new HttpRequestMessage(method, $"{_baseUrl}/{endpoint}");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _token);
+            return request;
+        }
+
+        private HttpRequestMessage CreateRequest(HttpMethod method, string endpoint, HttpContent? content)
+        {
+            var request = CreateRequest(method, endpoint);
+            request.Content = content;
+            return request;
         }
 
         public IEnumerable<Permission> GetAllPermissions()
         {
-            var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(_url);
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
-
-            var response = httpClient.GetAsync(_settings.Endpoints.RolesAll).Result;
-            var itRoleResponse = JsonSerializer.Deserialize<RoleResponse>(response.Content.ReadAsStringAsync().Result);
+            var rolesResponse = HttpClient.Send(CreateRequest(HttpMethod.Get, _settings.Endpoints.RolesAll));
+            rolesResponse.EnsureSuccessStatusCode();
+            var itRoleResponse = JsonSerializer.Deserialize<RoleResponse>(rolesResponse.Content.ReadAsStringAsync().Result);
             var itRolePermissions =
-                itRoleResponse!.Data!.Select(_ => new Permission($"{_settings.PermissionTypes.ItRole},{_.Id}", _.Name, _.CorporatePhoneNumber));
+                itRoleResponse!.Data!.Select(r => new Permission($"{_settings.PermissionTypes.ItRole},{r.Id}", r.Name, r.CorporatePhoneNumber));
 
-            response = httpClient.GetAsync(_settings.Endpoints.RightsAll).Result;
-            var rightResponse = JsonSerializer.Deserialize<RightResponse>(response.Content.ReadAsStringAsync().Result);
-            var rightPermissions = rightResponse!.Data!.Select(_ =>
-                new Permission($"{_settings.PermissionTypes.RequestRight},{_.Id}", _.Name, null));
+            var rightsResponse = HttpClient.Send(CreateRequest(HttpMethod.Get, _settings.Endpoints.RightsAll));
+            rightsResponse.EnsureSuccessStatusCode();
+            var rightResponse = JsonSerializer.Deserialize<RightResponse>(rightsResponse.Content.ReadAsStringAsync().Result);
+            var rightPermissions = rightResponse!.Data!.Select(r =>
+                new Permission($"{_settings.PermissionTypes.RequestRight},{r.Id}", r.Name, null));
 
             return itRolePermissions.Concat(rightPermissions);
         }
 
         public IEnumerable<string> GetUserPermissions(string userLogin)
         {
-            var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(_url);
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
+            var rolesResponse = HttpClient.Send(CreateRequest(HttpMethod.Get, string.Format(_settings.Endpoints.UserRoles, userLogin)));
+            rolesResponse.EnsureSuccessStatusCode();
+            var itRoleResponse = JsonSerializer.Deserialize<UserRoleResponse>(rolesResponse.Content.ReadAsStringAsync().Result);
+            var result1 = itRoleResponse!.Data!.Select(r => $"{_settings.PermissionTypes.ItRole},{r.Id}").ToList();
 
-            var response = httpClient.GetAsync(string.Format(_settings.Endpoints.UserRoles, userLogin)).Result;
-            var itRoleResponse = JsonSerializer.Deserialize<UserRoleResponse>(response.Content.ReadAsStringAsync().Result);
-            var result1 = itRoleResponse!.Data!.Select(_ => $"{_settings.PermissionTypes.ItRole},{_.Id}").ToList();
-
-            response = httpClient.GetAsync(string.Format(_settings.Endpoints.UserRights, userLogin)).Result;
-            var rightResponse = JsonSerializer.Deserialize<UserRightResponse>(response.Content.ReadAsStringAsync().Result);
-            var result2 = rightResponse!.Data!.Select(_ => $"{_settings.PermissionTypes.RequestRight},{_.Id}").ToList();
+            var rightsResponse = HttpClient.Send(CreateRequest(HttpMethod.Get, string.Format(_settings.Endpoints.UserRights, userLogin)));
+            rightsResponse.EnsureSuccessStatusCode();
+            var rightResponse = JsonSerializer.Deserialize<UserRightResponse>(rightsResponse.Content.ReadAsStringAsync().Result);
+            var result2 = rightResponse!.Data!.Select(r => $"{_settings.PermissionTypes.RequestRight},{r.Id}").ToList();
 
             return result1.Concat(result2).ToList();
         }
 
         public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(_url);
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
-
-            var response = httpClient.GetAsync(_settings.Endpoints.UsersAll).Result;
-            var userResponse = JsonSerializer.Deserialize<UserResponse>(response.Content.ReadAsStringAsync().Result);
-            var user = userResponse!.Data!.FirstOrDefault(_ => _.Login == userLogin);
+            var usersResponse = HttpClient.Send(CreateRequest(HttpMethod.Get, _settings.Endpoints.UsersAll));
+            usersResponse.EnsureSuccessStatusCode();
+            var userResponse = JsonSerializer.Deserialize<UserResponse>(usersResponse.Content.ReadAsStringAsync().Result);
+            var user = userResponse!.Data!.FirstOrDefault(u => u.Login == userLogin);
 
             if (user != null && user.Status == _settings.UserStatus.Locked)
             {
-                Logger.Error($"Пользователь {userLogin} залочен.");
+                Logger?.Error($"Пользователь {userLogin} залочен.");
                 return;
             }
 
@@ -105,35 +119,36 @@ namespace TR.Connector
                 foreach (var rightId in rightIds)
                 {
                     var rightStr = rightId.Split(',');
+                    string endpoint;
                     if (rightStr[0] == _settings.PermissionTypes.ItRole)
                     {
-                        httpClient.PutAsync(string.Format(_settings.Endpoints.AddRole, userLogin, rightStr[1]), null).Wait();
+                        endpoint = string.Format(_settings.Endpoints.AddRole, userLogin, rightStr[1]);
                     }
                     else if (rightStr[0] == _settings.PermissionTypes.RequestRight)
                     {
-                        httpClient.PutAsync(string.Format(_settings.Endpoints.AddRight, userLogin, rightStr[1]), null).Wait();
+                        endpoint = string.Format(_settings.Endpoints.AddRight, userLogin, rightStr[1]);
                     }
                     else
                     {
                         throw new Exception($"Тип доступа {rightStr[0]} не определен");
                     }
+
+                    var response = HttpClient.Send(CreateRequest(HttpMethod.Put, endpoint, null));
+                    response.EnsureSuccessStatusCode();
                 }
             }
         }
 
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
         {
-            var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(_url);
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
-
-            var response = httpClient.GetAsync(_settings.Endpoints.UsersAll).Result;
-            var userResponse = JsonSerializer.Deserialize<UserResponse>(response.Content.ReadAsStringAsync().Result);
-            var user = userResponse!.Data!.FirstOrDefault(_ => _.Login == userLogin);
+            var usersResponse = HttpClient.Send(CreateRequest(HttpMethod.Get, _settings.Endpoints.UsersAll));
+            usersResponse.EnsureSuccessStatusCode();
+            var userResponse = JsonSerializer.Deserialize<UserResponse>(usersResponse.Content.ReadAsStringAsync().Result);
+            var user = userResponse!.Data!.FirstOrDefault(u => u.Login == userLogin);
 
             if (user != null && user.Status == _settings.UserStatus.Locked)
             {
-                Logger.Error($"Пользователь {userLogin} залочен.");
+                Logger?.Error($"Пользователь {userLogin} залочен.");
                 return;
             }
 
@@ -142,18 +157,22 @@ namespace TR.Connector
                 foreach (var rightId in rightIds)
                 {
                     var rightStr = rightId.Split(',');
+                    string endpoint;
                     if (rightStr[0] == _settings.PermissionTypes.ItRole)
                     {
-                        httpClient.DeleteAsync(string.Format(_settings.Endpoints.DropRole, userLogin, rightStr[1])).Wait();
+                        endpoint = string.Format(_settings.Endpoints.DropRole, userLogin, rightStr[1]);
                     }
                     else if (rightStr[0] == _settings.PermissionTypes.RequestRight)
                     {
-                        httpClient.DeleteAsync(string.Format(_settings.Endpoints.DropRight, userLogin, rightStr[1])).Wait();
+                        endpoint = string.Format(_settings.Endpoints.DropRight, userLogin, rightStr[1]);
                     }
                     else
                     {
                         throw new Exception($"Тип доступа {rightStr[0]} не определен");
                     }
+
+                    var response = HttpClient.Send(CreateRequest(HttpMethod.Delete, endpoint));
+                    response.EnsureSuccessStatusCode();
                 }
             }
         }
@@ -176,11 +195,8 @@ namespace TR.Connector
 
         public IEnumerable<UserProperty> GetUserProperties(string userLogin)
         {
-            var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(_url);
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
-
-            var response = httpClient.GetAsync(string.Format(_settings.Endpoints.UserByLogin, userLogin)).Result;
+            var response = HttpClient.Send(CreateRequest(HttpMethod.Get, string.Format(_settings.Endpoints.UserByLogin, userLogin)));
+            response.EnsureSuccessStatusCode();
             var userResponse = JsonSerializer.Deserialize<UserPropertyResponse>(response.Content.ReadAsStringAsync().Result);
 
             var user = userResponse!.Data ?? throw new NullReferenceException($"Пользователь {userLogin} не найден");
@@ -200,12 +216,9 @@ namespace TR.Connector
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
         {
-            var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(_url);
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
-
-            var response = httpClient.GetAsync(string.Format(_settings.Endpoints.UserByLogin, userLogin)).Result;
-            var userResponse = JsonSerializer.Deserialize<UserPropertyResponse>(response.Content.ReadAsStringAsync().Result);
+            var getResponse = HttpClient.Send(CreateRequest(HttpMethod.Get, string.Format(_settings.Endpoints.UserByLogin, userLogin)));
+            getResponse.EnsureSuccessStatusCode();
+            var userResponse = JsonSerializer.Deserialize<UserPropertyResponse>(getResponse.Content.ReadAsStringAsync().Result);
 
             var user = userResponse!.Data ?? throw new NullReferenceException($"Пользователь {userLogin} не найден");
             if (user.Status == _settings.UserStatus.Locked)
@@ -226,17 +239,15 @@ namespace TR.Connector
                 }
             }
 
-            var content = new StringContent(JsonSerializer.Serialize(user), UnicodeEncoding.UTF8, "application/json");
-            httpClient.PutAsync(_settings.Endpoints.EditUser, content).Wait();
+            var content = new StringContent(JsonSerializer.Serialize(user), Encoding.UTF8, "application/json");
+            var putResponse = HttpClient.Send(CreateRequest(HttpMethod.Put, _settings.Endpoints.EditUser, content));
+            putResponse.EnsureSuccessStatusCode();
         }
 
         public bool IsUserExists(string userLogin)
         {
-            var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(_url);
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
-
-            var response = httpClient.GetAsync(_settings.Endpoints.UsersAll).Result;
+            var response = HttpClient.Send(CreateRequest(HttpMethod.Get, _settings.Endpoints.UsersAll));
+            response.EnsureSuccessStatusCode();
             var userResponse = JsonSerializer.Deserialize<UserResponse>(response.Content.ReadAsStringAsync().Result);
             var user = userResponse!.Data!.FirstOrDefault(u => u.Login == userLogin);
 
@@ -245,10 +256,6 @@ namespace TR.Connector
 
         public void CreateUser(UserToCreate user)
         {
-            var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(_url);
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
-
             var newUser = new CreateUserDto
             {
                 Login = user.Login,
@@ -266,8 +273,9 @@ namespace TR.Connector
                 Status = string.Empty
             };
 
-            var content = new StringContent(JsonSerializer.Serialize(newUser), UnicodeEncoding.UTF8, "application/json");
-            httpClient.PostAsync(_settings.Endpoints.CreateUser, content).Wait();
+            var content = new StringContent(JsonSerializer.Serialize(newUser), Encoding.UTF8, "application/json");
+            var response = HttpClient.Send(CreateRequest(HttpMethod.Post, _settings.Endpoints.CreateUser, content));
+            response.EnsureSuccessStatusCode();
         }
     }
 }
