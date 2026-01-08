@@ -1,12 +1,13 @@
-﻿using System.Net.Http.Headers;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using TR.Connector.Models;
 using TR.Connectors.Api.Entities;
 using TR.Connectors.Api.Interfaces;
 
 namespace TR.Connector
 {
-    public partial class Connector : IConnector
+    public class Connector : IConnector
     {
         public ILogger Logger { get; set; }
 
@@ -37,7 +38,7 @@ namespace TR.Connector
             var content = new StringContent(JsonSerializer.Serialize(body), UnicodeEncoding.UTF8, "application/json");
             var response = httpClient.PostAsync("api/v1/login", content).Result;
             var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(response.Content.ReadAsStringAsync().Result);
-            token = tokenResponse.data.access_token;
+            token = tokenResponse!.Data!.AccessToken;
         }
 
         public IEnumerable<Permission> GetAllPermissions()
@@ -50,15 +51,15 @@ namespace TR.Connector
             var response = httpClient.GetAsync("api/v1/roles/all").Result;
             var itRoleResponse = JsonSerializer.Deserialize<RoleResponse>(response.Content.ReadAsStringAsync().Result);
             var itRolePermissions =
-                itRoleResponse.data.Select(_ => new Permission($"ItRole,{_.id}", _.name, _.corporatePhoneNumber));
+                itRoleResponse!.Data!.Select(_ => new Permission($"ItRole,{_.Id}", _.Name, _.CorporatePhoneNumber));
 
             //Получаем права
             response = httpClient.GetAsync("api/v1/rights/all").Result;
-            var RightResponse = JsonSerializer.Deserialize<RoleResponse>(response.Content.ReadAsStringAsync().Result);
-            var RightPermissions = RightResponse.data.Select(_ =>
-                new Permission($"RequestRight,{_.id}", _.name, _.corporatePhoneNumber));
+            var rightResponse = JsonSerializer.Deserialize<RightResponse>(response.Content.ReadAsStringAsync().Result);
+            var rightPermissions = rightResponse!.Data!.Select(_ =>
+                new Permission($"RequestRight,{_.Id}", _.Name, null));
 
-            return itRolePermissions.Concat(RightPermissions);
+            return itRolePermissions.Concat(rightPermissions);
         }
 
         public IEnumerable<string> GetUserPermissions(string userLogin)
@@ -70,12 +71,12 @@ namespace TR.Connector
             //Получаем ИТРоли
             var response = httpClient.GetAsync($"api/v1/users/{userLogin}/roles").Result;
             var itRoleResponse = JsonSerializer.Deserialize<UserRoleResponse>(response.Content.ReadAsStringAsync().Result);
-            var result1 = itRoleResponse.data.Select(_ => $"ItRole,{_.id}").ToList();
+            var result1 = itRoleResponse!.Data!.Select(_ => $"ItRole,{_.Id}").ToList();
 
             //Получаем права
             response = httpClient.GetAsync($"api/v1/users/{userLogin}/rights").Result;
-            var RightResponse = JsonSerializer.Deserialize<UserRoleResponse>(response.Content.ReadAsStringAsync().Result);
-            var result2 = RightResponse.data.Select(_ => $"RequestRight,{_.id}").ToList();
+            var rightResponse = JsonSerializer.Deserialize<UserRightResponse>(response.Content.ReadAsStringAsync().Result);
+            var result2 = rightResponse!.Data!.Select(_ => $"RequestRight,{_.Id}").ToList();
 
             return result1.Concat(result2).ToList();
         }
@@ -89,15 +90,15 @@ namespace TR.Connector
              //проверяем что пользователь не залочен.
              var response = httpClient.GetAsync($"api/v1/users/all").Result;
              var userResponse = JsonSerializer.Deserialize<UserResponse>(response.Content.ReadAsStringAsync().Result);
-             var user = userResponse.data.FirstOrDefault(_ => _.login == userLogin);
+             var user = userResponse!.Data!.FirstOrDefault(_ => _.Login == userLogin);
 
-             if (user != null && user.status == "Lock")
+             if (user != null && user.Status == "Lock")
              {
                 Logger.Error($"Пользователь {userLogin} залочен.");
                 return;
              }
              //Назначаем права.
-             else if (user != null && user.status == "Unlock")
+             else if (user != null && user.Status == "Unlock")
              {
                  foreach (var rightId in rightIds)
                  {
@@ -126,15 +127,15 @@ namespace TR.Connector
             //проверяем что пользователь не залочен.
             var response = httpClient.GetAsync($"api/v1/users/all").Result;
             var userResponse = JsonSerializer.Deserialize<UserResponse>(response.Content.ReadAsStringAsync().Result);
-            var user = userResponse.data.FirstOrDefault(_ => _.login == userLogin);
+            var user = userResponse!.Data!.FirstOrDefault(_ => _.Login == userLogin);
 
-            if (user != null && user.status == "Lock")
+            if (user != null && user.Status == "Lock")
             {
                 Logger.Error($"Пользователь {userLogin} залочен.");
                 return;
             }
              //отзываем права.
-            else if (user != null && user.status == "Unlock")
+            else if (user != null && user.Status == "Unlock")
             {
                 foreach (var rightId in rightIds)
                 {
@@ -157,11 +158,15 @@ namespace TR.Connector
         public IEnumerable<Property> GetAllProperties()
         {
             var props = new List<Property>();
-            foreach (var propertyInfo in new UserPropertyData().GetType().GetProperties())
+            foreach (var propertyInfo in typeof(UserPropertyData).GetProperties())
             {
-                if(propertyInfo.Name == "login") continue;
+                var jsonAttr = propertyInfo.GetCustomAttributes(typeof(System.Text.Json.Serialization.JsonPropertyNameAttribute), false)
+                    .FirstOrDefault() as System.Text.Json.Serialization.JsonPropertyNameAttribute;
+                var jsonName = jsonAttr?.Name ?? propertyInfo.Name;
 
-                props.Add(new Property(propertyInfo.Name, propertyInfo.Name));
+                if (jsonName == "login") continue;
+
+                props.Add(new Property(jsonName, jsonName));
             }
             return props;
         }
@@ -175,13 +180,19 @@ namespace TR.Connector
             var response = httpClient.GetAsync($"api/v1/users/{userLogin}").Result;
             var userResponse = JsonSerializer.Deserialize<UserPropertyResponse>(response.Content.ReadAsStringAsync().Result);
 
-            var user = userResponse.data ?? throw new NullReferenceException($"Пользователь {userLogin} не найден");
+            var user = userResponse!.Data ?? throw new NullReferenceException($"Пользователь {userLogin} не найден");
 
-            if (user.status == "Lock")
+            if (user.Status == "Lock")
                 throw new Exception($"Невозможно получить свойства, пользователь {userLogin} залочен");
 
             return user.GetType().GetProperties()
-                .Select(_ => new UserProperty(_.Name, _.GetValue(user) as string));
+                .Select(prop =>
+                {
+                    var jsonAttr = prop.GetCustomAttributes(typeof(System.Text.Json.Serialization.JsonPropertyNameAttribute), false)
+                        .FirstOrDefault() as System.Text.Json.Serialization.JsonPropertyNameAttribute;
+                    var jsonName = jsonAttr?.Name ?? prop.Name;
+                    return new UserProperty(jsonName, prop.GetValue(user)?.ToString());
+                });
         }
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
@@ -193,15 +204,19 @@ namespace TR.Connector
             var response = httpClient.GetAsync($"api/v1/users/{userLogin}").Result;
             var userResponse = JsonSerializer.Deserialize<UserPropertyResponse>(response.Content.ReadAsStringAsync().Result);
 
-            var user = userResponse.data ?? throw new NullReferenceException($"Пользователь {userLogin} не найден");
-            if (user.status == "Lock")
+            var user = userResponse!.Data ?? throw new NullReferenceException($"Пользователь {userLogin} не найден");
+            if (user.Status == "Lock")
                 throw new Exception($"Невозможно обновить свойства, пользователь {userLogin} залочен");
 
             foreach (var property in properties)
             {
                 foreach (var userProp in user.GetType().GetProperties())
                 {
-                    if (property.Name == userProp.Name)
+                    var jsonAttr = userProp.GetCustomAttributes(typeof(System.Text.Json.Serialization.JsonPropertyNameAttribute), false)
+                        .FirstOrDefault() as System.Text.Json.Serialization.JsonPropertyNameAttribute;
+                    var jsonName = jsonAttr?.Name ?? userProp.Name;
+
+                    if (property.Name == jsonName)
                     {
                         userProp.SetValue(user, property.Value);
                     }
@@ -220,7 +235,7 @@ namespace TR.Connector
 
             var response = httpClient.GetAsync($"api/v1/users/all").Result;
             var userResponse = JsonSerializer.Deserialize<UserResponse>(response.Content.ReadAsStringAsync().Result);
-            var user = userResponse.data.FirstOrDefault(_ => _.login == userLogin);
+            var user = userResponse!.Data!.FirstOrDefault(_ => _.Login == userLogin);
 
             if(user != null) return true;
 
@@ -233,21 +248,21 @@ namespace TR.Connector
             httpClient.BaseAddress = new Uri(url);
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-            var newUser = new CreateUSerDTO()
+            var newUser = new CreateUserDto
             {
-                login = user.Login,
-                password = user.HashPassword,
+                Login = user.Login,
+                Password = user.HashPassword,
 
-                lastName = user.Properties.FirstOrDefault(p => p.Name.Equals("lastName", StringComparison.OrdinalIgnoreCase))?.Value ?? string.Empty,
-                firstName = user.Properties.FirstOrDefault(p => p.Name.Equals("firstName", StringComparison.OrdinalIgnoreCase))?.Value ?? string.Empty,
-                middleName = user.Properties.FirstOrDefault(p => p.Name.Equals("middleName", StringComparison.OrdinalIgnoreCase))?.Value ?? string.Empty,
+                LastName = user.Properties.FirstOrDefault(p => p.Name.Equals("lastName", StringComparison.OrdinalIgnoreCase))?.Value ?? string.Empty,
+                FirstName = user.Properties.FirstOrDefault(p => p.Name.Equals("firstName", StringComparison.OrdinalIgnoreCase))?.Value ?? string.Empty,
+                MiddleName = user.Properties.FirstOrDefault(p => p.Name.Equals("middleName", StringComparison.OrdinalIgnoreCase))?.Value ?? string.Empty,
 
-                telephoneNumber = user.Properties.FirstOrDefault(p => p.Name.Equals("telephoneNumber", StringComparison.OrdinalIgnoreCase))?.Value ?? string.Empty,
-                isLead = bool.TryParse(user.Properties.FirstOrDefault(p => p.Name.Equals("isLead", StringComparison.OrdinalIgnoreCase))?.Value ?? string.Empty, out bool isLeadValue)
+                TelephoneNumber = user.Properties.FirstOrDefault(p => p.Name.Equals("telephoneNumber", StringComparison.OrdinalIgnoreCase))?.Value ?? string.Empty,
+                IsLead = bool.TryParse(user.Properties.FirstOrDefault(p => p.Name.Equals("isLead", StringComparison.OrdinalIgnoreCase))?.Value ?? string.Empty, out bool isLeadValue)
                     ? isLeadValue
                     : false,
 
-                status = string.Empty
+                Status = string.Empty
             };
 
             var content = new StringContent(JsonSerializer.Serialize(newUser), UnicodeEncoding.UTF8, "application/json");
