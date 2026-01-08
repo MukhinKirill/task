@@ -71,6 +71,50 @@ namespace TR.Connector
             return request;
         }
 
+        private async Task<UserResponseData?> GetUserByLoginAsync(string userLogin)
+        {
+            var usersResponse = await HttpClient.SendAsync(CreateRequest(HttpMethod.Get, _settings.Endpoints.UsersAll));
+            usersResponse.EnsureSuccessStatusCode();
+            var usersContent = await usersResponse.Content.ReadAsStringAsync();
+            var userResponse = JsonSerializer.Deserialize<UserResponse>(usersContent);
+            return userResponse!.Data!.FirstOrDefault(u => u.Login == userLogin);
+        }
+
+        private bool IsUserLocked(UserResponseData? user)
+        {
+            return user != null && user.Status == _settings.UserStatus.Locked;
+        }
+
+        private string GetPermissionEndpoint(string permissionId, string userLogin, bool isAdd)
+        {
+            var parts = permissionId.Split(',');
+            var permissionType = parts[0];
+            var id = parts[1];
+
+            if (permissionType == _settings.PermissionTypes.ItRole)
+            {
+                return isAdd
+                    ? string.Format(_settings.Endpoints.AddRole, userLogin, id)
+                    : string.Format(_settings.Endpoints.DropRole, userLogin, id);
+            }
+
+            if (permissionType == _settings.PermissionTypes.RequestRight)
+            {
+                return isAdd
+                    ? string.Format(_settings.Endpoints.AddRight, userLogin, id)
+                    : string.Format(_settings.Endpoints.DropRight, userLogin, id);
+            }
+
+            throw new ArgumentException($"Unknown permission type: {permissionType}");
+        }
+
+        private static string GetJsonPropertyName(System.Reflection.PropertyInfo propertyInfo)
+        {
+            var jsonAttr = propertyInfo.GetCustomAttributes(typeof(JsonPropertyNameAttribute), false)
+                .FirstOrDefault() as JsonPropertyNameAttribute;
+            return jsonAttr?.Name ?? propertyInfo.Name;
+        }
+
         public async Task<IEnumerable<Permission>> GetAllPermissionsAsync()
         {
             var rolesResponse = await HttpClient.SendAsync(CreateRequest(HttpMethod.Get, _settings.Endpoints.RolesAll));
@@ -109,13 +153,9 @@ namespace TR.Connector
 
         public async Task AddUserPermissionsAsync(string userLogin, IEnumerable<string> rightIds)
         {
-            var usersResponse = await HttpClient.SendAsync(CreateRequest(HttpMethod.Get, _settings.Endpoints.UsersAll));
-            usersResponse.EnsureSuccessStatusCode();
-            var usersContent = await usersResponse.Content.ReadAsStringAsync();
-            var userResponse = JsonSerializer.Deserialize<UserResponse>(usersContent);
-            var user = userResponse!.Data!.FirstOrDefault(u => u.Login == userLogin);
+            var user = await GetUserByLoginAsync(userLogin);
 
-            if (user != null && user.Status == _settings.UserStatus.Locked)
+            if (IsUserLocked(user))
             {
                 Logger?.Error($"Пользователь {userLogin} залочен.");
                 return;
@@ -125,21 +165,7 @@ namespace TR.Connector
             {
                 foreach (var rightId in rightIds)
                 {
-                    var rightStr = rightId.Split(',');
-                    string endpoint;
-                    if (rightStr[0] == _settings.PermissionTypes.ItRole)
-                    {
-                        endpoint = string.Format(_settings.Endpoints.AddRole, userLogin, rightStr[1]);
-                    }
-                    else if (rightStr[0] == _settings.PermissionTypes.RequestRight)
-                    {
-                        endpoint = string.Format(_settings.Endpoints.AddRight, userLogin, rightStr[1]);
-                    }
-                    else
-                    {
-                        throw new Exception($"Тип доступа {rightStr[0]} не определен");
-                    }
-
+                    var endpoint = GetPermissionEndpoint(rightId, userLogin, isAdd: true);
                     var response = await HttpClient.SendAsync(CreateRequest(HttpMethod.Put, endpoint, null));
                     response.EnsureSuccessStatusCode();
                 }
@@ -148,13 +174,9 @@ namespace TR.Connector
 
         public async Task RemoveUserPermissionsAsync(string userLogin, IEnumerable<string> rightIds)
         {
-            var usersResponse = await HttpClient.SendAsync(CreateRequest(HttpMethod.Get, _settings.Endpoints.UsersAll));
-            usersResponse.EnsureSuccessStatusCode();
-            var usersContent = await usersResponse.Content.ReadAsStringAsync();
-            var userResponse = JsonSerializer.Deserialize<UserResponse>(usersContent);
-            var user = userResponse!.Data!.FirstOrDefault(u => u.Login == userLogin);
+            var user = await GetUserByLoginAsync(userLogin);
 
-            if (user != null && user.Status == _settings.UserStatus.Locked)
+            if (IsUserLocked(user))
             {
                 Logger?.Error($"Пользователь {userLogin} залочен.");
                 return;
@@ -164,21 +186,7 @@ namespace TR.Connector
             {
                 foreach (var rightId in rightIds)
                 {
-                    var rightStr = rightId.Split(',');
-                    string endpoint;
-                    if (rightStr[0] == _settings.PermissionTypes.ItRole)
-                    {
-                        endpoint = string.Format(_settings.Endpoints.DropRole, userLogin, rightStr[1]);
-                    }
-                    else if (rightStr[0] == _settings.PermissionTypes.RequestRight)
-                    {
-                        endpoint = string.Format(_settings.Endpoints.DropRight, userLogin, rightStr[1]);
-                    }
-                    else
-                    {
-                        throw new Exception($"Тип доступа {rightStr[0]} не определен");
-                    }
-
+                    var endpoint = GetPermissionEndpoint(rightId, userLogin, isAdd: false);
                     var response = await HttpClient.SendAsync(CreateRequest(HttpMethod.Delete, endpoint));
                     response.EnsureSuccessStatusCode();
                 }
@@ -187,18 +195,11 @@ namespace TR.Connector
 
         public IEnumerable<Property> GetAllProperties()
         {
-            var props = new List<Property>();
-            foreach (var propertyInfo in typeof(UserPropertyData).GetProperties())
-            {
-                var jsonAttr = propertyInfo.GetCustomAttributes(typeof(JsonPropertyNameAttribute), false)
-                    .FirstOrDefault() as JsonPropertyNameAttribute;
-                var jsonName = jsonAttr?.Name ?? propertyInfo.Name;
-
-                if (jsonName == "login") continue;
-
-                props.Add(new Property(jsonName, jsonName));
-            }
-            return props;
+            return typeof(UserPropertyData).GetProperties()
+                .Select(prop => GetJsonPropertyName(prop))
+                .Where(name => name != "login")
+                .Select(name => new Property(name, name))
+                .ToList();
         }
 
         public async Task<IEnumerable<UserProperty>> GetUserPropertiesAsync(string userLogin)
@@ -214,13 +215,7 @@ namespace TR.Connector
                 throw new Exception($"Невозможно получить свойства, пользователь {userLogin} залочен");
 
             return user.GetType().GetProperties()
-                .Select(prop =>
-                {
-                    var jsonAttr = prop.GetCustomAttributes(typeof(JsonPropertyNameAttribute), false)
-                        .FirstOrDefault() as JsonPropertyNameAttribute;
-                    var jsonName = jsonAttr?.Name ?? prop.Name;
-                    return new UserProperty(jsonName, prop.GetValue(user)?.ToString());
-                });
+                .Select(prop => new UserProperty(GetJsonPropertyName(prop), prop.GetValue(user)?.ToString()));
         }
 
         public async Task UpdateUserPropertiesAsync(IEnumerable<UserProperty> properties, string userLogin)
@@ -236,17 +231,9 @@ namespace TR.Connector
 
             foreach (var property in properties)
             {
-                foreach (var userProp in user.GetType().GetProperties())
-                {
-                    var jsonAttr = userProp.GetCustomAttributes(typeof(JsonPropertyNameAttribute), false)
-                        .FirstOrDefault() as JsonPropertyNameAttribute;
-                    var jsonName = jsonAttr?.Name ?? userProp.Name;
-
-                    if (property.Name == jsonName)
-                    {
-                        userProp.SetValue(user, property.Value);
-                    }
-                }
+                var userProp = user.GetType().GetProperties()
+                    .FirstOrDefault(p => GetJsonPropertyName(p) == property.Name);
+                userProp?.SetValue(user, property.Value);
             }
 
             var content = new StringContent(JsonSerializer.Serialize(user), Encoding.UTF8, "application/json");
@@ -256,12 +243,7 @@ namespace TR.Connector
 
         public async Task<bool> IsUserExistsAsync(string userLogin)
         {
-            var response = await HttpClient.SendAsync(CreateRequest(HttpMethod.Get, _settings.Endpoints.UsersAll));
-            response.EnsureSuccessStatusCode();
-            var content = await response.Content.ReadAsStringAsync();
-            var userResponse = JsonSerializer.Deserialize<UserResponse>(content);
-            var user = userResponse!.Data!.FirstOrDefault(u => u.Login == userLogin);
-
+            var user = await GetUserByLoginAsync(userLogin);
             return user != null;
         }
 
