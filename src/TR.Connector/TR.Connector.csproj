@@ -7,9 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="TR.Connectors.Api">
-      <HintPath>libs\TR.Connectors.Api.dll</HintPath>
-    </Reference>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TR.Connectors.Api\TR.Connectors.Api.csproj" />
   </ItemGroup>
 
 </Project>

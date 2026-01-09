@@ -1,9 +1,9 @@
-﻿namespace TR.Connectors.Api.Entities;
+﻿namespace TR.Connectors.Api.Entities.DTO.Requests;
 
 public sealed class UserProperty
 {
     public string Name { get; set; }
-    public string Value { get; set; }
+    public string? Value { get; set; }
 
     public UserProperty(string name, string value)
     {

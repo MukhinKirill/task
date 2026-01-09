@@ -1,257 +1,107 @@
-﻿using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
+﻿using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using TR.Connectors.Api.Entities;
+using TR.Connectors.Api.Entities.DTO.Requests;
+using TR.Connectors.Api.Entities.Model;
 using TR.Connectors.Api.Interfaces;
 
 namespace TR.Connector
 {
-    public partial class Connector : IConnector
+    public class Connector : IConnector
     {
-        public ILogger Logger { get; set; }
+        private readonly IAuthService? _authService;
+        private readonly IPermissionService? _permissionService;
+        private readonly IUserService? _userService;
+        private readonly ILogger<Connector>? _logger;
 
-        private string url = "";
-        private string login = "";
-        private string password = "";
+        public Connector() { }
 
-        private string token = "";
-
-        //Пустой конструктор
-        public Connector() {}
-
-        public void StartUp(string connectionString)
+        public Connector(
+            IAuthService authService,
+            IPermissionService permissionService,
+            IUserService userService,
+            ILogger<Connector> logger)
         {
-            //Парсим строку подключения.
-            Logger.Debug("Строка подключения: " + connectionString);
-            foreach (var item in connectionString.Split(';'))
-            {
-                if (item.StartsWith("url")) url = item.Split('=')[1];
-                if (item.StartsWith("login")) login = item.Split('=')[1];
-                if (item.StartsWith("password")) password = item.Split('=')[1];
-            }
-
-            //Проходим аунтификацию на сервере.
-            var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(url);
-            var body = new { login, password };
-            var content = new StringContent(JsonSerializer.Serialize(body), UnicodeEncoding.UTF8, "application/json");
-            var response = httpClient.PostAsync("api/v1/login", content).Result;
-            var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(response.Content.ReadAsStringAsync().Result);
-            token = tokenResponse.data.access_token;
+            _authService = authService ?? throw new ArgumentNullException(nameof(authService));
+            _permissionService = permissionService ?? throw new ArgumentNullException(nameof(permissionService));
+            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+            _logger = logger;
         }
 
-        public IEnumerable<Permission> GetAllPermissions()
+        public Task StartUpAsync(string connectionString)
         {
-            var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(url);
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            //Получаем ИТРоли
-            var response = httpClient.GetAsync("api/v1/roles/all").Result;
-            var itRoleResponse = JsonSerializer.Deserialize<RoleResponse>(response.Content.ReadAsStringAsync().Result);
-            var itRolePermissions =
-                itRoleResponse.data.Select(_ => new Permission($"ItRole,{_.id}", _.name, _.corporatePhoneNumber));
-
-            //Получаем права
-            response = httpClient.GetAsync("api/v1/rights/all").Result;
-            var RightResponse = JsonSerializer.Deserialize<RoleResponse>(response.Content.ReadAsStringAsync().Result);
-            var RightPermissions = RightResponse.data.Select(_ =>
-                new Permission($"RequestRight,{_.id}", _.name, _.corporatePhoneNumber));
-
-            return itRolePermissions.Concat(RightPermissions);
+            _logger?.LogDebug("Connector.StartUp called");
+            if (_authService == null) throw new InvalidOperationException("AuthService is not available — configure DI");
+            return _authService.StartUpAsync(connectionString, CancellationToken.None);
         }
 
-        public IEnumerable<string> GetUserPermissions(string userLogin)
+        public Task<IEnumerable<Permission>> GetAllPermissionsAsync()
         {
-            var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(url);
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            //Получаем ИТРоли
-            var response = httpClient.GetAsync($"api/v1/users/{userLogin}/roles").Result;
-            var itRoleResponse = JsonSerializer.Deserialize<UserRoleResponse>(response.Content.ReadAsStringAsync().Result);
-            var result1 = itRoleResponse.data.Select(_ => $"ItRole,{_.id}").ToList();
-
-            //Получаем права
-            response = httpClient.GetAsync($"api/v1/users/{userLogin}/rights").Result;
-            var RightResponse = JsonSerializer.Deserialize<UserRoleResponse>(response.Content.ReadAsStringAsync().Result);
-            var result2 = RightResponse.data.Select(_ => $"RequestRight,{_.id}").ToList();
-
-            return result1.Concat(result2).ToList();
+            if (_permissionService == null) throw new InvalidOperationException("PermissionService is not available — configure DI");
+            return _permissionService.GetAllPermissionsAsync(CancellationToken.None);
         }
 
-        public void AddUserPermissions(string userLogin, IEnumerable<string> rightIds)
+        public Task<IEnumerable<string>> GetUserPermissionsAsync(string userLogin)
         {
-            var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(url);
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-             //проверяем что пользователь не залочен.
-             var response = httpClient.GetAsync($"api/v1/users/all").Result;
-             var userResponse = JsonSerializer.Deserialize<UserResponse>(response.Content.ReadAsStringAsync().Result);
-             var user = userResponse.data.FirstOrDefault(_ => _.login == userLogin);
-
-             if (user != null && user.status == "Lock")
-             {
-                Logger.Error($"Пользователь {userLogin} залочен.");
-                return;
-             }
-             //Назначаем права.
-             else if (user != null && user.status == "Unlock")
-             {
-                 foreach (var rightId in rightIds)
-                 {
-                     var rightStr = rightId.Split(',');
-                     switch (rightStr[0])
-                     {
-                        case "ItRole":
-                            httpClient.PutAsync($"api/v1/users/{userLogin}/add/role/{rightStr[1]}", null).Wait();
-                            break;
-                        case "RequestRight":
-                            httpClient.PutAsync($"api/v1/users/{userLogin}/add/right/{rightStr[1]}", null).Wait();
-                            break;
-                        default: 
-                            throw new Exception($"Тип доступа {rightStr[0]} не определен");
-                     }
-                 }
-             }
+            if (_permissionService == null) throw new InvalidOperationException("PermissionService is not available — configure DI");
+            return _permissionService.GetUserPermissionsAsync(userLogin, CancellationToken.None);
         }
 
-        public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
+        public Task AddUserPermissionsAsync(string userLogin, IEnumerable<string> rightIds)
         {
-            var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(url);
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            if (_permissionService == null) throw new InvalidOperationException("PermissionService is not available — configure DI");
+            return _permissionService.AddUserPermissionsAsync(userLogin, rightIds, CancellationToken.None);
+        }
 
-            //проверяем что пользователь не залочен.
-            var response = httpClient.GetAsync($"api/v1/users/all").Result;
-            var userResponse = JsonSerializer.Deserialize<UserResponse>(response.Content.ReadAsStringAsync().Result);
-            var user = userResponse.data.FirstOrDefault(_ => _.login == userLogin);
-
-            if (user != null && user.status == "Lock")
-            {
-                Logger.Error($"Пользователь {userLogin} залочен.");
-                return;
-            }
-             //отзываем права.
-            else if (user != null && user.status == "Unlock")
-            {
-                foreach (var rightId in rightIds)
-                {
-                    var rightStr = rightId.Split(',');
-                    switch (rightStr[0])
-                    {
-                        case "ItRole":
-                            httpClient.DeleteAsync($"api/v1/users/{userLogin}/drop/role/{rightStr[1]}").Wait();
-                            break;
-                        case "RequestRight":
-                            httpClient.DeleteAsync($"api/v1/users/{userLogin}/drop/right/{rightStr[1]}").Wait();
-                            break;
-                        default:
-                            throw new Exception($"Тип доступа {rightStr[0]} не определен");
-                    }
-                }
-            }
+        public Task RemoveUserPermissionsAsync(string userLogin, IEnumerable<string> rightIds)
+        {
+            if (_permissionService == null) throw new InvalidOperationException("PermissionService is not available — configure DI");
+            return _permissionService.RemoveUserPermissionsAsync(userLogin, rightIds, CancellationToken.None);
         }
 
         public IEnumerable<Property> GetAllProperties()
         {
-            var props = new List<Property>();
-            foreach (var propertyInfo in new UserPropertyData().GetType().GetProperties())
-            {
-                if(propertyInfo.Name == "login") continue;
-
-                props.Add(new Property(propertyInfo.Name, propertyInfo.Name));
-            }
-            return props;
+            if (_userService == null) throw new InvalidOperationException("UserService is not available — configure DI");
+            return _userService.GetAllProperties();
+        }
+        
+        public Task<IEnumerable<UserProperty>> GetUserPropertiesAsync(string userLogin, CancellationToken ct = default)
+        {
+            if (_userService == null) throw new InvalidOperationException("UserService is not available — configure DI");
+            return _userService.GetUserPropertiesAsync(userLogin, ct);
         }
 
-        public IEnumerable<UserProperty> GetUserProperties(string userLogin)
+        public Task UpdateUserPropertiesAsync(IEnumerable<UserProperty> properties, string userLogin)
         {
-            var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(url);
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            var response = httpClient.GetAsync($"api/v1/users/{userLogin}").Result;
-            var userResponse = JsonSerializer.Deserialize<UserPropertyResponse>(response.Content.ReadAsStringAsync().Result);
-
-            var user = userResponse.data ?? throw new NullReferenceException($"Пользователь {userLogin} не найден");
-
-            if (user.status == "Lock")
-                throw new Exception($"Невозможно получить свойства, пользователь {userLogin} залочен");
-
-            return user.GetType().GetProperties()
-                .Select(_ => new UserProperty(_.Name, _.GetValue(user) as string));
+            if (_userService == null) throw new InvalidOperationException("UserService is not available — configure DI");
+            return _userService.UpdateUserPropertiesAsync(properties, userLogin, CancellationToken.None);
         }
 
-        public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)
+        public Task<bool> IsUserExistsAsync(string userLogin)
         {
-            var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(url);
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            var response = httpClient.GetAsync($"api/v1/users/{userLogin}").Result;
-            var userResponse = JsonSerializer.Deserialize<UserPropertyResponse>(response.Content.ReadAsStringAsync().Result);
-
-            var user = userResponse.data ?? throw new NullReferenceException($"Пользователь {userLogin} не найден");
-            if (user.status == "Lock")
-                throw new Exception($"Невозможно обновить свойства, пользователь {userLogin} залочен");
-
-            foreach (var property in properties)
-            {
-                foreach (var userProp in user.GetType().GetProperties())
-                {
-                    if (property.Name == userProp.Name)
-                    {
-                        userProp.SetValue(user, property.Value);
-                    }
-                }
-            }
-
-            var content = new StringContent(JsonSerializer.Serialize(user), UnicodeEncoding.UTF8, "application/json");
-            httpClient.PutAsync("api/v1/users/edit", content).Wait();
+            if (_userService == null) throw new InvalidOperationException("UserService is not available — configure DI");
+            return _userService.IsUserExistsAsync(userLogin, CancellationToken.None);
         }
 
-        public bool IsUserExists(string userLogin)
+        public Task CreateUserAsync(UserToCreate user)
         {
-            var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(url);
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            var response = httpClient.GetAsync($"api/v1/users/all").Result;
-            var userResponse = JsonSerializer.Deserialize<UserResponse>(response.Content.ReadAsStringAsync().Result);
-            var user = userResponse.data.FirstOrDefault(_ => _.login == userLogin);
-
-            if(user != null) return true;
-
-            return false;
+            if (_userService == null) throw new InvalidOperationException("UserService is not available — configure DI");
+            return _userService.CreateUserAsync(user, CancellationToken.None);
         }
 
-        public void CreateUser(UserToCreate user)
+        public Task LockUserAsync(string userLogin)
         {
-            var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(url);
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            if (_userService == null) throw new InvalidOperationException("UserService is not available — configure DI");
+            return _userService.LockUserAsync(userLogin, CancellationToken.None);
+        }
 
-            var newUser = new CreateUSerDTO()
-            {
-                login = user.Login,
-                password = user.HashPassword,
-
-                lastName = user.Properties.FirstOrDefault(p => p.Name.Equals("lastName", StringComparison.OrdinalIgnoreCase))?.Value ?? string.Empty,
-                firstName = user.Properties.FirstOrDefault(p => p.Name.Equals("firstName", StringComparison.OrdinalIgnoreCase))?.Value ?? string.Empty,
-                middleName = user.Properties.FirstOrDefault(p => p.Name.Equals("middleName", StringComparison.OrdinalIgnoreCase))?.Value ?? string.Empty,
-
-                telephoneNumber = user.Properties.FirstOrDefault(p => p.Name.Equals("telephoneNumber", StringComparison.OrdinalIgnoreCase))?.Value ?? string.Empty,
-                isLead = bool.TryParse(user.Properties.FirstOrDefault(p => p.Name.Equals("isLead", StringComparison.OrdinalIgnoreCase))?.Value ?? string.Empty, out bool isLeadValue)
-                    ? isLeadValue
-                    : false,
-
-                status = string.Empty
-            };
-
-            var content = new StringContent(JsonSerializer.Serialize(newUser), UnicodeEncoding.UTF8, "application/json");
-            httpClient.PostAsync("api/v1/users/create", content).Wait();
+        public Task UnlockUserAsync(string userLogin)
+        {
+            if (_userService == null) throw new InvalidOperationException("UserService is not available — configure DI");
+            return _userService.UnlockUserAsync(userLogin, CancellationToken.None);
         }
     }
 }

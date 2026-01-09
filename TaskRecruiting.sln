@@ -15,6 +15,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TR.Connector", "src\TR.Conn
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TR.Connector.Tests", "src\TR.Connector.Tests\TR.Connector.Tests.csproj", "{2959D7D1-5C93-4F1C-BF4B-31D3CAF4D88E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MockServer", "MockServer\MockServer.csproj", "{AFCE51B7-D583-46A7-847D-CAE8DE41E620}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,11 +35,13 @@ Global
 		{2959D7D1-5C93-4F1C-BF4B-31D3CAF4D88E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2959D7D1-5C93-4F1C-BF4B-31D3CAF4D88E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2959D7D1-5C93-4F1C-BF4B-31D3CAF4D88E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AFCE51B7-D583-46A7-847D-CAE8DE41E620}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AFCE51B7-D583-46A7-847D-CAE8DE41E620}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AFCE51B7-D583-46A7-847D-CAE8DE41E620}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AFCE51B7-D583-46A7-847D-CAE8DE41E620}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {283C2D30-6D80-47AD-88E2-7BDDDAF724B7}

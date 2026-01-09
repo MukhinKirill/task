@@ -1,4 +1,4 @@
-﻿namespace TR.Connectors.Api.Entities;
+﻿namespace TR.Connectors.Api.Entities.Model;
 
 public sealed class Permission
 {
