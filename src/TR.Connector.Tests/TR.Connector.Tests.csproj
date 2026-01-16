@@ -17,12 +17,17 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\TR.Connectors.Api\TR.Connectors.Api.csproj" />
     <ProjectReference Include="..\TR.Connector\TR.Connector.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="TR.Connectors.Api">
+      <HintPath>..\TR.Connector\libs\TR.Connectors.Api.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>
